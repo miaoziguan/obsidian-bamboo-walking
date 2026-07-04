@@ -1,0 +1,7 @@
+node_modules/
+coverage/
+*.zip
+.env
+.DS_Store
+main.js
+main.js.map

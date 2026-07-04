@@ -1,0 +1,30 @@
+{
+  "name": "obsidian-bamboo-walking",
+  "version": "0.1.0",
+  "description": "竹杖芒鞋 - 个人写作专栏 Obsidian 插件",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "node esbuild.config.mjs production",
+    "build:dev": "node esbuild.config.mjs build-dev",
+    "sync": "bash sync.sh",
+    "sync:dev": "bash sync.sh --dev"
+  },
+  "keywords": ["obsidian", "plugin", "writing", "column", "bamboo-walking", "竹杖芒鞋"],
+  "author": "羽鳞君",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/miaoziguan/obsidian-bamboo-walking"
+  },
+  "homepage": "https://github.com/miaoziguan/obsidian-bamboo-walking#readme",
+  "bugs": {
+    "url": "https://github.com/miaoziguan/obsidian-bamboo-walking/issues"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.20.0",
+    "obsidian": "^1.0.0",
+    "typescript": "^5.0.0"
+  }
+}
