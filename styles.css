@@ -880,29 +880,27 @@
 
 /* ═══════════ 自定义细滚动条 ═══════════ */
 
+/* 滚动条完全隐形 */
+.bws-list,
+.bwr-content,
+.bwr-toc {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
 .bws-list::-webkit-scrollbar,
 .bwr-content::-webkit-scrollbar,
 .bwr-toc::-webkit-scrollbar {
-  width: 5px;
+  width: 0;
 }
-
 .bws-list::-webkit-scrollbar-track,
 .bwr-content::-webkit-scrollbar-track,
 .bwr-toc::-webkit-scrollbar-track {
   background: transparent;
 }
-
 .bws-list::-webkit-scrollbar-thumb,
 .bwr-content::-webkit-scrollbar-thumb,
 .bwr-toc::-webkit-scrollbar-thumb {
-  background: var(--background-modifier-border);
-  border-radius: 3px;
-}
-
-.bws-list::-webkit-scrollbar-thumb:hover,
-.bwr-content::-webkit-scrollbar-thumb:hover,
-.bwr-toc::-webkit-scrollbar-thumb:hover {
-  background: var(--bw-bamboo-pale);
+  background: transparent;
 }
 
 /* ═══════════ 暗色模式：进度条 + TOC 高亮 ═══════════ */
