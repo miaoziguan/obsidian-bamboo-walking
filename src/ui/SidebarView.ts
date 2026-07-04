@@ -123,14 +123,16 @@ export class SidebarView extends ItemView {
       cls: "bws-btn-refresh",
       attr: { "aria-label": "刷新文章", title: "刷新文章" },
     });
-    refreshBtn.innerHTML = this.isRefreshing
-      ? '<span class="bws-spin">↻</span>' : "↻";
-    if (this.isRefreshing) refreshBtn.disabled = true;
+    refreshBtn.setText(this.isRefreshing ? "↻" : "↻");
+    if (this.isRefreshing) {
+      refreshBtn.addClass("bws-spin");
+      refreshBtn.disabled = true;
+    }
     refreshBtn.addEventListener("click", () => {
       if (this.isRefreshing || !this.onRefresh) return;
       this.isRefreshing = true;
       refreshBtn.disabled = true;
-      refreshBtn.innerHTML = '<span class="bws-spin">↻</span>';
+      refreshBtn.addClass("bws-spin");
       this.onRefresh();
     });
 
@@ -180,20 +182,24 @@ export class SidebarView extends ItemView {
         cls: "bws-search-clear",
         attr: { "aria-label": "清除搜索", title: "清除" },
       });
-      clearBtn.innerHTML = "×";
-      if (!this.searchQuery) clearBtn.style.display = "none";
+      clearBtn.setText("×");
+      if (!this.searchQuery) clearBtn.addClass("bws-hidden");
 
       clearBtn.addEventListener("click", () => {
         searchInput.value = "";
         this.searchQuery = "";
-        clearBtn.style.display = "none";
+        clearBtn.addClass("bws-hidden");
         this.renderList(contentEl);
         searchInput.focus();
       });
 
       searchInput.addEventListener("input", (e) => {
         this.searchQuery = (e.target as HTMLInputElement).value.toLowerCase();
-        clearBtn.style.display = this.searchQuery ? "" : "none";
+        if (this.searchQuery) {
+          clearBtn.removeClass("bws-hidden");
+        } else {
+          clearBtn.addClass("bws-hidden");
+        }
         if (this.searchDebounce !== null) window.clearTimeout(this.searchDebounce);
         this.searchDebounce = window.setTimeout(() => {
           this.renderList(contentEl);
@@ -298,8 +304,7 @@ export class SidebarView extends ItemView {
     const title = section.createDiv({ cls: "bws-cat-title" });
     title.createSpan({ cls: "bws-arrow", text: "▾" });
     const nameSpan = title.createSpan({ text: group.name });
-    nameSpan.style.overflow = "hidden";
-    nameSpan.style.textOverflow = "ellipsis";
+    nameSpan.addClass("bws-cat-name");
     // #5: 分类计数用 badge
     title.createSpan({ cls: "bws-cat-count", text: `${group.articles.length}` });
 
@@ -335,7 +340,7 @@ export class SidebarView extends ItemView {
 
     // 第三行：摘要（两行截断 + 悬浮提示）
     if (article.summary) {
-      const summaryEl = item.createDiv({
+      item.createDiv({
         cls: "bws-art-summary",
         text: article.summary,
         attr: { title: article.summary },

@@ -24,11 +24,17 @@ export default class BambooWalkingPlugin extends Plugin {
   cacheService!: CacheService;
 
   private service!: ArticleService;
-  private sidebarView: SidebarView | null = null;
-  private readerView: ReaderView | null = null;
   private refreshTimer: number | null = null;
   private firstLaunchTimer: number | null = null;
   private currentIndex: ArticleIndexEntry[] = [];
+
+  private getSidebarView(): SidebarView | null {
+    return this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR)[0]?.view as SidebarView ?? null;
+  }
+
+  private getReaderView(): ReaderView | null {
+    return this.app.workspace.getLeavesOfType(VIEW_TYPE_READER)[0]?.view as ReaderView ?? null;
+  }
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -49,35 +55,34 @@ export default class BambooWalkingPlugin extends Plugin {
 
     // ── 注册视图 ──
     this.registerView(VIEW_TYPE_SIDEBAR, (leaf) => {
-      this.sidebarView = new SidebarView(leaf);
-      this.sidebarView.setOnSelect((entry) => this.openArticle(entry));
-      this.sidebarView.setOnRefresh(() => this.refreshArticles());
-      this.sidebarView.setIsReadFn((slug) => this.cacheService.isRead(slug));
-      this.sidebarView.setOnReady(() => {
-        // 视图就绪时，推送当前已有数据
+      const view = new SidebarView(leaf);
+      view.setOnSelect((entry) => { void this.openArticle(entry); });
+      view.setOnRefresh(() => { void this.refreshArticles(); });
+      view.setIsReadFn((slug) => this.cacheService.isRead(slug));
+      view.setOnReady(() => {
         const idx = this.currentIndex.length > 0
           ? this.currentIndex
           : this.cacheService.getIndex();
         if (idx.length > 0) {
-          this.sidebarView!.updateArticles(idx);
+          view.updateArticles(idx);
         }
       });
-      return this.sidebarView;
+      return view;
     });
 
     this.registerView(VIEW_TYPE_READER, (leaf) => {
-      this.readerView = new ReaderView(leaf);
-      this.readerView.setOnSave(async () => { await this.saveCurrentAsNote(); });
-      this.readerView.setOnBack(() => this.focusSidebar());
-      return this.readerView;
+      const view = new ReaderView(leaf);
+      view.setOnSave(async () => { await this.saveCurrentAsNote(); });
+      view.setOnBack(() => this.focusSidebar());
+      return view;
     });
 
     // ── 命令 ──
-    this.addCommand({ id: "open-column", name: "打开专栏", callback: () => this.activateViews() });
-    this.addCommand({ id: "refresh-articles", name: "刷新文章列表", callback: () => this.refreshArticles() });
-    this.addCommand({ id: "save-as-note", name: "保存当前文章为笔记", callback: () => this.saveCurrentAsNote() });
+    this.addCommand({ id: "open-column", name: "打开专栏", callback: () => { void this.activateViews(); } });
+    this.addCommand({ id: "refresh-articles", name: "刷新文章列表", callback: () => { void this.refreshArticles(); } });
+    this.addCommand({ id: "save-as-note", name: "保存当前文章为笔记", callback: () => { void this.saveCurrentAsNote(); } });
 
-    this.addRibbonIcon("book-open", "竹杖芒鞋", () => this.activateViews());
+    this.addRibbonIcon("book-open", "竹杖芒鞋", () => { void this.activateViews(); });
     this.addSettingTab(new BambooWalkingSettingTab(this.app, this, this.manifest.version));
 
     // ── 首次启动：自动打开视图 ──
@@ -85,23 +90,24 @@ export default class BambooWalkingPlugin extends Plugin {
     if (isFirstLaunch) {
       // 延迟 500ms 等 workspace 就绪
       this.firstLaunchTimer = window.setTimeout(() => {
-        this.activateViews();
+        void this.activateViews();
         new Notice("竹杖芒鞋：点击左侧栏图标开始阅读");
       }, 500);
     }
 
     // ── 加载缓存数据 ──
     this.currentIndex = this.cacheService.getIndex();
-    if (this.sidebarView && this.currentIndex.length > 0) {
-      this.sidebarView.updateArticles(this.currentIndex);
-    } else if (this.sidebarView) {
-      this.sidebarView.setLoading();
+    const sidebarView = this.getSidebarView();
+    if (sidebarView && this.currentIndex.length > 0) {
+      sidebarView.updateArticles(this.currentIndex);
+    } else if (sidebarView) {
+      sidebarView.setLoading();
     }
 
     // ── 定时刷新 ──
     if (REFRESH_INTERVAL > 0) {
       this.refreshTimer = window.setInterval(
-        () => this.refreshArticles(true),
+        () => { void this.refreshArticles(true); },
         REFRESH_INTERVAL * 60 * 1000,
       );
       // Obsidian Plugin.registerInterval 签名为 number，但 TS 环境下 window.setInterval 返回 NodeJS.Timeout，
@@ -110,7 +116,7 @@ export default class BambooWalkingPlugin extends Plugin {
     }
 
     // ── 立即拉取 ──
-    this.refreshArticles(true);
+    void this.refreshArticles(true);
   }
 
   onunload(): void {
@@ -156,8 +162,9 @@ export default class BambooWalkingPlugin extends Plugin {
   /* ═══════════════════ 文章 ═══════════════════ */
 
   async refreshArticles(silent = false): Promise<void> {
-    if (this.sidebarView && this.currentIndex.length === 0) {
-      this.sidebarView.setLoading();
+    const sidebarView = this.getSidebarView();
+    if (sidebarView && this.currentIndex.length === 0) {
+      sidebarView.setLoading();
     }
 
     try {
@@ -165,8 +172,8 @@ export default class BambooWalkingPlugin extends Plugin {
       const newSlugs = await this.cacheService.setIndex(entries);
       this.currentIndex = entries;
 
-      if (this.sidebarView) {
-        this.sidebarView.updateArticles(entries);
+      if (sidebarView) {
+        sidebarView.updateArticles(entries);
       }
 
       if (newSlugs.length > 0 && !silent) {
@@ -174,49 +181,53 @@ export default class BambooWalkingPlugin extends Plugin {
       } else if (!silent) {
         new Notice("竹杖芒鞋：已是最新");
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "未知错误";
       console.error("[竹杖芒鞋] 刷新失败:", e);
-      if (this.sidebarView && this.currentIndex.length === 0) {
-        this.sidebarView.setError(e.message);
+      if (sidebarView && this.currentIndex.length === 0) {
+        sidebarView.setError(msg);
       }
       if (!silent) {
-        new Notice(`竹杖芒鞋：刷新失败 - ${e.message}`);
+        new Notice(`竹杖芒鞋：刷新失败 - ${msg}`);
       }
     }
   }
 
   async openArticle(entry: ArticleIndexEntry): Promise<void> {
-    if (this.sidebarView) this.sidebarView.setSelected(entry.slug);
+    const sidebarView = this.getSidebarView();
+    if (sidebarView) sidebarView.setSelected(entry.slug);
 
-    // 标记为已读
     await this.cacheService.markRead(entry.slug);
-    if (this.sidebarView) this.sidebarView.refreshReadState();
+    if (sidebarView) sidebarView.refreshReadState();
 
     let article = this.cacheService.getCachedArticle(entry.slug);
     if (!article) {
-      // 用阅读器内联加载态，不弹 Notice
       await this.activateViews();
-      if (this.readerView) this.readerView.showLoading(entry.title);
+      const readerView = this.getReaderView();
+      if (readerView) readerView.showLoading(entry.title);
 
       try {
         article = await this.service.fetchArticle(entry);
         await this.cacheService.setArticle(entry.slug, article);
-      } catch (e: any) {
-        if (this.readerView) this.readerView.showError(e.message);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "未知错误";
+        if (readerView) readerView.showError(msg);
         return;
       }
     }
 
     await this.activateViews();
-    if (this.readerView) {
-      await this.readerView.showArticle(article);
+    const readerView = this.getReaderView();
+    if (readerView) {
+      await readerView.showArticle(article);
       const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_READER);
       if (leaves.length > 0) this.app.workspace.revealLeaf(leaves[0]);
     }
   }
 
   async saveCurrentAsNote(): Promise<void> {
-    const article: Article | null = this.readerView?.currentArticle ?? null;
+    const readerView = this.getReaderView();
+    const article: Article | null = readerView?.currentArticle ?? null;
 
     if (!article) {
       new Notice("竹杖芒鞋：当前没有打开的文章");
@@ -255,8 +266,9 @@ export default class BambooWalkingPlugin extends Plugin {
       }
 
       new Notice(`已保存：${filePath}`);
-    } catch (e: any) {
-      new Notice(`保存失败: ${e.message}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "未知错误";
+      new Notice(`保存失败: ${msg}`);
     }
   }
 }

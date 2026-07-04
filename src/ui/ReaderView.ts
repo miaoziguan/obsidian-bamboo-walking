@@ -114,7 +114,8 @@ export class ReaderView extends ItemView {
 
     // ── 正文区域 ──
     const body = contentCol.createDiv({ cls: "bwr-body markdown-preview-view" });
-    await MarkdownRenderer.renderMarkdown(
+    await MarkdownRenderer.render(
+      this.app,
       this.article.content,
       body,
       "",
@@ -166,7 +167,7 @@ export class ReaderView extends ItemView {
         cls: "bwr-btn",
         attr: { "aria-label": "返回目录" },
       });
-      backBtn.innerHTML = "← 目录";
+      backBtn.setText("← 目录");
       backBtn.addEventListener("click", () => {
         if (this.onBack) this.onBack();
       });
@@ -259,7 +260,7 @@ export class ReaderView extends ItemView {
     for (const line of lines) {
       const match = line.match(/^(#{1,4})\s+(.+)$/);
       if (match) {
-        const text = match[2].replace(/[*_`~\[\]]/g, "").trim();
+        const text = match[2].replace(/[[\]*_`~]/g, "").trim();
         entries.push({
           level: match[1].length,
           text,

@@ -1,5 +1,5 @@
 /* ────────────── 本地缓存服务 ────────────── */
-import type { Article, ArticleIndexEntry, CacheData, CachedArticle } from "../types";
+import type { Article, ArticleIndexEntry, CacheData } from "../types";
 import { CACHE_KEY } from "../constants";
 
 export class CacheService {

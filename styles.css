@@ -67,6 +67,18 @@
   opacity: 0.5;
 }
 
+.bws-btn-refresh.bws-spin {
+  animation: bws-spin 0.8s linear infinite;
+}
+
+@keyframes bws-spin {
+  to { transform: rotate(360deg); }
+}
+
+.bws-hidden {
+  display: none;
+}
+
 /* ── 搜索框 + 清除按钮 ── */
 .bws-search-wrap {
   padding: 6px 12px 4px;
@@ -174,6 +186,11 @@
 }
 
 .bws-cat-title:hover { background: var(--background-modifier-hover); }
+
+.bws-cat-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .bws-arrow {
   font-size: 9px;
