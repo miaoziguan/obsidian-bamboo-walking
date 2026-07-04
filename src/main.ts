@@ -47,7 +47,7 @@ export default class BambooWalkingPlugin extends Plugin {
     }
 
     this.cacheService = new CacheService(
-      () => this.loadData(),
+      async () => (await this.loadData()) ?? null,
       (data) => this.saveData(data),
       CACHE_EXPIRY,
     );
@@ -110,9 +110,7 @@ export default class BambooWalkingPlugin extends Plugin {
         () => { void this.refreshArticles(true); },
         REFRESH_INTERVAL * 60 * 1000,
       );
-      // Obsidian Plugin.registerInterval 签名为 number，但 TS 环境下 window.setInterval 返回 NodeJS.Timeout，
-      // 此处用 as any 绕过类型不匹配（Obsidian 插件社区惯例）
-      this.registerInterval(this.refreshTimer as any);
+      this.registerInterval(this.refreshTimer as unknown as number);
     }
 
     // ── 立即拉取 ──

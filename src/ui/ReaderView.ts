@@ -71,7 +71,8 @@ export class ReaderView extends ItemView {
     this.isSaving = false;
     this.article = article;
     await this.render();
-    (this.leaf as any).tabHeaderInnerTitleEl?.setText(this.getDisplayText());
+    // @ts-expect-error — Obsidian 内部 API，用于设置标签页标题
+    this.leaf.tabHeaderInnerTitleEl?.setText(this.getDisplayText());
   }
 
   async onOpen(): Promise<void> {
@@ -178,24 +179,26 @@ export class ReaderView extends ItemView {
       cls: "bwr-btn bwr-btn-save",
       text: "保存为笔记",
     });
-    saveBtn.addEventListener("click", async () => {
-      if (this.isSaving || !this.onSave) return;
-      this.isSaving = true;
-      saveBtn.disabled = true;
-      saveBtn.textContent = "保存中…";
-      try {
-        await this.onSave();
-        saveBtn.textContent = "已保存 ✓";
-        window.setTimeout(() => {
-          saveBtn.textContent = "保存为笔记";
-          saveBtn.disabled = false;
+    saveBtn.addEventListener("click", () => {
+      void (async () => {
+        if (this.isSaving || !this.onSave) return;
+        this.isSaving = true;
+        saveBtn.disabled = true;
+        saveBtn.textContent = "保存中…";
+        try {
+          await this.onSave();
+          saveBtn.textContent = "已保存 ✓";
+          window.setTimeout(() => {
+            saveBtn.textContent = "保存为笔记";
+            saveBtn.disabled = false;
+            this.isSaving = false;
+          }, 2000);
+        } catch {
           this.isSaving = false;
-        }, 2000);
-      } catch {
-        this.isSaving = false;
-        saveBtn.disabled = false;
-        saveBtn.textContent = "保存为笔记";
-      }
+          saveBtn.disabled = false;
+          saveBtn.textContent = "保存为笔记";
+        }
+      })();
     });
   }
 

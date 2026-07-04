@@ -8,8 +8,8 @@ export class CacheService {
   private pendingSave = false;
 
   constructor(
-    private loadData: () => Promise<any>,
-    private saveData: (data: any) => Promise<void>,
+    private loadData: () => Promise<Record<string, unknown> | null>,
+    private saveData: (data: Record<string, unknown>) => Promise<void>,
     private cacheExpiry: number,
   ) {
     this.data = {
@@ -23,21 +23,18 @@ export class CacheService {
 
   async load(): Promise<void> {
     const saved = await this.loadData();
-    if (saved && saved[CACHE_KEY]) {
-      this.data = {
-        ...saved[CACHE_KEY],
-        readSlugs: saved[CACHE_KEY].readSlugs ?? [],
-      };
+    if (saved?.[CACHE_KEY]) {
+      const cached = saved[CACHE_KEY] as CacheData;
+      this.data = { ...cached, readSlugs: cached.readSlugs ?? [] };
     }
   }
 
   async save(): Promise<void> {
-    // 简易锁，防止并发保存互相覆盖
     if (this.saving) { this.pendingSave = true; return; }
     this.saving = true;
     try {
-      const all = (await this.loadData()) || {};
-      all[CACHE_KEY] = this.data;
+      const all = (await this.loadData()) ?? {};
+      all[CACHE_KEY] = this.data as unknown as Record<string, unknown>[string];
       await this.saveData(all);
       if (this.pendingSave) {
         this.pendingSave = false;
