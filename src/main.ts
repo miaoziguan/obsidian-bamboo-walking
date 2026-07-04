@@ -153,8 +153,7 @@ export default class BambooWalkingPlugin extends Plugin {
   }
 
   focusSidebar(): void {
-    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR);
-    if (leaves.length > 0) this.app.workspace.revealLeaf(leaves[0]);
+    // 无需额外操作，侧边栏视图始终可见
   }
 
   /* ═══════════════════ 文章 ═══════════════════ */
@@ -218,8 +217,6 @@ export default class BambooWalkingPlugin extends Plugin {
     const readerView = this.getReaderView();
     if (readerView) {
       await readerView.showArticle(article);
-      const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_READER);
-      if (leaves.length > 0) this.app.workspace.revealLeaf(leaves[0]);
     }
   }
 
