@@ -71,8 +71,9 @@ export class ReaderView extends ItemView {
     this.isSaving = false;
     this.article = article;
     await this.render();
-    // @ts-expect-error — Obsidian 内部 API，用于设置标签页标题
-    this.leaf.tabHeaderInnerTitleEl?.setText(this.getDisplayText());
+    // Obsidian 内部 API，用于设置标签页标题
+    const tabHeader = (this.leaf as { tabHeaderInnerTitleEl?: { setText: (t: string) => void } }).tabHeaderInnerTitleEl;
+    tabHeader?.setText(this.getDisplayText());
   }
 
   async onOpen(): Promise<void> {
@@ -284,20 +285,7 @@ export class ReaderView extends ItemView {
   private renderEmpty(): void {
     const empty = this.contentEl.createDiv({ cls: "bwr-empty" });
     const bamboo = empty.createDiv({ cls: "bwr-bamboo-art" });
-    bamboo.innerHTML = `
-      <svg width="120" height="160" viewBox="0 0 120 160" fill="none">
-        <rect x="55" y="20" width="10" height="140" rx="5" fill="var(--bw-bamboo)" opacity="0.3"/>
-        <rect x="55" y="20" width="10" height="140" rx="5" stroke="var(--bw-bamboo)" stroke-width="1" opacity="0.4"/>
-        <line x1="53" y1="50" x2="67" y2="50" stroke="var(--bw-bamboo-deep)" stroke-width="1.5" opacity="0.4"/>
-        <line x1="53" y1="80" x2="67" y2="80" stroke="var(--bw-bamboo-deep)" stroke-width="1.5" opacity="0.4"/>
-        <line x1="53" y1="110" x2="67" y2="110" stroke="var(--bw-bamboo-deep)" stroke-width="1.5" opacity="0.4"/>
-        <line x1="53" y1="140" x2="67" y2="140" stroke="var(--bw-bamboo-deep)" stroke-width="1.5" opacity="0.4"/>
-        <path d="M65 45 Q80 35 90 40 Q78 42 65 48" fill="var(--bw-bamboo)" opacity="0.25"/>
-        <path d="M65 42 Q82 30 95 33 Q80 36 65 45" fill="var(--bw-bamboo-deep)" opacity="0.2"/>
-        <path d="M55 75 Q38 65 30 70 Q40 72 55 78" fill="var(--bw-bamboo)" opacity="0.25"/>
-        <path d="M55 72 Q35 60 25 65 Q38 66 55 75" fill="var(--bw-bamboo-deep)" opacity="0.2"/>
-        <path d="M65 105 Q82 95 92 100 Q80 102 65 108" fill="var(--bw-bamboo)" opacity="0.25"/>
-      </svg>`;
+    // SVG 装饰通过 CSS background-image 渲染，避免 innerHTML
     empty.createEl("h3", { text: "竹杖芒鞋轻胜马", cls: "bwr-empty-title" });
     empty.createEl("p", {
       text: "从左侧目录选择一篇文章开始阅读",

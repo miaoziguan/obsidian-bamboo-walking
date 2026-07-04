@@ -33,8 +33,8 @@ export class CacheService {
     if (this.saving) { this.pendingSave = true; return; }
     this.saving = true;
     try {
-      const all = (await this.loadData()) ?? {};
-      all[CACHE_KEY] = this.data as unknown as Record<string, unknown>[string];
+      const all = ((await this.loadData()) ?? {}) as Record<string, CacheData>;
+      all[CACHE_KEY] = this.data;
       await this.saveData(all);
       if (this.pendingSave) {
         this.pendingSave = false;

@@ -47,8 +47,8 @@ export default class BambooWalkingPlugin extends Plugin {
     }
 
     this.cacheService = new CacheService(
-      async () => (await this.loadData()) ?? null,
-      (data) => this.saveData(data),
+      async () => (await this.loadData()) as Record<string, unknown> | null,
+      (data) => this.saveData(data as unknown),
       CACHE_EXPIRY,
     );
     await this.cacheService.load();
@@ -129,14 +129,14 @@ export default class BambooWalkingPlugin extends Plugin {
   /* ═══════════════════ 配置 ═══════════════════ */
 
   async loadSettings(): Promise<void> {
-    const data = await this.loadData();
+    const data = (await this.loadData()) as { settings?: BambooWalkingSettings } | null;
     this.settings = Object.assign({}, DEFAULT_SETTINGS, data?.settings);
   }
 
   async saveSettings(): Promise<void> {
-    const data = (await this.loadData()) || {};
+    const data = ((await this.loadData()) ?? {}) as Record<string, unknown>;
     data.settings = this.settings;
-    await this.saveData(data);
+    await this.saveData(data as unknown);
   }
 
   /* ═══════════════════ 视图 ═══════════════════ */
