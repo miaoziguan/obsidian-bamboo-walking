@@ -147,18 +147,17 @@ export class ReaderView extends ItemView {
       const scrollTop = contentCol.scrollTop;
       const scrollHeight = contentCol.scrollHeight - contentCol.clientHeight;
 
-      // 段落加权进度：已滑过视口中线的元素数 / 总元素数
-      const threshold = contentCol.clientHeight * 0.33;
-      let readCount = 0;
-      for (const el of this.readableElements) {
-        const rect = el.getBoundingClientRect();
-        const contentRect = contentCol.getBoundingClientRect();
-        // 元素的顶部已滚过视口 1/3 处即为已读
-        if (rect.top <= contentRect.top + threshold) readCount++;
+      // 段落加权进度：测量正文内容区域，排除图片/代码块等占位元素
+      const els = this.readableElements;
+      let pct = 0;
+      if (els.length >= 2) {
+        const first = els[0].offsetTop;
+        const last = els[els.length - 1];
+        const total = last.offsetTop + last.offsetHeight - first;
+        pct = total > 0 ? Math.min(Math.max((scrollTop - first) / total, 0), 1) : 0;
+      } else {
+        pct = scrollHeight > 0 ? Math.min(scrollTop / scrollHeight, 1) : 0;
       }
-      const pct = this.readableElements.length > 0
-        ? Math.min(readCount / this.readableElements.length, 1)
-        : scrollHeight > 0 ? Math.min(scrollTop / scrollHeight, 1) : 0;
       progressBar.style.width = `${pct * 100}%`;
 
       // TOC scroll spy
