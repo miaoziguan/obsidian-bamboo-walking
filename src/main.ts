@@ -1,5 +1,5 @@
 /* ────────────── 竹杖芒鞋 · 插件入口 ────────────── */
-import { Notice, Plugin } from "obsidian";
+import { App, Modal, Notice, Plugin, Setting } from "obsidian";
 import type { Article, ArticleIndexEntry, BambooWalkingSettings } from "./types";
 import { DEFAULT_SETTINGS, VIEW_TYPE_READER, VIEW_TYPE_SIDEBAR } from "./types";
 import { REFRESH_INTERVAL, CACHE_EXPIRY } from "./constants";
@@ -14,6 +14,26 @@ import { yamlEscape } from "./utils/yaml";
 // esbuild define 注入，开发构建=true，生产构建=false
 declare const DEV_MODE: boolean;
 
+/** 简单确认弹窗 */
+class ConfirmModal extends Modal {
+  private onResult: (ok: boolean) => void;
+
+  constructor(app: App, private message: string, onResult: (ok: boolean) => void) {
+    super(app);
+    this.onResult = onResult;
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.createEl("p", { text: this.message, cls: "bw-confirm-msg" });
+    const btns = contentEl.createDiv({ cls: "bw-confirm-btns" });
+    new Setting(btns)
+      .addButton((btn) => btn.setButtonText("覆盖").setCta().onClick(() => { this.onResult(true); this.close(); }))
+      .addButton((btn) => btn.setButtonText("取消").onClick(() => { this.onResult(false); this.close(); }));
+  }
+
+  onClose(): void { this.contentEl.empty(); }
+}
 interface ArticleService {
   fetchIndex(): Promise<ArticleIndexEntry[]>;
   fetchArticle(entry: ArticleIndexEntry): Promise<Article>;
@@ -174,8 +194,10 @@ export default class BambooWalkingPlugin extends Plugin {
       }
 
       if (newSlugs.length > 0 && !silent) {
+        sidebarView?.setStatus(`发现 ${newSlugs.length} 篇新文章`);
         new Notice(`竹杖芒鞋：发现 ${newSlugs.length} 篇新文章`);
       } else if (!silent) {
+        sidebarView?.setStatus("已是最新");
         new Notice("竹杖芒鞋：已是最新");
       }
     } catch (e: unknown) {
@@ -183,9 +205,11 @@ export default class BambooWalkingPlugin extends Plugin {
       console.error("[竹杖芒鞋] 刷新失败:", e);
       if (sidebarView && this.currentIndex.length === 0) {
         sidebarView.setError(msg);
+      } else {
+        sidebarView?.setStatus("刷新失败，点击 ↻ 重试");
       }
       if (!silent) {
-        new Notice(`竹杖芒鞋：刷新失败 - ${msg}`);
+        new Notice(`竹杖芒鞋：刷新失败，点击刷新按钮重试`);
       }
     }
   }
@@ -255,6 +279,15 @@ export default class BambooWalkingPlugin extends Plugin {
       const fullContent = fm + article.content;
 
       if (await this.app.vault.adapter.exists(filePath)) {
+        // 覆盖确认：仅当文件已存在时询问
+        const ok = await new Promise<boolean>((resolve) => {
+          const dlg = new ConfirmModal(this.app, `「${article.title}」已存在，是否覆盖？`, resolve);
+          dlg.open();
+        });
+        if (!ok) {
+          new Notice("已取消保存");
+          return;
+        }
         await this.app.vault.adapter.write(filePath, fullContent);
       } else {
         await this.app.vault.create(filePath, fullContent);

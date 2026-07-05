@@ -75,6 +75,15 @@
   to { transform: rotate(360deg); }
 }
 
+/* 持久状态栏 */
+.bws-status {
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--text-faint);
+  text-align: center;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
 .bws-hidden {
   display: none;
 }

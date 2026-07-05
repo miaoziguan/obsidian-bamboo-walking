@@ -169,7 +169,7 @@ export class ReaderView extends ItemView {
         cls: "bwr-btn",
         attr: { "aria-label": "返回目录" },
       });
-      backBtn.setText("← 目录");
+      backBtn.setText("← 文章列表");
       backBtn.addEventListener("click", () => {
         if (this.onBack) this.onBack();
       });

@@ -15,6 +15,7 @@ export class SidebarView extends ItemView {
   private isRefreshing = false;
   private searchDebounce: number | null = null;
   private filter: "unread" | "all" = "unread";
+  private statusMsg = "";
   private onSelect: ((entry: ArticleIndexEntry) => void) | null = null;
   private onRefresh: (() => void) | null = null;
   private isReadFn: ((slug: string) => boolean) | null = null;
@@ -28,6 +29,13 @@ export class SidebarView extends ItemView {
   setOnRefresh(cb: () => void): void { this.onRefresh = cb; }
   setIsReadFn(fn: (slug: string) => boolean): void { this.isReadFn = fn; }
   setOnReady(cb: () => void): void { this.onReady = cb; }
+
+  /** 持久状态栏：显示最近一次刷新结果 */
+  setStatus(msg: string): void {
+    this.statusMsg = msg;
+    const el = this.containerEl.querySelector(".bws-status");
+    if (el) el.textContent = msg;
+  }
 
   setLoading(): void {
     if (this.articles.length === 0) { this.state = "loading"; this.render(); }
@@ -136,6 +144,13 @@ export class SidebarView extends ItemView {
       this.onRefresh();
     });
 
+    // ── 持久状态栏 ──
+    if (this.statusMsg) {
+      contentEl.createDiv({ cls: "bws-status", text: this.statusMsg });
+    } else if (this.state === "loading") {
+      contentEl.createDiv({ cls: "bws-status", text: "正在检查更新…" });
+    }
+
     // ── 未读 / 全部 切换 ──
     if (this.state === "loaded" || (this.state !== "loading" && this.articles.length > 0)) {
       const unreadCount = this.isReadFn
@@ -243,7 +258,7 @@ export class SidebarView extends ItemView {
     empty.createSpan({ text: "暂无文章" });
     empty.createEl("br");
     empty.createEl("small", {
-      text: "作者还没有发布文章，请稍后再来",
+      text: "专栏刚刚起步，作者正在筹备文章，敬请期待",
       cls: "bws-empty-hint",
     });
   }
