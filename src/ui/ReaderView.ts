@@ -18,7 +18,8 @@ export class ReaderView extends ItemView {
   private onBack: (() => void) | null = null;
   private tocElements = new Map<string, HTMLElement>();
   private headingElements: { id: string; el: HTMLElement }[] = [];
-  private readableElements: HTMLElement[] = [];
+  private tocProgressBar: HTMLElement | null = null;
+  private tocProgressPct: HTMLElement | null = null;
   private scrollHandler: (() => void) | null = null;
 
   constructor(leaf: WorkspaceLeaf) {
@@ -72,9 +73,7 @@ export class ReaderView extends ItemView {
     this.isSaving = false;
     this.article = article;
     await this.render();
-    // Obsidian 内部 API，用于设置标签页标题
-    const tabHeader = (this.leaf as { tabHeaderInnerTitleEl?: { setText: (t: string) => void } }).tabHeaderInnerTitleEl;
-    tabHeader?.setText(this.getDisplayText());
+    (this.leaf as any).tabHeaderInnerTitleEl?.setText(this.getDisplayText());
   }
 
   async onOpen(): Promise<void> {
@@ -92,6 +91,8 @@ export class ReaderView extends ItemView {
     contentEl.addClass("bwr-reader");
     this.tocElements.clear();
     this.headingElements = [];
+    this.tocProgressBar = null;
+    this.tocProgressPct = null;
     if (this.scrollHandler) { this.scrollHandler = null; }
 
     if (!this.article) {
@@ -99,17 +100,16 @@ export class ReaderView extends ItemView {
       return;
     }
 
-    // 阅读进度条
-    const progressBar = contentEl.createDiv({ cls: "bwr-progress" });
+    // 顶部固定区：absolute 在 contentEl，宽度对齐 content 列
+    contentEl.style.position = "relative";
+    const topBar = contentEl.createDiv({ cls: "bwr-topbar" });
+    this.renderToolbar(topBar);
+    this.renderHeader(topBar);
 
-    this.renderToolbar(contentEl);
-
-    // 正文 + TOC 容器
+    // 正文 + TOC 容器，顶部留出 topbar 高度
     const layout = contentEl.createDiv({ cls: "bwr-layout" });
-
-    // 内容列（header + body），跟 TOC 并排
+    layout.style.paddingTop = `${topBar.offsetHeight}px`;
     const contentCol = layout.createDiv({ cls: "bwr-content" });
-    this.renderHeader(contentCol);
 
     // ── TOC 侧栏（始终占位，保持内容列宽度稳定） ──
     const toc = this.extractToc(this.article.content);
@@ -117,22 +117,12 @@ export class ReaderView extends ItemView {
 
     // ── 正文区域 ──
     const body = contentCol.createDiv({ cls: "bwr-body markdown-preview-view" });
-    await MarkdownRenderer.render(
-      this.app,
+    await MarkdownRenderer.renderMarkdown(
       this.article.content,
       body,
       "",
       this.component,
     );
-
-    // 收集可读元素用于段落进度
-    this.readableElements = [];
-    body.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, blockquote p").forEach((el) => {
-      const text = el.textContent?.trim() ?? "";
-      // 跳过纯代码块和空段落
-      if (el.closest("pre") || !text) return;
-      this.readableElements.push(el as HTMLElement);
-    });
 
     // 给标题加 id，收集用于 scroll spy
     body.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((el) => {
@@ -142,29 +132,25 @@ export class ReaderView extends ItemView {
       this.headingElements.push({ id, el: el as HTMLElement });
     });
 
-    // 滚动监听：段落进度 + TOC 高亮
+    // 滚动监听：TOC 进度 + 高亮（layout 是滚动容器）
     this.scrollHandler = () => {
-      const scrollTop = contentCol.scrollTop;
-      const scrollHeight = contentCol.scrollHeight - contentCol.clientHeight;
+      const scrollTop = layout.scrollTop;
+      const scrollHeight = layout.scrollHeight - layout.clientHeight;
 
-      // 段落加权进度：测量正文内容区域，排除图片/代码块等占位元素
-      const els = this.readableElements;
-      let pct = 0;
-      if (els.length >= 2) {
-        const first = els[0].offsetTop;
-        const last = els[els.length - 1];
-        const total = last.offsetTop + last.offsetHeight - first;
-        pct = total > 0 ? Math.min(Math.max((scrollTop - first) / total, 0), 1) : 0;
-      } else {
-        pct = scrollHeight > 0 ? Math.min(scrollTop / scrollHeight, 1) : 0;
+      // TOC 进度条 + 百分比
+      const pct = scrollHeight > 0 ? Math.min(scrollTop / scrollHeight, 1) : 0;
+      if (this.tocProgressBar) {
+        this.tocProgressBar.style.width = `${pct * 100}%`;
       }
-      progressBar.style.width = `${pct * 100}%`;
+      if (this.tocProgressPct) {
+        this.tocProgressPct.textContent = `${Math.round(pct * 100)}%`;
+      }
 
       // TOC scroll spy
       if (this.headingElements.length === 0) return;
       let activeId = this.headingElements[0].id;
       for (const h of this.headingElements) {
-        if (h.el.offsetTop - contentCol.offsetTop <= scrollTop + 60) {
+        if (h.el.offsetTop - layout.offsetTop <= scrollTop + 60) {
           activeId = h.id;
         } else {
           break;
@@ -174,10 +160,10 @@ export class ReaderView extends ItemView {
         el.classList.toggle("is-active", id === activeId);
       });
     };
-    contentCol.addEventListener("scroll", this.scrollHandler);
+    layout.addEventListener("scroll", this.scrollHandler);
 
     // 滚动到顶部
-    contentCol.scrollTop = 0;
+    layout.scrollTop = 0;
   }
 
   private renderToolbar(container: HTMLElement): void {
@@ -188,7 +174,7 @@ export class ReaderView extends ItemView {
         cls: "bwr-btn",
         attr: { "aria-label": "返回目录" },
       });
-      backBtn.setText("← 文章列表");
+      backBtn.innerHTML = "← 目录";
       backBtn.addEventListener("click", () => {
         if (this.onBack) this.onBack();
       });
@@ -199,26 +185,24 @@ export class ReaderView extends ItemView {
       cls: "bwr-btn bwr-btn-save",
       text: "保存为笔记",
     });
-    saveBtn.addEventListener("click", () => {
-      void (async () => {
-        if (this.isSaving || !this.onSave) return;
-        this.isSaving = true;
-        saveBtn.disabled = true;
-        saveBtn.textContent = "保存中…";
-        try {
-          await this.onSave();
-          saveBtn.textContent = "已保存 ✓";
-          window.setTimeout(() => {
-            saveBtn.textContent = "保存为笔记";
-            saveBtn.disabled = false;
-            this.isSaving = false;
-          }, 2000);
-        } catch {
-          this.isSaving = false;
-          saveBtn.disabled = false;
+    saveBtn.addEventListener("click", async () => {
+      if (this.isSaving || !this.onSave) return;
+      this.isSaving = true;
+      saveBtn.disabled = true;
+      saveBtn.textContent = "保存中…";
+      try {
+        await this.onSave();
+        saveBtn.textContent = "已保存 ✓";
+        window.setTimeout(() => {
           saveBtn.textContent = "保存为笔记";
-        }
-      })();
+          saveBtn.disabled = false;
+          this.isSaving = false;
+        }, 2000);
+      } catch {
+        this.isSaving = false;
+        saveBtn.disabled = false;
+        saveBtn.textContent = "保存为笔记";
+      }
     });
   }
 
@@ -256,7 +240,17 @@ export class ReaderView extends ItemView {
     const nav = layout.createDiv({ cls: "bwr-toc" });
     if (toc.length < 2) return;
 
-    nav.createDiv({ cls: "bwr-toc-title", text: "目录" });
+    // 进度条
+    const progressWrap = nav.createDiv({ cls: "bwr-toc-progress" });
+    const bar = progressWrap.createDiv({ cls: "bwr-toc-bar" });
+    this.tocProgressBar = bar;
+
+    // 标题行：目录 + 百分比
+    const titleRow = nav.createDiv({ cls: "bwr-toc-header" });
+    titleRow.createDiv({ cls: "bwr-toc-title", text: "目录" });
+    const pct = titleRow.createDiv({ cls: "bwr-toc-pct", text: "0%" });
+    this.tocProgressPct = pct;
+
     const list = nav.createDiv({ cls: "bwr-toc-list" });
 
     for (const entry of toc) {
@@ -283,7 +277,7 @@ export class ReaderView extends ItemView {
     for (const line of lines) {
       const match = line.match(/^(#{1,4})\s+(.+)$/);
       if (match) {
-        const text = match[2].replace(/[[\]*_`~]/g, "").trim();
+        const text = match[2].replace(/[*_`~\[\]]/g, "").trim();
         entries.push({
           level: match[1].length,
           text,
@@ -304,7 +298,20 @@ export class ReaderView extends ItemView {
   private renderEmpty(): void {
     const empty = this.contentEl.createDiv({ cls: "bwr-empty" });
     const bamboo = empty.createDiv({ cls: "bwr-bamboo-art" });
-    // SVG 装饰通过 CSS background-image 渲染，避免 innerHTML
+    bamboo.innerHTML = `
+      <svg width="120" height="160" viewBox="0 0 120 160" fill="none">
+        <rect x="55" y="20" width="10" height="140" rx="5" fill="var(--bw-bamboo)" opacity="0.3"/>
+        <rect x="55" y="20" width="10" height="140" rx="5" stroke="var(--bw-bamboo)" stroke-width="1" opacity="0.4"/>
+        <line x1="53" y1="50" x2="67" y2="50" stroke="var(--bw-bamboo-deep)" stroke-width="1.5" opacity="0.4"/>
+        <line x1="53" y1="80" x2="67" y2="80" stroke="var(--bw-bamboo-deep)" stroke-width="1.5" opacity="0.4"/>
+        <line x1="53" y1="110" x2="67" y2="110" stroke="var(--bw-bamboo-deep)" stroke-width="1.5" opacity="0.4"/>
+        <line x1="53" y1="140" x2="67" y2="140" stroke="var(--bw-bamboo-deep)" stroke-width="1.5" opacity="0.4"/>
+        <path d="M65 45 Q80 35 90 40 Q78 42 65 48" fill="var(--bw-bamboo)" opacity="0.25"/>
+        <path d="M65 42 Q82 30 95 33 Q80 36 65 45" fill="var(--bw-bamboo-deep)" opacity="0.2"/>
+        <path d="M55 75 Q38 65 30 70 Q40 72 55 78" fill="var(--bw-bamboo)" opacity="0.25"/>
+        <path d="M55 72 Q35 60 25 65 Q38 66 55 75" fill="var(--bw-bamboo-deep)" opacity="0.2"/>
+        <path d="M65 105 Q82 95 92 100 Q80 102 65 108" fill="var(--bw-bamboo)" opacity="0.25"/>
+      </svg>`;
     empty.createEl("h3", { text: "竹杖芒鞋轻胜马", cls: "bwr-empty-title" });
     empty.createEl("p", {
       text: "从左侧目录选择一篇文章开始阅读",
