@@ -68,7 +68,7 @@ export default class BambooWalkingPlugin extends Plugin {
 
     this.cacheService = new CacheService(
       async () => (await this.loadData()) as Record<string, unknown> | null,
-      (data) => this.saveData(data as unknown),
+      (data) => this.saveData(data),
       CACHE_EXPIRY,
     );
     await this.cacheService.load();
@@ -130,7 +130,7 @@ export default class BambooWalkingPlugin extends Plugin {
         () => { void this.refreshArticles(true); },
         REFRESH_INTERVAL * 60 * 1000,
       );
-      this.registerInterval(this.refreshTimer as unknown as number);
+      this.registerInterval(this.refreshTimer!);
     }
 
     // ── 立即拉取 ──
@@ -156,7 +156,7 @@ export default class BambooWalkingPlugin extends Plugin {
   async saveSettings(): Promise<void> {
     const data = ((await this.loadData()) ?? {}) as Record<string, unknown>;
     data.settings = this.settings;
-    await this.saveData(data as unknown);
+    await this.saveData(data);
   }
 
   /* ═══════════════════ 视图 ═══════════════════ */

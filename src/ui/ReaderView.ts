@@ -73,7 +73,8 @@ export class ReaderView extends ItemView {
     this.isSaving = false;
     this.article = article;
     await this.render();
-    (this.leaf as any).tabHeaderInnerTitleEl?.setText(this.getDisplayText());
+    const leafWithTab = this.leaf as unknown as { tabHeaderInnerTitleEl?: { setText: (t: string) => void } };
+    leafWithTab.tabHeaderInnerTitleEl?.setText(this.getDisplayText());
   }
 
   async onOpen(): Promise<void> {
@@ -101,14 +102,14 @@ export class ReaderView extends ItemView {
     }
 
     // 顶部固定区：absolute 在 contentEl，宽度对齐 content 列
-    contentEl.style.position = "relative";
     const topBar = contentEl.createDiv({ cls: "bwr-topbar" });
     this.renderToolbar(topBar);
     this.renderHeader(topBar);
 
     // 正文 + TOC 容器，顶部留出 topbar 高度
     const layout = contentEl.createDiv({ cls: "bwr-layout" });
-    layout.style.paddingTop = `${topBar.offsetHeight}px`;
+    const topHeight = `${topBar.offsetHeight}px`;
+    (layout as unknown as { setCssProps(p: Record<string, string>): void }).setCssProps({ "padding-top": topHeight });
     const contentCol = layout.createDiv({ cls: "bwr-content" });
 
     // ── TOC 侧栏（始终占位，保持内容列宽度稳定） ──
@@ -117,7 +118,8 @@ export class ReaderView extends ItemView {
 
     // ── 正文区域 ──
     const body = contentCol.createDiv({ cls: "bwr-body markdown-preview-view" });
-    await MarkdownRenderer.renderMarkdown(
+    await MarkdownRenderer.render(
+      this.app,
       this.article.content,
       body,
       "",
@@ -174,7 +176,7 @@ export class ReaderView extends ItemView {
         cls: "bwr-btn",
         attr: { "aria-label": "返回目录" },
       });
-      backBtn.innerHTML = "← 目录";
+      backBtn.setText("← 目录");
       backBtn.addEventListener("click", () => {
         if (this.onBack) this.onBack();
       });
@@ -277,7 +279,7 @@ export class ReaderView extends ItemView {
     for (const line of lines) {
       const match = line.match(/^(#{1,4})\s+(.+)$/);
       if (match) {
-        const text = match[2].replace(/[*_`~\[\]]/g, "").trim();
+        const text = match[2].replace(/[\]*_`~[]/g, "").trim();
         entries.push({
           level: match[1].length,
           text,
@@ -298,20 +300,7 @@ export class ReaderView extends ItemView {
   private renderEmpty(): void {
     const empty = this.contentEl.createDiv({ cls: "bwr-empty" });
     const bamboo = empty.createDiv({ cls: "bwr-bamboo-art" });
-    bamboo.innerHTML = `
-      <svg width="120" height="160" viewBox="0 0 120 160" fill="none">
-        <rect x="55" y="20" width="10" height="140" rx="5" fill="var(--bw-bamboo)" opacity="0.3"/>
-        <rect x="55" y="20" width="10" height="140" rx="5" stroke="var(--bw-bamboo)" stroke-width="1" opacity="0.4"/>
-        <line x1="53" y1="50" x2="67" y2="50" stroke="var(--bw-bamboo-deep)" stroke-width="1.5" opacity="0.4"/>
-        <line x1="53" y1="80" x2="67" y2="80" stroke="var(--bw-bamboo-deep)" stroke-width="1.5" opacity="0.4"/>
-        <line x1="53" y1="110" x2="67" y2="110" stroke="var(--bw-bamboo-deep)" stroke-width="1.5" opacity="0.4"/>
-        <line x1="53" y1="140" x2="67" y2="140" stroke="var(--bw-bamboo-deep)" stroke-width="1.5" opacity="0.4"/>
-        <path d="M65 45 Q80 35 90 40 Q78 42 65 48" fill="var(--bw-bamboo)" opacity="0.25"/>
-        <path d="M65 42 Q82 30 95 33 Q80 36 65 45" fill="var(--bw-bamboo-deep)" opacity="0.2"/>
-        <path d="M55 75 Q38 65 30 70 Q40 72 55 78" fill="var(--bw-bamboo)" opacity="0.25"/>
-        <path d="M55 72 Q35 60 25 65 Q38 66 55 75" fill="var(--bw-bamboo-deep)" opacity="0.2"/>
-        <path d="M65 105 Q82 95 92 100 Q80 102 65 108" fill="var(--bw-bamboo)" opacity="0.25"/>
-      </svg>`;
+    // SVG 装饰通过 CSS background-image 渲染，避免 innerHTML
     empty.createEl("h3", { text: "竹杖芒鞋轻胜马", cls: "bwr-empty-title" });
     empty.createEl("p", {
       text: "从左侧目录选择一篇文章开始阅读",
