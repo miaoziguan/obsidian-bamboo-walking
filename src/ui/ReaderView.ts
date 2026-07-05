@@ -18,6 +18,7 @@ export class ReaderView extends ItemView {
   private onBack: (() => void) | null = null;
   private tocElements = new Map<string, HTMLElement>();
   private headingElements: { id: string; el: HTMLElement }[] = [];
+  private readableElements: HTMLElement[] = [];
   private scrollHandler: (() => void) | null = null;
 
   constructor(leaf: WorkspaceLeaf) {
@@ -124,6 +125,15 @@ export class ReaderView extends ItemView {
       this.component,
     );
 
+    // 收集可读元素用于段落进度
+    this.readableElements = [];
+    body.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, blockquote p").forEach((el) => {
+      const text = el.textContent?.trim() ?? "";
+      // 跳过纯代码块和空段落
+      if (el.closest("pre") || !text) return;
+      this.readableElements.push(el as HTMLElement);
+    });
+
     // 给标题加 id，收集用于 scroll spy
     body.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((el) => {
       const text = el.textContent?.trim() ?? "";
@@ -132,13 +142,23 @@ export class ReaderView extends ItemView {
       this.headingElements.push({ id, el: el as HTMLElement });
     });
 
-    // 滚动监听：进度条 + TOC 高亮
+    // 滚动监听：段落进度 + TOC 高亮
     this.scrollHandler = () => {
       const scrollTop = contentCol.scrollTop;
       const scrollHeight = contentCol.scrollHeight - contentCol.clientHeight;
 
-      // 进度条
-      const pct = scrollHeight > 0 ? Math.min(scrollTop / scrollHeight, 1) : 0;
+      // 段落加权进度：已滑过视口中线的元素数 / 总元素数
+      const threshold = contentCol.clientHeight * 0.33;
+      let readCount = 0;
+      for (const el of this.readableElements) {
+        const rect = el.getBoundingClientRect();
+        const contentRect = contentCol.getBoundingClientRect();
+        // 元素的顶部已滚过视口 1/3 处即为已读
+        if (rect.top <= contentRect.top + threshold) readCount++;
+      }
+      const pct = this.readableElements.length > 0
+        ? Math.min(readCount / this.readableElements.length, 1)
+        : scrollHeight > 0 ? Math.min(scrollTop / scrollHeight, 1) : 0;
       progressBar.style.width = `${pct * 100}%`;
 
       // TOC scroll spy
