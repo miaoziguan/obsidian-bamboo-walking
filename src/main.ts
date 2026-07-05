@@ -130,7 +130,9 @@ export default class BambooWalkingPlugin extends Plugin {
         () => { void this.refreshArticles(true); },
         REFRESH_INTERVAL * 60 * 1000,
       );
-      this.registerInterval(this.refreshTimer!);
+      if (this.refreshTimer !== null) {
+        this.registerInterval(this.refreshTimer);
+      }
     }
 
     // ── 立即拉取 ──
