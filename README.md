@@ -3,7 +3,7 @@
 > 竹杖芒鞋轻胜马，谁怕？一蓑烟雨任平生。  
 > — 苏轼《定风波》
 
-**安装即订阅**。羽鳞君的个人写作专栏，以 Obsidian 插件的形式分发——你写文章，读者装插件，内容自动送达。
+**安装即订阅**。羽鳞君的个人写作专栏，以 Obsidian 插件的形式分发——我写文章，读者装插件，内容自动送达。
 
 **Install = Subscribe.** A personal writing column by 羽鳞君, delivered as an Obsidian plugin.
 
