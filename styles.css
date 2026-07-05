@@ -470,14 +470,12 @@
 /* 正文内的链接 */
 .bwr-body a {
   color: var(--bw-bamboo);
-  text-decoration: underline;
-  text-decoration-color: var(--bw-bamboo-pale);
-  text-underline-offset: 2px;
-  transition: text-decoration-color 0.2s;
+  border-bottom: 1px solid var(--bw-bamboo-pale);
+  transition: border-color 0.2s;
 }
 
 .bwr-body a:hover {
-  text-decoration-color: var(--bw-bamboo);
+  border-bottom-color: var(--bw-bamboo);
 }
 
 /* 正文内的分割线 —— 竹节风格 */
@@ -768,6 +766,7 @@
   flex: 1;
   align-items: flex-start;
   overflow-y: auto;
+  padding-top: var(--bwr-topbar-h, 0px);
 }
 
 /* TOC 侧栏 */

@@ -108,8 +108,7 @@ export class ReaderView extends ItemView {
 
     // 正文 + TOC 容器，顶部留出 topbar 高度
     const layout = contentEl.createDiv({ cls: "bwr-layout" });
-    const topHeight = `${topBar.offsetHeight}px`;
-    (layout as unknown as { setCssProps(p: Record<string, string>): void }).setCssProps({ "padding-top": topHeight });
+    layout.style.setProperty("--bwr-topbar-h", `${topBar.offsetHeight}px`);
     const contentCol = layout.createDiv({ cls: "bwr-content" });
 
     // ── TOC 侧栏（始终占位，保持内容列宽度稳定） ──
@@ -187,24 +186,26 @@ export class ReaderView extends ItemView {
       cls: "bwr-btn bwr-btn-save",
       text: "保存为笔记",
     });
-    saveBtn.addEventListener("click", async () => {
-      if (this.isSaving || !this.onSave) return;
-      this.isSaving = true;
-      saveBtn.disabled = true;
-      saveBtn.textContent = "保存中…";
-      try {
-        await this.onSave();
-        saveBtn.textContent = "已保存 ✓";
-        window.setTimeout(() => {
-          saveBtn.textContent = "保存为笔记";
-          saveBtn.disabled = false;
+    saveBtn.addEventListener("click", () => {
+      void (async () => {
+        if (this.isSaving || !this.onSave) return;
+        this.isSaving = true;
+        saveBtn.disabled = true;
+        saveBtn.textContent = "保存中…";
+        try {
+          await this.onSave();
+          saveBtn.textContent = "已保存 ✓";
+          window.setTimeout(() => {
+            saveBtn.textContent = "保存为笔记";
+            saveBtn.disabled = false;
+            this.isSaving = false;
+          }, 2000);
+        } catch {
           this.isSaving = false;
-        }, 2000);
-      } catch {
-        this.isSaving = false;
-        saveBtn.disabled = false;
-        saveBtn.textContent = "保存为笔记";
-      }
+          saveBtn.disabled = false;
+          saveBtn.textContent = "保存为笔记";
+        }
+      })();
     });
   }
 
@@ -299,7 +300,7 @@ export class ReaderView extends ItemView {
 
   private renderEmpty(): void {
     const empty = this.contentEl.createDiv({ cls: "bwr-empty" });
-    const bamboo = empty.createDiv({ cls: "bwr-bamboo-art" });
+    empty.createDiv({ cls: "bwr-bamboo-art" });
     // SVG 装饰通过 CSS background-image 渲染，避免 innerHTML
     empty.createEl("h3", { text: "竹杖芒鞋轻胜马", cls: "bwr-empty-title" });
     empty.createEl("p", {
