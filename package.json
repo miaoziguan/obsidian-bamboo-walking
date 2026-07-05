@@ -1,6 +1,6 @@
 {
   "name": "obsidian-bamboo-walking",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "竹杖芒鞋 - 个人写作专栏 Obsidian 插件",
   "main": "main.js",
   "scripts": {
