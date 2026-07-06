@@ -1167,12 +1167,12 @@ button.bws-btn-retry:hover { opacity: 0.7; }
   background: var(--bw-bamboo-light);
 }
 
-/* 对齐保证：月份头与文章条目共享同一左侧盒模型，杜绝运行时样式偏差 */
-.bws-article,
-.bws-timeline-head {
-  box-sizing: border-box !important;
-  margin-left: 0 !important;
-  padding-left: 12px !important;
-  border-left: 0 !important;
+/* 对齐保证：月份头与文章条目共享同一左侧盒模型 */
+.bws-list .bws-article,
+.bws-list .bws-timeline-head {
+  box-sizing: border-box;
+  margin-left: 0;
+  padding-left: 12px;
+  border-left: 0;
 }
 
