@@ -853,7 +853,6 @@ button.bws-btn-retry {
 }
 
 button.bws-btn-retry:hover { opacity: 0.7; }
-}
 
 /* 时间线月份分隔 */
 /* 时间线月份头 —— 完全照搬 bws-article 的盒模型 + 同属性 */

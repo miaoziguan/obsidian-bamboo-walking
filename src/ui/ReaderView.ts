@@ -31,7 +31,7 @@ export class ReaderView extends ItemView {
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
     this.component = new Component();
-    const saved = localStorage.getItem("bw-font-size");
+    const saved = this.app.loadLocalStorage("bw-font-size");
     if (saved) this.fontSize = parseInt(saved, 10);
   }
 
@@ -143,10 +143,10 @@ export class ReaderView extends ItemView {
       img.setAttribute("loading", "lazy");
       img.classList.add("bwr-img");
       img.addEventListener("load", () => img.classList.add("bwr-img--loaded"));
-      if ((img as HTMLImageElement).complete) {
+      if (img.complete) {
         img.classList.add("bwr-img--loaded");
       }
-      img.addEventListener("click", () => this.openLightbox(img as HTMLImageElement));
+      img.addEventListener("click", () => this.openLightbox(img));
     });
 
     // 代码块增强：语言标签 + 复制按钮
@@ -161,13 +161,26 @@ export class ReaderView extends ItemView {
         const text = code?.textContent ?? "";
         void navigator.clipboard.writeText(text).then(() => {
           copyBtn.setText("已复制 ✓");
-          setTimeout(() => copyBtn.setText("复制"), 1500);
+          window.setTimeout(() => copyBtn.setText("复制"), 1500);
         });
       });
-      // 行号
+      // 行号（用 DOM 构建替代 innerHTML 赋值）
       if (code) {
-        const lines = code.innerHTML.split("\n");
-        code.innerHTML = lines.map((l, i) => `<span class="bwr-line" data-line="${i + 1}">${l}</span>`).join("\n");
+        const html = code.innerHTML;
+        code.replaceChildren();
+        const lines = html.split("\n");
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < lines.length; i++) {
+          const span = document.createElement("span");
+          span.className = "bwr-line";
+          span.setAttribute("data-line", String(i + 1));
+          span.innerHTML = lines[i];
+          frag.appendChild(span);
+          if (i < lines.length - 1) {
+            frag.appendChild(document.createTextNode("\n"));
+          }
+        }
+        code.appendChild(frag);
       }
     });
 
@@ -230,7 +243,7 @@ export class ReaderView extends ItemView {
 
     // 恢复阅读进度
     if (this.article) {
-      const saved = localStorage.getItem(`bw-progress-${this.article.slug}`);
+      const saved = this.app.loadLocalStorage(`bw-progress-${this.article.slug}`);
       if (saved) { layout.scrollTop = parseInt(saved, 10); }
     }
   }
@@ -238,7 +251,7 @@ export class ReaderView extends ItemView {
   /** 持久化当前文章的滚动位置 */
   private saveProgress(scrollTop: number): void {
     if (!this.article) return;
-    localStorage.setItem(`bw-progress-${this.article.slug}`, String(Math.round(scrollTop)));
+    this.app.saveLocalStorage(`bw-progress-${this.article.slug}`, String(Math.round(scrollTop)));
   }
 
   private renderToolbar(container: HTMLElement): void {
@@ -434,7 +447,7 @@ export class ReaderView extends ItemView {
     } else {
       this.fontSize = Math.max(12, Math.min(22, this.fontSize + delta * 2));
     }
-    localStorage.setItem("bw-font-size", String(this.fontSize));
+    this.app.saveLocalStorage("bw-font-size", String(this.fontSize));
     this.applyFontSize();
   }
 
@@ -451,12 +464,13 @@ export class ReaderView extends ItemView {
   }
 
   private openLightbox(img: HTMLImageElement): void {
-    const overlay = document.body.createDiv({ cls: "bwr-lightbox" });
+    const doc = img.ownerDocument;
+    const overlay = doc.body.createDiv({ cls: "bwr-lightbox" });
     const clone = overlay.createEl("img", { cls: "bwr-lightbox-img" });
     clone.src = img.src;
     clone.alt = img.alt;
     overlay.addEventListener("click", () => overlay.remove());
-    document.addEventListener("keydown", (e) => {
+    doc.addEventListener("keydown", (e) => {
       if (e.key === "Escape") overlay.remove();
     }, { once: true });
   }

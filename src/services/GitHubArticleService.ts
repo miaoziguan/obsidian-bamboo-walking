@@ -40,7 +40,7 @@ export class GitHubArticleService {
     if (GITHUB_TOKEN) headers.Authorization = `Bearer ${GITHUB_TOKEN}`;
 
     const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("请求超时")), FETCH_TIMEOUT),
+      window.setTimeout(() => reject(new Error("请求超时")), FETCH_TIMEOUT),
     );
 
     const req = requestUrl({ url, headers }).then((resp) => {
