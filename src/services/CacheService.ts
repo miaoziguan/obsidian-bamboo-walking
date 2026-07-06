@@ -63,15 +63,16 @@ export class CacheService {
     return newSlugs.filter((s) => !oldSlugs.has(s));
   }
 
-  getCachedArticle(slug: string): Article | null {
+  /** 获取缓存文章；提供 hash 时若与缓存不匹配则返回 null（内容已更新） */
+  getCachedArticle(slug: string, hash?: string): Article | null {
     const cached = this.data.articles[slug];
     if (!cached) return null;
-    if (Date.now() - cached.fetchedAt > 24 * 60 * 60 * 1000) return null;
+    if (hash && cached.hash && cached.hash !== hash) return null;
     return cached.article;
   }
 
-  async setArticle(slug: string, article: Article): Promise<void> {
-    this.data.articles[slug] = { article, fetchedAt: Date.now() };
+  async setArticle(slug: string, article: Article, hash?: string): Promise<void> {
+    this.data.articles[slug] = { article, fetchedAt: Date.now(), hash };
     await this.save();
   }
 

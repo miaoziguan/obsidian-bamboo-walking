@@ -5,7 +5,6 @@ import {
   GITHUB_OWNER,
   GITHUB_REPO,
   GITHUB_BRANCH,
-  GITHUB_TOKEN,
   INDEX_PATH,
   ARTICLES_PATH,
 } from "../constants";
@@ -37,14 +36,11 @@ export class GitHubArticleService {
   }
 
   private async fetchText(url: string): Promise<string> {
-    const headers: Record<string, string> = {};
-    if (GITHUB_TOKEN) headers.Authorization = `Bearer ${GITHUB_TOKEN}`;
-
     const timeout = new Promise<never>((_, reject) =>
       window.setTimeout(() => reject(new Error("请求超时")), FETCH_TIMEOUT),
     );
 
-    const req = requestUrl({ url, headers }).then((resp) => {
+    const req = requestUrl({ url }).then((resp) => {
       if (resp.status !== 200) throw new Error(`HTTP ${resp.status}`);
       return resp.text;
     });

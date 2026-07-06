@@ -232,7 +232,7 @@ export default class BambooWalkingPlugin extends Plugin {
     await this.cacheService.markRead(entry.slug);
     if (sidebarView) sidebarView.refreshReadState();
 
-    let article = this.cacheService.getCachedArticle(entry.slug);
+    let article = this.cacheService.getCachedArticle(entry.slug, entry.hash);
     if (!article) {
       await this.activateViews();
       const readerView = this.getReaderView();
@@ -240,7 +240,7 @@ export default class BambooWalkingPlugin extends Plugin {
 
       try {
         article = await this.service.fetchArticle(entry);
-        await this.cacheService.setArticle(entry.slug, article);
+        await this.cacheService.setArticle(entry.slug, article, entry.hash);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "未知错误";
         if (readerView) readerView.showError(msg);

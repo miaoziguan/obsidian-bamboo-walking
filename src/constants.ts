@@ -22,9 +22,6 @@ export const INDEX_PATH = "articles/index.json";
 /** 文章 .md 文件在仓库中的根目录 */
 export const ARTICLES_PATH = "articles";
 
-/** GitHub PAT（可选，留空即可；仅在你自己的开发环境用） */
-export const GITHUB_TOKEN = "";
-
 /** 自动刷新间隔（分钟），0 = 禁用 */
 export const REFRESH_INTERVAL = 30;
 

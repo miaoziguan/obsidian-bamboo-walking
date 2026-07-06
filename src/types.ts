@@ -15,6 +15,7 @@ export interface ArticleMeta {
 /** 索引文件 articles/index.json 的单条记录 */
 export interface ArticleIndexEntry extends ArticleMeta {
   slug: string;          // 文章路径标识，如 "技术随想/2026-07-04-hello"
+  hash?: string;         // 文章 .md 内容的 SHA256，用于缓存失效检测
 }
 
 /** 内存中的完整文章对象 */
@@ -47,6 +48,7 @@ export interface CacheData {
 export interface CachedArticle {
   article: Article;
   fetchedAt: number;
+  hash?: string;         // 缓存时的文章 hash，与 index.json 对比判断是否过期
 }
 
 /** 视图类型常量 */
