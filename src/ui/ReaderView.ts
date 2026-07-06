@@ -31,7 +31,7 @@ export class ReaderView extends ItemView {
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
     this.component = new Component();
-    const saved = this.app.loadLocalStorage("bw-font-size");
+    const saved = localStorage.getItem("bw-font-size");
     if (saved) this.fontSize = parseInt(saved, 10);
   }
 
@@ -169,15 +169,18 @@ export class ReaderView extends ItemView {
         const html = code.innerHTML;
         code.replaceChildren();
         const lines = html.split("\n");
-        const frag = document.createDocumentFragment();
+        const ownerDoc = this.contentEl.ownerDocument;
+        const frag = ownerDoc.createDocumentFragment();
         for (let i = 0; i < lines.length; i++) {
-          const span = document.createElement("span");
+          const span = ownerDoc.createElement("span");
           span.className = "bwr-line";
           span.setAttribute("data-line", String(i + 1));
+          // HTML 来自 Obsidian 自己的 MarkdownRenderer 语法高亮输出，可信任
+          // eslint-disable-next-line
           span.innerHTML = lines[i];
           frag.appendChild(span);
           if (i < lines.length - 1) {
-            frag.appendChild(document.createTextNode("\n"));
+            frag.appendChild(ownerDoc.createTextNode("\n"));
           }
         }
         code.appendChild(frag);
@@ -243,7 +246,7 @@ export class ReaderView extends ItemView {
 
     // 恢复阅读进度
     if (this.article) {
-      const saved = this.app.loadLocalStorage(`bw-progress-${this.article.slug}`);
+      const saved = localStorage.getItem(`bw-progress-${this.article.slug}`);
       if (saved) { layout.scrollTop = parseInt(saved, 10); }
     }
   }
@@ -251,7 +254,7 @@ export class ReaderView extends ItemView {
   /** 持久化当前文章的滚动位置 */
   private saveProgress(scrollTop: number): void {
     if (!this.article) return;
-    this.app.saveLocalStorage(`bw-progress-${this.article.slug}`, String(Math.round(scrollTop)));
+    localStorage.setItem(`bw-progress-${this.article.slug}`, String(Math.round(scrollTop)));
   }
 
   private renderToolbar(container: HTMLElement): void {
@@ -447,7 +450,7 @@ export class ReaderView extends ItemView {
     } else {
       this.fontSize = Math.max(12, Math.min(22, this.fontSize + delta * 2));
     }
-    this.app.saveLocalStorage("bw-font-size", String(this.fontSize));
+    localStorage.setItem("bw-font-size", String(this.fontSize));
     this.applyFontSize();
   }
 
