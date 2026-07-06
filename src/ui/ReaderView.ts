@@ -31,9 +31,15 @@ export class ReaderView extends ItemView {
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
     this.component = new Component();
-    const raw = this.app.loadLocalStorage("bw-font-size");
-    const saved = typeof raw === "string" ? raw : null;
+    const saved = this.loadLocalString("bw-font-size");
     if (saved) this.fontSize = parseInt(saved, 10);
+  }
+
+  /** Obsidian loadLocalStorage 返回 any，在此处窄化为 string | null */
+  private loadLocalString(key: string): string | null {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const val: unknown = this.app.loadLocalStorage(key);
+    return typeof val === "string" ? val : null;
   }
 
   getViewType(): string { return VIEW_TYPE_READER; }
@@ -269,8 +275,7 @@ export class ReaderView extends ItemView {
 
     // 恢复阅读进度
     if (this.article) {
-      const raw = this.app.loadLocalStorage(`bw-progress-${this.article.slug}`);
-      const saved = typeof raw === "string" ? raw : null;
+      const saved = this.loadLocalString(`bw-progress-${this.article.slug}`);
       if (saved) { layout.scrollTop = parseInt(saved, 10); }
     }
   }
