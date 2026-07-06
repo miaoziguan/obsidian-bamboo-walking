@@ -28,7 +28,8 @@ export class GitHubArticleService {
     const url = this.buildUrl(`${ARTICLES_PATH}/${entry.slug}.md`);
     const raw = await this.fetchText(url);
     const { frontmatter, body } = parseFrontmatter(raw);
-    return { ...entry, ...frontmatter, content: body };
+    // index.json 优先，frontmatter 仅作后备（应对 index.json 缺字段的极端情况）
+    return { ...frontmatter, ...entry, content: body };
   }
 
   private buildUrl(filePath: string): string {

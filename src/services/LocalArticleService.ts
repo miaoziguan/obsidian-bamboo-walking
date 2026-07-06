@@ -29,6 +29,7 @@ export class LocalArticleService {
     const filePath = `${this.basePath}/${entry.slug}.md`;
     const raw = await this.adapter.read(filePath);
     const { frontmatter, body } = parseFrontmatter(raw);
-    return { ...entry, ...frontmatter, content: body };
+    // index.json 优先，frontmatter 仅作后备
+    return { ...frontmatter, ...entry, content: body };
   }
 }

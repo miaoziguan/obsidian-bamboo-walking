@@ -22,12 +22,20 @@ export function parseFrontmatter(raw: string): {
     const key = line.slice(0, colonIdx).trim();
     let value: unknown = line.slice(colonIdx + 1).trim();
     if ((value as string).startsWith("[") && (value as string).endsWith("]")) {
-      value = (value as string)
-        .slice(1, -1)
-        .split(",")
-        .map((s: string) => s.trim().replace(/^["']|["']$/g, ""));
+      const inner = (value as string).slice(1, -1).trim();
+      if (!inner) {
+        value = [];
+      } else {
+        value = inner
+          .split(",")
+          .map((s: string) =>
+            s.trim().replace(/^["']|["']$/g, "").replace(/\\(.)/g, "$1"),
+          );
+      }
     } else {
-      value = (value as string).replace(/^["']|["']$/g, "");
+      value = (value as string)
+        .replace(/^["']|["']$/g, "")
+        .replace(/\\(.)/g, "$1");
       if (/^\d+(\.\d+)?$/.test(value as string)) value = parseFloat(value as string);
     }
     fm[key] = value;
