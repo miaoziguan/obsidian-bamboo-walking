@@ -15,7 +15,7 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl("h2", { text: "竹杖芒鞋 · 设置" });
+    new Setting(containerEl).setName("竹杖芒鞋 · 设置").setHeading();
 
     // ── 保存笔记 ──
     new Setting(containerEl)
@@ -36,16 +36,16 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
       .setName("清除缓存")
       .setDesc("清除本地缓存的文章数据，下次打开时重新拉取")
       .addButton((btn) =>
-        btn.setButtonText("清除缓存").onClick(async () => {
+        btn.setButtonText("✕ 清除缓存").onClick(async () => {
           await this.plugin.cacheService.clear();
-          btn.setButtonText("已清除");
-          setTimeout(() => btn.setButtonText("清除缓存"), 2000);
+          btn.setButtonText("✓ 已清除");
+          window.setTimeout(() => { btn.setButtonText("✕ 清除缓存"); }, 2000);
         }),
       );
 
     // ── 关于 ──
+    new Setting(containerEl).setName(`竹杖芒鞋 v${this.pluginVersion}`).setHeading();
     const about = containerEl.createDiv({ cls: "bw-about-card" });
-    about.createEl("h4", { text: `竹杖芒鞋 v${this.pluginVersion}` });
     about.createEl("p", {
       text: "竹杖芒鞋轻胜马，谁怕？一蓑烟雨任平生。",
       cls: "bw-about-quote",

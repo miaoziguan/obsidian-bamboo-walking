@@ -14,8 +14,11 @@ export class SidebarView extends ItemView {
   private errorMessage = "";
   private isRefreshing = false;
   private searchDebounce: number | null = null;
-  private filter: "unread" | "all" = "unread";
+  private filter: "all" | "unread" = "all";
+  private groupMode: "category" | "time" = "category";
+  private statusMsg = "";
   private onSelect: ((entry: ArticleIndexEntry) => void) | null = null;
+  private getContent: ((slug: string) => string | null) | null = null;
   private onRefresh: (() => void) | null = null;
   private isReadFn: ((slug: string) => boolean) | null = null;
   private onReady: (() => void) | null = null;
@@ -27,7 +30,15 @@ export class SidebarView extends ItemView {
   setOnSelect(cb: (entry: ArticleIndexEntry) => void): void { this.onSelect = cb; }
   setOnRefresh(cb: () => void): void { this.onRefresh = cb; }
   setIsReadFn(fn: (slug: string) => boolean): void { this.isReadFn = fn; }
+  setGetContentFn(fn: (slug: string) => string | null): void { this.getContent = fn; }
   setOnReady(cb: () => void): void { this.onReady = cb; }
+
+  /** 持久状态栏：显示最近一次刷新结果 */
+  setStatus(msg: string): void {
+    this.statusMsg = msg;
+    const el = this.containerEl.querySelector(".bws-status");
+    if (el) el.textContent = msg;
+  }
 
   setLoading(): void {
     if (this.articles.length === 0) { this.state = "loading"; this.render(); }
@@ -64,8 +75,8 @@ export class SidebarView extends ItemView {
     if (!this.isReadFn) return;
     const unreadCount = this.articles.filter((a) => !this.isReadFn!(a.slug)).length;
     const tabs = this.containerEl.querySelectorAll(".bws-filter-tab");
-    if (tabs[0]) tabs[0].textContent = `未读 ${unreadCount}`;
-    if (tabs[1]) tabs[1].textContent = `全部 ${this.articles.length}`;
+    if (tabs[0]) tabs[0].textContent = `全部 ${this.articles.length}`;
+    if (tabs[1]) tabs[1].textContent = `未读 ${unreadCount}`;
   }
 
   setSelected(slug: string | null): void {
@@ -123,16 +134,25 @@ export class SidebarView extends ItemView {
       cls: "bws-btn-refresh",
       attr: { "aria-label": "刷新文章", title: "刷新文章" },
     });
-    refreshBtn.innerHTML = this.isRefreshing
-      ? '<span class="bws-spin">↻</span>' : "↻";
-    if (this.isRefreshing) refreshBtn.disabled = true;
+    refreshBtn.setText(this.isRefreshing ? "↻" : "↻");
+    if (this.isRefreshing) {
+      refreshBtn.addClass("bws-spin");
+      refreshBtn.disabled = true;
+    }
     refreshBtn.addEventListener("click", () => {
       if (this.isRefreshing || !this.onRefresh) return;
       this.isRefreshing = true;
       refreshBtn.disabled = true;
-      refreshBtn.innerHTML = '<span class="bws-spin">↻</span>';
+      refreshBtn.addClass("bws-spin");
       this.onRefresh();
     });
+
+    // ── 持久状态栏 ──
+    if (this.statusMsg) {
+      contentEl.createDiv({ cls: "bws-status", text: this.statusMsg });
+    } else if (this.state === "loading") {
+      contentEl.createDiv({ cls: "bws-status", text: "正在检查更新…" });
+    }
 
     // ── 未读 / 全部 切换 ──
     if (this.state === "loaded" || (this.state !== "loading" && this.articles.length > 0)) {
@@ -141,6 +161,18 @@ export class SidebarView extends ItemView {
         : this.articles.length;
 
       const filterBar = contentEl.createDiv({ cls: "bws-filter-tabs" });
+
+      const allTab = filterBar.createEl("button", {
+        cls: `bws-filter-tab${this.filter === "all" ? " is-active" : ""}`,
+        text: `全部 ${this.articles.length}`,
+      });
+      allTab.addEventListener("click", () => {
+        if (this.filter === "all") return;
+        this.filter = "all";
+        this.renderList(contentEl);
+        allTab.addClass("is-active");
+        unreadTab.removeClass("is-active");
+      });
 
       const unreadTab = filterBar.createEl("button", {
         cls: `bws-filter-tab${this.filter === "unread" ? " is-active" : ""}`,
@@ -154,17 +186,20 @@ export class SidebarView extends ItemView {
         allTab.removeClass("is-active");
       });
 
-      const allTab = filterBar.createEl("button", {
-        cls: `bws-filter-tab${this.filter === "all" ? " is-active" : ""}`,
-        text: `全部 ${this.articles.length}`,
-      });
-      allTab.addEventListener("click", () => {
-        if (this.filter === "all") return;
-        this.filter = "all";
-        this.renderList(contentEl);
-        allTab.addClass("is-active");
-        unreadTab.removeClass("is-active");
-      });
+      // 排序切换（仅全部模式下显示）
+      if (this.filter === "all") {
+        const sortBtn = filterBar.createEl("button", {
+          cls: "bws-sort-btn",
+          attr: { "aria-label": "切换排序", title: this.groupMode === "category" ? "按时间排序" : "按分类排序" },
+        });
+        sortBtn.setText(this.groupMode === "category" ? "⇅" : "☰");
+        sortBtn.addEventListener("click", () => {
+          this.groupMode = this.groupMode === "category" ? "time" : "category";
+          sortBtn.setText(this.groupMode === "category" ? "⇅" : "☰");
+          sortBtn.setAttr("title", this.groupMode === "category" ? "按时间排序" : "按分类排序");
+          this.renderList(contentEl);
+        });
+      }
     }
 
     // ── 搜索框（带清除按钮） ──
@@ -180,20 +215,24 @@ export class SidebarView extends ItemView {
         cls: "bws-search-clear",
         attr: { "aria-label": "清除搜索", title: "清除" },
       });
-      clearBtn.innerHTML = "×";
-      if (!this.searchQuery) clearBtn.style.display = "none";
+      clearBtn.setText("×");
+      if (!this.searchQuery) clearBtn.addClass("bws-hidden");
 
       clearBtn.addEventListener("click", () => {
         searchInput.value = "";
         this.searchQuery = "";
-        clearBtn.style.display = "none";
+        clearBtn.addClass("bws-hidden");
         this.renderList(contentEl);
         searchInput.focus();
       });
 
       searchInput.addEventListener("input", (e) => {
         this.searchQuery = (e.target as HTMLInputElement).value.toLowerCase();
-        clearBtn.style.display = this.searchQuery ? "" : "none";
+        if (this.searchQuery) {
+          clearBtn.removeClass("bws-hidden");
+        } else {
+          clearBtn.addClass("bws-hidden");
+        }
         if (this.searchDebounce !== null) window.clearTimeout(this.searchDebounce);
         this.searchDebounce = window.setTimeout(() => {
           this.renderList(contentEl);
@@ -227,7 +266,7 @@ export class SidebarView extends ItemView {
     err.createEl("span", { cls: "bws-error-icon", text: "⚠" });
     err.createEl("div", { text: "加载失败", cls: "bws-error-title" });
     err.createEl("div", { text: this.errorMessage || "请检查网络后重试", cls: "bws-error-msg" });
-    err.createEl("button", { cls: "bws-btn-retry", text: "重试" })
+    err.createEl("button", { cls: "bws-btn-retry", text: "↻ 重试" })
       .addEventListener("click", () => { if (this.onRefresh) this.onRefresh(); });
   }
 
@@ -237,7 +276,7 @@ export class SidebarView extends ItemView {
     empty.createSpan({ text: "暂无文章" });
     empty.createEl("br");
     empty.createEl("small", {
-      text: "作者还没有发布文章，请稍后再来",
+      text: "专栏刚刚起步，作者正在筹备文章，敬请期待",
       cls: "bws-empty-hint",
     });
   }
@@ -248,6 +287,13 @@ export class SidebarView extends ItemView {
     oldList?.remove();
 
     const listEl = contentEl.createDiv({ cls: "bws-list" });
+
+    if (this.groupMode === "time" && this.filter === "all") {
+      this.renderTimeline(listEl);
+      listEl.scrollTop = scrollTop;
+      return;
+    }
+
     const groups = this.groupByCategory();
 
     if (groups.length === 0) {
@@ -290,6 +336,70 @@ export class SidebarView extends ItemView {
     });
   }
 
+  /* ═══════ 时间线模式（内部排序用，无独立 tab） ═══════ */
+
+  private sortByDate(): ArticleIndexEntry[] {
+    const pool = this.filteredArticles();
+    return pool.sort((a, b) => b.date.localeCompare(a.date));
+  }
+
+  private filteredArticles(): ArticleIndexEntry[] {
+    let pool = this.articles;
+    if (this.searchQuery) {
+      pool = pool.filter((a) =>
+        a.title.toLowerCase().includes(this.searchQuery) ||
+        a.summary.toLowerCase().includes(this.searchQuery) ||
+        a.category.toLowerCase().includes(this.searchQuery) ||
+        (a.tags ?? []).some((t) => t.toLowerCase().includes(this.searchQuery)) ||
+        (this.getContent?.(a.slug) ?? "").toLowerCase().includes(this.searchQuery),
+      );
+    }
+    return pool;
+  }
+
+  /** 时间线模式：按月份分组 */
+  private renderTimeline(listEl: HTMLElement): void {
+    const pool = this.filteredArticles();
+    if (pool.length === 0) {
+      const empty = listEl.createDiv({ cls: "bws-empty" });
+      empty.createSpan({ text: "没有匹配的文章" });
+      if (this.searchQuery) {
+        empty.createEl("br");
+        empty.createEl("small", { text: `搜索词：${this.searchQuery}`, cls: "bws-empty-hint" });
+      }
+      return;
+    }
+
+    const months = new Map<string, ArticleIndexEntry[]>();
+    for (const a of pool) {
+      const key = a.date.substring(0, 7);
+      if (!months.has(key)) months.set(key, []);
+      months.get(key)!.push(a);
+    }
+
+    const ML: Record<string, string> = {
+      "01": "1月", "02": "2月", "03": "3月", "04": "4月",
+      "05": "5月", "06": "6月", "07": "7月", "08": "8月",
+      "09": "9月", "10": "10月", "11": "11月", "12": "12月",
+    };
+
+    const sorted = Array.from(months.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]));
+
+    for (const [ym, articles] of sorted) {
+      const [year, mm] = ym.split("-");
+      const section = listEl.createDiv({ cls: "bws-timeline" });
+      section.createDiv({
+        cls: "bws-timeline-head",
+        text: `${year}年${ML[mm] ?? mm}`,
+        attr: { role: "button", tabindex: "0" },   // 与 bws-article 同属性，吃相同默认样式
+      });
+      for (const a of articles.sort((a, b) => b.date.localeCompare(a.date))) {
+        this.renderArticleItem(section, a);
+      }
+    }
+  }
+
   private renderCategory(parent: HTMLElement, group: CategoryGroup): void {
     const section = parent.createDiv({ cls: "bws-category" });
     const isCollapsed = this.collapsedCategories.has(group.name);
@@ -298,8 +408,7 @@ export class SidebarView extends ItemView {
     const title = section.createDiv({ cls: "bws-cat-title" });
     title.createSpan({ cls: "bws-arrow", text: "▾" });
     const nameSpan = title.createSpan({ text: group.name });
-    nameSpan.style.overflow = "hidden";
-    nameSpan.style.textOverflow = "ellipsis";
+    nameSpan.addClass("bws-cat-name");
     // #5: 分类计数用 badge
     title.createSpan({ cls: "bws-cat-count", text: `${group.articles.length}` });
 
@@ -335,7 +444,7 @@ export class SidebarView extends ItemView {
 
     // 第三行：摘要（两行截断 + 悬浮提示）
     if (article.summary) {
-      const summaryEl = item.createDiv({
+      item.createDiv({
         cls: "bws-art-summary",
         text: article.summary,
         attr: { title: article.summary },
@@ -363,7 +472,8 @@ export class SidebarView extends ItemView {
         a.title.toLowerCase().includes(this.searchQuery) ||
         a.summary.toLowerCase().includes(this.searchQuery) ||
         a.category.toLowerCase().includes(this.searchQuery) ||
-        (a.tags ?? []).some((t) => t.toLowerCase().includes(this.searchQuery)),
+        (a.tags ?? []).some((t) => t.toLowerCase().includes(this.searchQuery)) ||
+        (this.getContent?.(a.slug) ?? "").toLowerCase().includes(this.searchQuery),
       );
     }
 

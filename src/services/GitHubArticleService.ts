@@ -11,10 +11,11 @@ import {
 } from "../constants";
 import { parseFrontmatter } from "../utils/yaml";
 
+const FETCH_TIMEOUT = 8000;
+
 export class GitHubArticleService {
-  /** 从仓库获取文章索引 */
   async fetchIndex(): Promise<ArticleIndexEntry[]> {
-    const url = this.buildRawUrl(INDEX_PATH);
+    const url = this.buildUrl(INDEX_PATH);
     const text = await this.fetchText(url);
     try {
       return JSON.parse(text) as ArticleIndexEntry[];
@@ -23,30 +24,30 @@ export class GitHubArticleService {
     }
   }
 
-  /** 获取单篇文章内容 */
   async fetchArticle(entry: ArticleIndexEntry): Promise<Article> {
-    const filePath = `${ARTICLES_PATH}/${entry.slug}.md`;
-    const url = this.buildRawUrl(filePath);
+    const url = this.buildUrl(`${ARTICLES_PATH}/${entry.slug}.md`);
     const raw = await this.fetchText(url);
     const { frontmatter, body } = parseFrontmatter(raw);
     return { ...entry, ...frontmatter, content: body };
   }
 
-  /* ─── 内部工具 ─── */
-
-  private buildRawUrl(filePath: string): string {
+  private buildUrl(filePath: string): string {
     return `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${filePath}`;
   }
 
   private async fetchText(url: string): Promise<string> {
     const headers: Record<string, string> = {};
-    if (GITHUB_TOKEN) {
-      headers.Authorization = `Bearer ${GITHUB_TOKEN}`;
-    }
-    const resp = await requestUrl({ url, headers });
-    if (resp.status !== 200) {
-      throw new Error(`HTTP ${resp.status}: ${url}`);
-    }
-    return resp.text;
+    if (GITHUB_TOKEN) headers.Authorization = `Bearer ${GITHUB_TOKEN}`;
+
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("请求超时")), FETCH_TIMEOUT),
+    );
+
+    const req = requestUrl({ url, headers }).then((resp) => {
+      if (resp.status !== 200) throw new Error(`HTTP ${resp.status}`);
+      return resp.text;
+    });
+
+    return Promise.race([req, timeout]);
   }
 }
