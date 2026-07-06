@@ -31,8 +31,9 @@ export class ReaderView extends ItemView {
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
     this.component = new Component();
-    const saved = this.app.loadLocalStorage("bw-font-size");
-    if (saved) this.fontSize = parseInt(saved as string, 10);
+    const raw = this.app.loadLocalStorage("bw-font-size");
+    const saved = typeof raw === "string" ? raw : null;
+    if (saved) this.fontSize = parseInt(saved, 10);
   }
 
   getViewType(): string { return VIEW_TYPE_READER; }
@@ -268,8 +269,9 @@ export class ReaderView extends ItemView {
 
     // 恢复阅读进度
     if (this.article) {
-      const saved = this.app.loadLocalStorage(`bw-progress-${this.article.slug}`);
-      if (saved) { layout.scrollTop = parseInt(saved as string, 10); }
+      const raw = this.app.loadLocalStorage(`bw-progress-${this.article.slug}`);
+      const saved = typeof raw === "string" ? raw : null;
+      if (saved) { layout.scrollTop = parseInt(saved, 10); }
     }
   }
 
