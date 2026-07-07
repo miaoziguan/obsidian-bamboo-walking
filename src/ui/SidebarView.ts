@@ -338,11 +338,6 @@ export class SidebarView extends ItemView {
 
   /* ═══════ 时间线模式（内部排序用，无独立 tab） ═══════ */
 
-  private sortByDate(): ArticleIndexEntry[] {
-    const pool = this.filteredArticles();
-    return pool.sort((a, b) => b.date.localeCompare(a.date));
-  }
-
   private filteredArticles(): ArticleIndexEntry[] {
     let pool = this.articles;
     if (this.searchQuery) {

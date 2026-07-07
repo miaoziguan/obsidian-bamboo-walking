@@ -1,7 +1,7 @@
 /* ────────────── 竹杖芒鞋 · 类型定义 ────────────── */
 
 /** 文章元数据（frontmatter） */
-export interface ArticleMeta {
+interface ArticleMeta {
   title: string;
   date: string;          // YYYY-MM-DD
   category: string;      // 专栏分类名
@@ -45,7 +45,7 @@ export interface CacheData {
   readSlugs: string[];
 }
 
-export interface CachedArticle {
+interface CachedArticle {
   article: Article;
   fetchedAt: number;
   hash?: string;         // 缓存时的文章 hash，与 index.json 对比判断是否过期

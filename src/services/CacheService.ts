@@ -10,7 +10,6 @@ export class CacheService {
   constructor(
     private loadData: () => Promise<Record<string, unknown> | null>,
     private saveData: (data: Record<string, unknown>) => Promise<void>,
-    private cacheExpiry: number,
   ) {
     this.data = {
       index: [],
@@ -45,10 +44,6 @@ export class CacheService {
     }
   }
 
-  isIndexExpired(): boolean {
-    return Date.now() - this.data.lastFetch > this.cacheExpiry;
-  }
-
   getIndex(): ArticleIndexEntry[] {
     return this.data.index;
   }
@@ -78,10 +73,6 @@ export class CacheService {
 
   /* ── 已读追踪 ── */
 
-  getReadSlugs(): Set<string> {
-    return new Set(this.data.readSlugs);
-  }
-
   isRead(slug: string): boolean {
     return this.data.readSlugs.includes(slug);
   }
@@ -106,9 +97,5 @@ export class CacheService {
       readSlugs: this.data.readSlugs,  // 清缓存但保留已读记录
     };
     await this.save();
-  }
-
-  updateExpiry(ms: number): void {
-    this.cacheExpiry = ms;
   }
 }

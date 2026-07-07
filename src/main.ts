@@ -2,7 +2,7 @@
 import { App, Modal, Notice, Plugin, Setting } from "obsidian";
 import type { Article, ArticleIndexEntry, BambooWalkingSettings } from "./types";
 import { DEFAULT_SETTINGS, VIEW_TYPE_READER, VIEW_TYPE_SIDEBAR } from "./types";
-import { REFRESH_INTERVAL, CACHE_EXPIRY } from "./constants";
+import { REFRESH_INTERVAL } from "./constants";
 import { GitHubArticleService } from "./services/GitHubArticleService";
 import { LocalArticleService } from "./services/LocalArticleService";
 import { CacheService } from "./services/CacheService";
@@ -69,7 +69,6 @@ export default class BambooWalkingPlugin extends Plugin {
     this.cacheService = new CacheService(
       async () => (await this.loadData()) as Record<string, unknown> | null,
       (data) => this.saveData(data),
-      CACHE_EXPIRY,
     );
     await this.cacheService.load();
 

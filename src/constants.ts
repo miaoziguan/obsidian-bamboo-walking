@@ -25,9 +25,6 @@ export const ARTICLES_PATH = "articles";
 /** 自动刷新间隔（分钟），0 = 禁用 */
 export const REFRESH_INTERVAL = 30;
 
-/** 索引缓存有效期（毫秒） */
-export const CACHE_EXPIRY = 30 * 60 * 1000;  // 30 分钟
-
 /** 插件数据缓存键名 */
 export const CACHE_KEY = "bamboo-walking-cache";
 
