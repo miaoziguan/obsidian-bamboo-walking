@@ -37,7 +37,7 @@ export class ReaderView extends ItemView {
 
   /** Obsidian loadLocalStorage 返回 any，在此处窄化为 string | null */
   private loadLocalString(key: string): string | null {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Obsidian 类型声明 loadLocalStorage 返回 any | null
     const val: unknown = this.app.loadLocalStorage(key);
     return typeof val === "string" ? val : null;
   }
