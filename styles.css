@@ -15,6 +15,21 @@
   --bw-white: #fff;
   --bw-shadow: rgba(0, 0, 0, 0.1);
   --bw-overlay: rgba(0, 0, 0, 0.85);
+
+  /* ── 间距 spacing ── */
+  --bw-space-xs: 4px;
+  --bw-space-sm: 8px;
+  --bw-space-md: 12px;
+  --bw-space-lg: 16px;
+  --bw-space-xl: 20px;
+  --bw-space-2xl: 40px;
+
+  /* ── 圆角 radius ── */
+  --bw-radius-sm: 3px;
+  --bw-radius: 6px;
+  --bw-radius-md: 8px;
+  --bw-radius-lg: 10px;
+  --bw-radius-pill: 50%;
 }
 
 /* ── 全局按钮重置（插件内，覆盖 Obsidian 主题） ── */
@@ -79,7 +94,7 @@ button.bws-btn-refresh:disabled { cursor: not-allowed; opacity: 0.5; }
   width: 100%;
   padding: 5px 26px 5px 10px;  /* 右侧留空给清除按钮 */
   border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
+  border-radius: var(--bw-radius);
   background: var(--background-primary);
   color: var(--text-normal);
   font-size: 12px;
@@ -114,7 +129,7 @@ button.bws-btn-refresh:disabled { cursor: not-allowed; opacity: 0.5; }
 /* ── 未读 / 全部 切换 ── */
 .bws-filter-tabs {
   display: flex;
-  gap: 4px;
+  gap: var(--bw-space-xs);
   padding: 8px 12px 4px;
 }
 
@@ -122,7 +137,7 @@ button.bws-btn-refresh:disabled { cursor: not-allowed; opacity: 0.5; }
   flex: 1;
   padding: 4px 0;
   border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
+  border-radius: var(--bw-radius);
   background: none;
   cursor: pointer;
   font-size: 12px;
@@ -198,7 +213,7 @@ button.bws-btn-refresh:disabled { cursor: not-allowed; opacity: 0.5; }
   color: var(--text-faint);
   background: var(--background-modifier-hover);
   padding: 1px 6px;
-  border-radius: 8px;
+  border-radius: var(--bw-radius-md);
   margin-left: auto;
   min-width: 16px;
   text-align: center;
@@ -226,7 +241,7 @@ button.bws-sort-btn {
   justify-content: center;
   font-size: 13px;
   color: var(--text-faint);
-  border-radius: 6px;
+  border-radius: var(--bw-radius);
   transition: all 0.15s;
 }
 
@@ -328,7 +343,7 @@ button.bws-sort-btn:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 20px;
+  padding: var(--bw-space-sm) var(--bw-space-xl);
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
@@ -350,12 +365,12 @@ button.bwr-btn-save:hover { color: var(--bw-bamboo-deep); }
 
 .bwr-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--bw-space-sm);
 }
 
 .bwr-zoom {
   display: flex;
-  gap: 4px;
+  gap: var(--bw-space-xs);
 }
 
 button.bwr-btn-zoom {
@@ -390,7 +405,7 @@ button.bwr-fab-btn {
   width: 36px;
   height: 36px;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--bw-radius-pill);
   background: var(--background-secondary);
   color: var(--text-muted);
   cursor: pointer;
@@ -409,14 +424,14 @@ button.bwr-fab-btn:hover {
 
 /* 文章头部 */
 .bwr-header {
-  padding: 20px 40px 16px;
+  padding: var(--bw-space-xl) var(--bw-space-2xl) var(--bw-space-lg);
   max-width: 720px;
   width: 100%;
   margin: 0 auto;
 }
 
 .bwr-title {
-  margin: 0 0 12px;
+  margin: 0 0 var(--bw-space-md);
   font-size: 26px;
   font-weight: 700;
   line-height: 1.3;
@@ -437,7 +452,7 @@ button.bwr-fab-btn:hover {
 .bwr-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--bw-space-sm);
   font-size: 13px;
   color: var(--text-muted);
   flex-wrap: wrap;
@@ -467,7 +482,7 @@ button.bwr-fab-btn:hover {
 .bwr-tag {
   font-size: 11px;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: var(--bw-radius-lg);
   background: var(--bw-bamboo-pale);
   color: var(--bw-bamboo-deep);
   opacity: 0.85;
@@ -480,7 +495,7 @@ button.bwr-fab-btn:hover {
 
 /* 正文区域 */
 .bwr-body {
-  padding: 0 40px 60px;
+  padding: 0 var(--bw-space-2xl) 60px;
   max-width: 720px;
   width: 100%;
   margin: 0 auto;
@@ -515,7 +530,7 @@ button.bwr-fab-btn:hover {
 
 /* 正文内的代码块 */
 .bwr-body pre {
-  border-radius: 6px;
+  border-radius: var(--bw-radius);
   border: 1px solid var(--background-modifier-border);
 }
 
@@ -525,7 +540,7 @@ button.bwr-fab-btn:hover {
 
 /* 正文内的图片 */
 .bwr-body img {
-  border-radius: 6px;
+  border-radius: var(--bw-radius);
   margin: 1em 0;
 }
 
@@ -563,7 +578,7 @@ button.bwr-fab-btn:hover {
 
 /* 相关阅读 */
 .bwr-related {
-  margin-top: 40px;
+  margin-top: var(--bw-space-2xl);
   padding: 16px 0 0;
   border-top: 1px solid var(--background-modifier-border);
   max-width: 720px;
@@ -576,7 +591,7 @@ button.bwr-fab-btn:hover {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-muted);
-  margin-bottom: 8px;
+  margin-bottom: var(--bw-space-sm);
 }
 
 .bwr-related-link {
@@ -594,7 +609,7 @@ button.bwr-fab-btn:hover {
 /* 代码块 */
 pre.bwr-code {
   position: relative;
-  border-radius: 8px;
+  border-radius: var(--bw-radius-md);
   overflow: hidden;
 }
 
@@ -648,7 +663,7 @@ button.bwr-code-copy:hover { color: var(--bw-bamboo); }
   cursor: zoom-in;
   min-height: 120px;
   background: var(--background-secondary);
-  border-radius: 6px;
+  border-radius: var(--bw-radius);
   opacity: 0;
   transition: opacity 0.3s;
 }
@@ -683,7 +698,7 @@ button.bwr-code-copy:hover { color: var(--bw-bamboo); }
   align-items: center;
   justify-content: center;
   height: 100%;
-  padding: 40px;
+  padding: var(--bw-space-2xl);
   text-align: center;
 }
 
@@ -697,7 +712,7 @@ button.bwr-code-copy:hover { color: var(--bw-bamboo); }
 }
 
 .bwr-empty-title {
-  margin: 0 0 8px;
+  margin: 0 0 var(--bw-space-sm);
   font-size: 20px;
   font-weight: 600;
   color: var(--bw-bamboo);
@@ -713,15 +728,15 @@ button.bwr-code-copy:hover { color: var(--bw-bamboo); }
 /* ═══════════ 设置面板 ═══════════ */
 
 .bw-about-card {
-  padding: 16px;
+  padding: var(--bw-space-lg);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+  border-radius: var(--bw-radius-md);
   background: var(--background-secondary);
   margin-top: 8px;
 }
 
 .bw-about-card h4 {
-  margin: 0 0 8px;
+  margin: 0 0 var(--bw-space-sm);
   color: var(--bw-bamboo-deep);
 }
 
@@ -778,10 +793,10 @@ button.bwr-code-copy:hover { color: var(--bw-bamboo); }
 
 @media (max-width: 600px) {
   .bwr-header {
-    padding: 20px 20px 16px;
+    padding: var(--bw-space-xl) var(--bw-space-xl) var(--bw-space-lg);
   }
   .bwr-body {
-    padding: 0 20px 40px;
+    padding: 0 var(--bw-space-xl) var(--bw-space-2xl);
     font-size: 14px;
   }
   .bwr-title {
@@ -801,7 +816,7 @@ button.bwr-code-copy:hover { color: var(--bw-bamboo); }
 }
 
 .bws-sk-line {
-  border-radius: 3px;
+  border-radius: var(--bw-radius-sm);
   background: var(--background-modifier-hover);
   animation: bws-shimmer 1.5s ease-in-out infinite;
 }
@@ -825,14 +840,14 @@ button.bwr-code-copy:hover { color: var(--bw-bamboo); }
 /* ═══════════ 侧边栏错误态 ═══════════ */
 
 .bws-error {
-  padding: 30px 20px;
+  padding: 30px var(--bw-space-xl);
   text-align: center;
 }
 
 .bws-error-icon {
   font-size: 24px;
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: var(--bw-space-sm);
 }
 
 .bws-error-title {
@@ -844,7 +859,7 @@ button.bwr-code-copy:hover { color: var(--bw-bamboo); }
 .bws-error-msg {
   font-size: 12px;
   color: var(--text-faint);
-  margin-bottom: 12px;
+  margin-bottom: var(--bw-space-md);
   word-break: break-all;
 }
 
@@ -893,7 +908,7 @@ button.bws-btn-retry:hover { opacity: 0.7; }
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: 16px;
+  gap: var(--bw-space-lg);
 }
 
 .bwr-loading-spinner {
@@ -901,7 +916,7 @@ button.bws-btn-retry:hover { opacity: 0.7; }
   height: 32px;
   border: 3px solid var(--background-modifier-border);
   border-top-color: var(--bw-bamboo);
-  border-radius: 50%;
+  border-radius: var(--bw-radius-pill);
   animation: bwr-spin 0.8s linear infinite;
 }
 
@@ -924,12 +939,12 @@ button.bws-btn-retry:hover { opacity: 0.7; }
   justify-content: center;
   height: 100%;
   text-align: center;
-  padding: 40px;
+  padding: var(--bw-space-2xl);
 }
 
 .bwr-error-icon {
   font-size: 32px;
-  margin-bottom: 8px;
+  margin-bottom: var(--bw-space-sm);
 }
 
 .bwr-error-title {
@@ -1019,7 +1034,7 @@ button.bws-btn-retry:hover { opacity: 0.7; }
   padding: 4px 8px;
   color: var(--text-muted);
   cursor: pointer;
-  border-radius: 3px;
+  border-radius: var(--bw-radius-sm);
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1148,7 +1163,7 @@ button.bws-btn-retry:hover { opacity: 0.7; }
 .bwr-content::-webkit-scrollbar-thumb,
 .bwr-toc::-webkit-scrollbar-thumb {
   background: var(--background-modifier-border);
-  border-radius: 3px;
+  border-radius: var(--bw-radius-sm);
 }
 
 .bws-list::-webkit-scrollbar-thumb:hover,
@@ -1177,7 +1192,7 @@ button.bws-btn-retry:hover { opacity: 0.7; }
 .bws-list .bws-timeline-head {
   box-sizing: border-box;
   margin-left: 0;
-  padding-left: 12px;
+  padding-left: var(--bw-space-md);
   border-left: 0;
 }
 
