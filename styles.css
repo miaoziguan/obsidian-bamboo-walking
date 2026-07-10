@@ -53,31 +53,90 @@
   font-size: 13px;
 }
 
-/* ── 顶部标题栏 ── */
+/* ── 顶部标题栏 / 作者卡片 ── */
 .bws-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   padding: 10px 12px 6px;
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
-.bws-title {
-  margin: 0;
-  font-size: 15px;
+/* 作者卡片（博客式简介） */
+.bws-author-card {
+  position: relative;
+  display: flex;
+  gap: var(--bw-space-md);
+  align-items: flex-start;
+  padding: var(--bw-space-xs) 0;
+}
+
+.bws-author-avatar {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--bw-radius-pill);
+  object-fit: cover;
+  background: var(--bw-bamboo-pale);
+  border: 2px solid var(--bw-white);
+  box-shadow: 0 1px 3px var(--bw-shadow);
+}
+
+.bws-author-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.bws-author-name {
+  font-size: 14px;
   font-weight: 600;
   color: var(--bw-bamboo-deep);
   letter-spacing: 0.5px;
+  margin-bottom: 2px;
 }
 
-/* 刷新按钮 */
+.bws-author-bio {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin-bottom: var(--bw-space-xs);
+  /* 多行截断 */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bws-author-links {
+  display: flex;
+  gap: var(--bw-space-sm);
+}
+
+.bws-author-link {
+  font-size: 11px;
+  color: var(--bw-bamboo);
+  text-decoration: none;
+  padding: 1px 8px;
+  border: 1px solid var(--bw-bamboo-pale);
+  border-radius: var(--bw-radius-pill);
+  transition: background 0.2s, color 0.2s;
+}
+
+.bws-author-link:hover {
+  background: var(--bw-bamboo);
+  color: var(--bw-white);
+  text-decoration: none;
+}
+
+/* 刷新按钮（作者卡片右上角） */
 button.bws-btn-refresh {
+  position: absolute;
+  top: 2px;
+  right: 0;
   background: none;
   border: none;
   cursor: pointer;
   font-size: 14px;
   color: var(--text-faint);
-  padding: 0;
+  padding: 2px 4px;
+  line-height: 1;
 }
 
 button.bws-btn-refresh:hover { color: var(--bw-bamboo); }

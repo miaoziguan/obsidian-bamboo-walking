@@ -2,6 +2,22 @@
 import { ItemView } from "obsidian";
 import type { ArticleIndexEntry, CategoryGroup } from "../types";
 import { VIEW_TYPE_SIDEBAR } from "../types";
+import {
+  PROFILE_NAME,
+  PROFILE_AVATAR,
+  PROFILE_BIO,
+  PROFILE_LINKS,
+} from "../constants";
+
+/** 头像加载失败时回退的 SVG 占位（羽鳞君首字） */
+const AVATAR_FALLBACK =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">' +
+      '<rect width="96" height="96" rx="48" fill="#4a7c59"/>' +
+      '<text x="48" y="62" font-size="44" fill="#faf8f3" text-anchor="middle" ' +
+      'font-family="sans-serif" font-weight="600">羽</text></svg>',
+  );
 
 type SidebarState = "loading" | "loaded" | "error" | "empty";
 
@@ -126,19 +142,9 @@ export class SidebarView extends ItemView {
     contentEl.empty();
     contentEl.addClass("bws-sidebar");
 
-    // ── 顶部栏 ──
+    // ── 顶部栏：作者卡片（博客式简介）──
     const header = contentEl.createDiv({ cls: "bws-header" });
-    header.createEl("h2", { text: "竹杖芒鞋", cls: "bws-title" });
-
-    const refreshBtn = header.createEl("button", {
-      cls: "bws-btn-refresh",
-      attr: { "aria-label": "刷新文章", title: "刷新文章" },
-    });
-    refreshBtn.setText(this.isRefreshing ? "↻" : "↻");
-    if (this.isRefreshing) {
-      refreshBtn.addClass("bws-spin");
-      refreshBtn.disabled = true;
-    }
+    const refreshBtn = this.renderAuthorCard(header);
     refreshBtn.addEventListener("click", () => {
       if (this.isRefreshing || !this.onRefresh) return;
       this.isRefreshing = true;
@@ -247,6 +253,74 @@ export class SidebarView extends ItemView {
       case "error":    this.renderError(contentEl); break;
       case "empty":    this.renderEmpty(contentEl); break;
       case "loaded":   this.renderList(contentEl); break;
+    }
+  }
+
+  /* ═══════ 作者卡片（左上角博客式简介）═══════ */
+
+  private renderAuthorCard(header: HTMLElement): HTMLButtonElement {
+    const card = header.createDiv({ cls: "bws-author-card" });
+
+    // 刷新按钮（卡片右上角）
+    const refreshBtn = card.createEl("button", {
+      cls: "bws-btn-refresh",
+      attr: { "aria-label": "刷新文章", title: "刷新文章" },
+    });
+    refreshBtn.setText("↻");
+    if (this.isRefreshing) {
+      refreshBtn.addClass("bws-spin");
+      refreshBtn.disabled = true;
+    }
+
+    // 圆形头像
+    const avatar = card.createEl("img", {
+      cls: "bws-author-avatar",
+      attr: { alt: PROFILE_NAME, loading: "lazy" },
+    });
+    avatar.src = AVATAR_FALLBACK; // 先放占位，加载成功再替换
+    this.loadAvatar(avatar);
+
+    // 文字信息区
+    const info = card.createDiv({ cls: "bws-author-info" });
+    info.createEl("div", { cls: "bws-author-name", text: PROFILE_NAME });
+
+    info.createEl("div", { cls: "bws-author-bio", text: PROFILE_BIO });
+
+    if (PROFILE_LINKS.length > 0) {
+      const links = info.createDiv({ cls: "bws-author-links" });
+      for (const link of PROFILE_LINKS) {
+        links.createEl("a", {
+          text: link.label,
+          href: link.url,
+          cls: "bws-author-link",
+          attr: { target: "_blank", rel: "noopener noreferrer" },
+        });
+      }
+    }
+
+    return refreshBtn;
+  }
+
+  /** 读取插件目录下的 avatar.png，转 data URI 显示；失败保留 SVG 占位 */
+  private async loadAvatar(img: HTMLImageElement): Promise<void> {
+    try {
+      const adapter = this.app.vault.adapter as any;
+      const basePath: string = adapter.getBasePath?.() ?? "";
+      if (!basePath) return;
+      // 插件目录 = vault/.obsidian/plugins/<manifest.id>
+      const pluginRoot = `${basePath}/.obsidian/plugins/bamboo-walking`;
+      const avatarPath = `${pluginRoot}/${PROFILE_AVATAR}`;
+      const buf: ArrayBuffer | null = await adapter.readBinary(avatarPath);
+      if (!buf) return;
+      const bytes = new Uint8Array(buf);
+      let binary = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
+      }
+      img.src = "data:image/png;base64," + btoa(binary);
+    } catch {
+      /* 保留 SVG 占位 */
     }
   }
 

@@ -30,3 +30,21 @@ export const CACHE_KEY = "bamboo-walking-cache";
 
 /** 作者显示名（用于文章头部署名） */
 export const AUTHOR_NAME = "竹杖芒鞋";
+
+/* ────────────── 作者卡片（侧边栏左上角博客式简介） ────────────── */
+/* 固定写死，非读者可配置项。换头像/简介改这里 + 替换插件根目录 avatar.png */
+
+/** 作者卡片显示名 */
+export const PROFILE_NAME = "羽鳞君";
+
+/** 作者头像文件名（位于插件根目录，与 main.js / manifest.json 同级） */
+export const PROFILE_AVATAR = "avatar.png";
+
+/** 作者简介 */
+export const PROFILE_BIO =
+  "竹杖芒鞋轻胜马，谁怕？一蓑烟雨任平生。欢迎来到喵字馆创始人羽鳞君的Obsidian后室。";
+
+/** 作者社交/链接 */
+export const PROFILE_LINKS: { label: string; url: string }[] = [
+  { label: "GitHub", url: "https://github.com/miaoziguan" },
+];
