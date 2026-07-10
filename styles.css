@@ -12,6 +12,9 @@
   --bw-ink: #2c2c2c;
   --bw-ink-light: #5a5a5a;
   --bw-divider: #d4ccb8;
+  --bw-white: #fff;
+  --bw-shadow: rgba(0, 0, 0, 0.1);
+  --bw-overlay: rgba(0, 0, 0, 0.85);
 }
 
 /* ── 全局按钮重置（插件内，覆盖 Obsidian 主题） ── */
@@ -134,7 +137,7 @@ button.bws-btn-refresh:disabled { cursor: not-allowed; opacity: 0.5; }
 
 .bws-filter-tab.is-active {
   background: var(--bw-bamboo);
-  color: #fff;
+  color: var(--bw-white);
   border-color: var(--bw-bamboo);
 }
 
@@ -395,7 +398,7 @@ button.bwr-fab-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px var(--bw-shadow);
   transition: background 0.2s;
 }
 
@@ -659,7 +662,7 @@ button.bwr-code-copy:hover { color: var(--bw-bamboo); }
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(0, 0, 0, 0.85);
+  background: var(--bw-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -750,6 +753,8 @@ button.bwr-code-copy:hover { color: var(--bw-bamboo); }
   --bw-ink: #e0e0e0;
   --bw-ink-light: #b0b0b0;
   --bw-divider: rgba(143, 197, 159, 0.15);
+  --bw-toc-active-bg: rgba(143, 197, 159, 0.15);
+  --bw-blockquote-bg: rgba(143, 197, 159, 0.08);
 }
 
 .theme-dark .bwr-title { color: var(--bw-ink); }
@@ -757,7 +762,7 @@ button.bwr-code-copy:hover { color: var(--bw-bamboo); }
 .theme-dark .bwr-empty-title { color: var(--bw-bamboo-light); }
 
 .theme-dark .bwr-body blockquote {
-  background: rgba(143, 197, 159, 0.08);
+  background: var(--bw-blockquote-bg);
   border-left-color: var(--bw-bamboo-pale);
 }
 
@@ -1101,7 +1106,7 @@ button.bws-btn-retry:hover { opacity: 0.7; }
 .theme-dark .bws-filter-tab.is-active {
   background: var(--bw-bamboo-light);
   border-color: var(--bw-bamboo-light);
-  color: #fff;
+  color: var(--bw-white);
 }
 
 .theme-dark .bwr-toc {
@@ -1160,7 +1165,7 @@ button.bws-btn-retry:hover { opacity: 0.7; }
 
 .theme-dark .bwr-toc-item.is-active {
   color: var(--bw-bamboo-light);
-  background: rgba(74, 124, 89, 0.15);
+  background: var(--bw-toc-active-bg);
 }
 
 .theme-dark .bwr-title::after {
