@@ -258,18 +258,15 @@ export class SidebarView extends ItemView {
     if (statusEl) {
       if (this.statusMsg) {
         statusEl.textContent = this.statusMsg;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- 原生 DOM API，切换可见性
-        statusEl.style.display = "";
+        statusEl.classList.remove("bws-hidden");
         if (this.statusState) statusEl.setAttribute("data-state", this.statusState);
         else statusEl.removeAttribute("data-state");
       } else if (this.state === "loading") {
         statusEl.textContent = "正在检查更新…";
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- 原生 DOM API，切换可见性
-        statusEl.style.display = "";
+        statusEl.classList.remove("bws-hidden");
         statusEl.removeAttribute("data-state");
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- 原生 DOM API，切换可见性
-        statusEl.style.display = "none";
+        statusEl.classList.add("bws-hidden");
       }
     }
 

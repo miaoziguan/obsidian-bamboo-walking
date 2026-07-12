@@ -72,6 +72,10 @@
   color: var(--text-faint);
 }
 
+.bws-status.bws-hidden {
+  display: none;
+}
+
 /* 陈旧态（离线 / 刷新失败，显示缓存）：橙色警示 + 左侧竖条，明确区分 */
 .bws-status[data-state="stale"] {
   color: var(--text-warning, #c98a2b);
