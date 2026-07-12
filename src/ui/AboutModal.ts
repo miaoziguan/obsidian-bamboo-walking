@@ -85,6 +85,8 @@ export class AboutModal extends Modal {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setIcon 是 Obsidian 官方 API
       setIcon(copyMail, "copy");
       copyMail.addEventListener("click", () => {
+        // 仅在用户主动点击时写入剪贴板（本插件内容），从不读取剪贴板
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- navigator.clipboard 是浏览器标准 API
         void navigator.clipboard.writeText(CONTACT_EMAIL).then(
           () => new Notice("已复制邮箱地址"),
           () => new Notice("复制失败，请手动选择"),
@@ -106,6 +108,8 @@ export class AboutModal extends Modal {
         });
         setIcon(copyWx, "copy");
         copyWx.addEventListener("click", () => {
+          // 仅在用户主动点击时写入剪贴板（本插件内容），从不读取剪贴板
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- navigator.clipboard 是浏览器标准 API
           void navigator.clipboard.writeText(CONTACT_WECHAT).then(
             () => new Notice("已复制微信号"),
             () => new Notice("复制失败，请手动选择"),

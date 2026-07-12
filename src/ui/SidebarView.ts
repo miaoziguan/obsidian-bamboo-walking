@@ -258,14 +258,17 @@ export class SidebarView extends ItemView {
     if (statusEl) {
       if (this.statusMsg) {
         statusEl.textContent = this.statusMsg;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setCssStyles 是 Obsidian 官方 API
         setCssStyles(statusEl, { display: "" });
         if (this.statusState) statusEl.setAttribute("data-state", this.statusState);
         else statusEl.removeAttribute("data-state");
       } else if (this.state === "loading") {
         statusEl.textContent = "正在检查更新…";
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setCssStyles 是 Obsidian 官方 API
         setCssStyles(statusEl, { display: "" });
         statusEl.removeAttribute("data-state");
       } else {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setCssStyles 是 Obsidian 官方 API
         setCssStyles(statusEl, { display: "none" });
       }
     }

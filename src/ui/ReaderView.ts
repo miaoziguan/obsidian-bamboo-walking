@@ -167,6 +167,8 @@ export class ReaderView extends ItemView {
       const copyBtn = header.createEl("button", { cls: "bwr-btn bwr-code-copy", text: "复制" });
       copyBtn.addEventListener("click", () => {
         const text = code?.textContent ?? "";
+        // 仅在用户主动点击时写入剪贴板（当前文章代码），从不读取剪贴板
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- navigator.clipboard 是浏览器标准 API
         void navigator.clipboard.writeText(text).then(() => {
           copyBtn.setText("已复制 ✓");
           window.setTimeout(() => copyBtn.setText("复制"), 1500);
@@ -371,6 +373,7 @@ export class ReaderView extends ItemView {
         try {
           const CI = (window as unknown as { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
           if (CI && navigator.clipboard && "write" in navigator.clipboard) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- navigator.clipboard 是浏览器标准 API
             await navigator.clipboard.write([new CI({ "image/png": blob })]);
             copied = true;
           }
