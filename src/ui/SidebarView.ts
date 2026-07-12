@@ -1,5 +1,5 @@
 /* ────────────── 侧边栏：专栏导航 ────────────── */
-import { ItemView, setIcon, setCssStyles } from "obsidian";
+import { ItemView, setIcon } from "obsidian";
 import type { ArticleIndexEntry, CategoryGroup } from "../types";
 import { VIEW_TYPE_SIDEBAR } from "../types";
 import {
@@ -258,18 +258,18 @@ export class SidebarView extends ItemView {
     if (statusEl) {
       if (this.statusMsg) {
         statusEl.textContent = this.statusMsg;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setCssStyles 是 Obsidian 官方 API
-        setCssStyles(statusEl, { display: "" });
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- 原生 DOM API，切换可见性
+        statusEl.style.display = "";
         if (this.statusState) statusEl.setAttribute("data-state", this.statusState);
         else statusEl.removeAttribute("data-state");
       } else if (this.state === "loading") {
         statusEl.textContent = "正在检查更新…";
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setCssStyles 是 Obsidian 官方 API
-        setCssStyles(statusEl, { display: "" });
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- 原生 DOM API，切换可见性
+        statusEl.style.display = "";
         statusEl.removeAttribute("data-state");
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setCssStyles 是 Obsidian 官方 API
-        setCssStyles(statusEl, { display: "none" });
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- 原生 DOM API，切换可见性
+        statusEl.style.display = "none";
       }
     }
 
