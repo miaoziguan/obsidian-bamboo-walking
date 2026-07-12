@@ -1781,31 +1781,12 @@ button.bws-btn-retry:hover { opacity: 0.7; }
   }
 }
 
-/* ═══════════ 自定义细滚动条 ═══════════ */
+/* ═══════════ 隐藏滚动条 ═══════════ */
 
 .bws-list::-webkit-scrollbar,
 .bwr-content::-webkit-scrollbar,
 .bwr-toc::-webkit-scrollbar {
-  width: 5px;
-}
-
-.bws-list::-webkit-scrollbar-track,
-.bwr-content::-webkit-scrollbar-track,
-.bwr-toc::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.bws-list::-webkit-scrollbar-thumb,
-.bwr-content::-webkit-scrollbar-thumb,
-.bwr-toc::-webkit-scrollbar-thumb {
-  background: var(--background-modifier-border);
-  border-radius: var(--bw-radius-sm);
-}
-
-.bws-list::-webkit-scrollbar-thumb:hover,
-.bwr-content::-webkit-scrollbar-thumb:hover,
-.bwr-toc::-webkit-scrollbar-thumb:hover {
-  background: var(--bw-bamboo-pale);
+  width: 0;
 }
 
 /* ═══════════ 暗色模式：进度条 + TOC 高亮 ═══════════ */
