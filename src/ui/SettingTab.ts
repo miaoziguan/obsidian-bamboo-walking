@@ -1,7 +1,6 @@
 /* ────────────── 插件设置面板 ────────────── */
 import { App, PluginSettingTab, Setting } from "obsidian";
 import type BambooWalkingPlugin from "../main";
-import { GITHUB_SVG } from "../constants";
 
 export class BambooWalkingSettingTab extends PluginSettingTab {
   constructor(
@@ -59,6 +58,6 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
       attr: { target: "_blank", rel: "noopener noreferrer", "aria-label": "GitHub", title: "GitHub" },
     });
     const ghIco = gh.createSpan({ cls: "bw-brand-link-ico-wrap" });
-    ghIco.innerHTML = GITHUB_SVG;
+    setIcon(ghIco, "github");
   }
 }

@@ -1,5 +1,5 @@
 /* ────────────── 关于 / 投稿 / 其他平台 弹层 ────────────── */
-import { App, Modal, Notice } from "obsidian";
+import { App, Modal, Notice, setIcon } from "obsidian";
 import {
   PROFILE_NAME,
   AVATAR_DATA_URI,
@@ -8,8 +8,6 @@ import {
   CONTACT_WECHAT,
   SUBMIT_TEXT,
   PROFILE_PLATFORMS,
-  GITHUB_SVG,
-  COPY_SVG,
 } from "../constants";
 
 
@@ -56,7 +54,7 @@ export class AboutModal extends Modal {
         // GitHub 显示图标，其余显示文字标签
         if (/github\.com/i.test(p.url)) {
           const ico = a.createSpan({ cls: "bw-about-link-ico" });
-          ico.innerHTML = GITHUB_SVG;
+          setIcon(ico, "github");
         }
         a.createSpan({ text: p.label });
       }
@@ -84,7 +82,7 @@ export class AboutModal extends Modal {
         cls: "bw-about-copy-btn",
         attr: { title: "复制邮箱地址", "aria-label": "复制邮箱地址" },
       });
-      copyMail.innerHTML = COPY_SVG;
+      setIcon(copyMail, "copy");
       copyMail.addEventListener("click", () => {
         void navigator.clipboard.writeText(CONTACT_EMAIL).then(
           () => new Notice("已复制邮箱地址"),
@@ -105,7 +103,7 @@ export class AboutModal extends Modal {
           cls: "bw-about-copy-btn",
           attr: { title: "复制微信号", "aria-label": "复制微信号" },
         });
-        copyWx.innerHTML = COPY_SVG;
+        setIcon(copyWx, "copy");
         copyWx.addEventListener("click", () => {
           void navigator.clipboard.writeText(CONTACT_WECHAT).then(
             () => new Notice("已复制微信号"),

@@ -65,7 +65,7 @@ function wrapText(
 
 /** 渲染分享卡片为 Blob（PNG） */
 export async function renderShareCard(article: Article): Promise<Blob> {
-  const canvas = document.createElement("canvas");
+  const canvas = activeDocument.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d");
@@ -143,7 +143,7 @@ export async function renderShareCard(article: Article): Promise<Blob> {
   const footerY = cardY + cardH - 96;
   ctx.fillStyle = THEME.bambooDeep;
   ctx.font = "600 32px -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif";
-  const author = article.author || AUTHOR_NAME;
+  const author: string = article.author || AUTHOR_NAME;
   ctx.fillText(author, contentX, footerY);
 
   ctx.fillStyle = THEME.inkLight;

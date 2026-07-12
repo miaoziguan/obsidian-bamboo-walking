@@ -1,12 +1,11 @@
 /* ────────────── 侧边栏：专栏导航 ────────────── */
-import { ItemView } from "obsidian";
+import { ItemView, setIcon, setCssStyles } from "obsidian";
 import type { ArticleIndexEntry, CategoryGroup } from "../types";
 import { VIEW_TYPE_SIDEBAR } from "../types";
 import {
   PROFILE_NAME,
   PROFILE_BIO,
   PROFILE_LINKS,
-  GITHUB_SVG,
   AVATAR_DATA_URI,
   CONTACT_EMAIL,
 } from "../constants";
@@ -183,7 +182,9 @@ export class SidebarView extends ItemView {
   async onOpen(): Promise<void> {
     // 恢复上次的分组偏好（分类 / 时间）
     const saved = this.app.loadLocalStorage("bw-group-mode");
-    if (saved === "time" || saved === "category") this.groupMode = saved;
+    if (saved === "time" || saved === "category") {
+      this.groupMode = saved as "time" | "category";
+    }
     this.render();
     if (this.onReady) this.onReady();
   }
@@ -256,15 +257,15 @@ export class SidebarView extends ItemView {
     if (statusEl) {
       if (this.statusMsg) {
         statusEl.textContent = this.statusMsg;
-        statusEl.style.display = "";
+        setCssStyles(statusEl, { display: "" });
         if (this.statusState) statusEl.setAttribute("data-state", this.statusState);
         else statusEl.removeAttribute("data-state");
       } else if (this.state === "loading") {
         statusEl.textContent = "正在检查更新…";
-        statusEl.style.display = "";
+        setCssStyles(statusEl, { display: "" });
         statusEl.removeAttribute("data-state");
       } else {
-        statusEl.style.display = "none";
+        setCssStyles(statusEl, { display: "none" });
       }
     }
 
@@ -445,7 +446,7 @@ export class SidebarView extends ItemView {
         attr: { target: "_blank", rel: "noopener noreferrer", "aria-label": "GitHub", title: "GitHub" },
       });
       const ghIco = gh.createSpan({ cls: "bw-brand-link-ico-wrap" });
-      ghIco.innerHTML = GITHUB_SVG;
+      setIcon(ghIco, "github");
     }
     const handle = PROFILE_LINKS[0]?.url.split("/").pop() ?? "";
     idBox.createEl("div", { cls: "bws-author-handle", text: handle ? "@" + handle : "" });
@@ -695,7 +696,7 @@ export class SidebarView extends ItemView {
       for (const [ym, mArts] of months) {
         const [year, mm] = ym.split("-");
         const monthEl = bucketEl.createDiv({ cls: "bws-timeline-month" });
-        const mHead = monthEl.createDiv({
+        monthEl.createDiv({
           cls: "bws-timeline-head",
           text: `${year}年${mm}月`,
           attr: { role: "button", tabindex: "0" },
