@@ -47,6 +47,8 @@ export default class BambooWalkingPlugin extends Plugin {
   private refreshTimer: number | null = null;
   private firstLaunchTimer: number | null = null;
   private currentIndex: ArticleIndexEntry[] = [];
+  /** 最近一次刷新发现的新 slug，供侧边栏延迟打开时补注「新」标记 */
+  private lastNewSlugs: string[] = [];
 
   private getSidebarView(): SidebarView | null {
     return this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR)[0]?.view as SidebarView ?? null;
@@ -84,6 +86,7 @@ export default class BambooWalkingPlugin extends Plugin {
           ? this.currentIndex
           : this.cacheService.getIndex();
         if (idx.length > 0) {
+          if (this.lastNewSlugs.length > 0) view.setNewSlugs(this.lastNewSlugs);
           view.updateArticles(idx);
         }
       });
@@ -198,28 +201,41 @@ export default class BambooWalkingPlugin extends Plugin {
       const entries = await this.service.fetchIndex();
       const newSlugs = await this.cacheService.setIndex(entries);
       this.currentIndex = entries;
+      this.lastNewSlugs = newSlugs;
 
       if (sidebarView) {
+        // 注入新到达的 slug，让侧边栏条目自动亮起「新」标记（含静默自动刷新）
+        if (newSlugs.length > 0) sidebarView.setNewSlugs(newSlugs);
         sidebarView.updateArticles(entries);
       }
 
-      if (newSlugs.length > 0 && !silent) {
-        sidebarView?.setStatus(`发现 ${newSlugs.length} 篇新文章`);
-        new Notice(`竹杖芒鞋：发现 ${newSlugs.length} 篇新文章`);
-      } else if (!silent) {
-        sidebarView?.setStatus("已是最新");
-        new Notice("竹杖芒鞋：已是最新");
+      // 常驻状态栏：无论手动/静默刷新都更新「更新于 hh:mm」，让用户随时可见上次同步时间
+      sidebarView?.setRefreshStatus(newSlugs.length);
+      // Notice 仅在手动刷新时弹出，避免静默自动刷新打扰
+      if (!silent) {
+        if (newSlugs.length > 0) {
+          new Notice(`竹杖芒鞋：发现 ${newSlugs.length} 篇新文章`);
+        } else {
+          new Notice("竹杖芒鞋：已是最新");
+        }
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "未知错误";
       console.error("[竹杖芒鞋] 刷新失败:", e);
+      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
       if (sidebarView && this.currentIndex.length === 0) {
+        // 完全无缓存：仍是错误态
         sidebarView.setError(msg);
-      } else {
-        sidebarView?.setStatus("刷新失败，点击 ↻ 重试");
+      } else if (sidebarView) {
+        // 有缓存：明确告知用户当前展示的是缓存及其新鲜度，消除困惑
+        sidebarView.setStaleStatus(this.cacheService.getLastFetch(), offline);
       }
       if (!silent) {
-        new Notice(`竹杖芒鞋：刷新失败，点击刷新按钮重试`);
+        new Notice(
+          offline
+            ? "竹杖芒鞋：当前离线，显示的是本地缓存"
+            : "竹杖芒鞋：刷新失败，点击刷新按钮重试",
+        );
       }
     }
   }
@@ -229,7 +245,11 @@ export default class BambooWalkingPlugin extends Plugin {
     if (sidebarView) sidebarView.setSelected(entry.slug);
 
     await this.cacheService.markRead(entry.slug);
-    if (sidebarView) sidebarView.refreshReadState();
+    if (sidebarView) {
+      sidebarView.refreshReadState();
+      // 点开即视为已关注，移除「新」标记
+      sidebarView.clearNewSlug(entry.slug);
+    }
 
     let article = this.cacheService.getCachedArticle(entry.slug, entry.hash);
     if (!article) {

@@ -1,8 +1,9 @@
 /* ────────────── 主区域：文章阅读视图 ────────────── */
-import { ItemView, WorkspaceLeaf, MarkdownRenderer, Component } from "obsidian";
+import { ItemView, WorkspaceLeaf, MarkdownRenderer, Component, Notice } from "obsidian";
 import type { Article, ArticleIndexEntry } from "../types";
 import { VIEW_TYPE_READER } from "../types";
 import { AUTHOR_NAME } from "../constants";
+import { renderShareCard, safeFileName } from "../utils/share";
 
 interface TocEntry {
   level: number;
@@ -310,6 +311,15 @@ export class ReaderView extends ItemView {
       .addEventListener("click", () => this.zoomFont(1));
 
     const actions = bar.createDiv({ cls: "bwr-actions" });
+
+    // 轻量分享动作：分享为图片
+    const imgBtn = actions.createEl("button", {
+      cls: "bwr-btn bwr-btn-share",
+      text: "◱ 图片",
+      attr: { title: "分享为图片卡片" },
+    });
+    imgBtn.addEventListener("click", () => this.shareAsImage(imgBtn));
+
     const saveBtn = actions.createEl("button", {
       cls: "bwr-btn bwr-btn-save",
       text: "↓ 保存为笔记",
@@ -335,6 +345,52 @@ export class ReaderView extends ItemView {
         }
       })();
     });
+  }
+
+  /** 生成分享图并下载 +（尽力）复制到剪贴板 */
+  private shareAsImage(btn: HTMLButtonElement): void {
+    if (!this.article) return;
+    const article = this.article;
+    const orig = btn.textContent ?? "◱ 图片";
+    btn.disabled = true;
+    btn.textContent = "生成中…";
+    void (async () => {
+      try {
+        const blob = await renderShareCard(article);
+
+        // 触发下载
+        const url = URL.createObjectURL(blob);
+        const a = this.contentEl.ownerDocument.createElement("a");
+        a.href = url;
+        a.download = `竹杖芒鞋-${safeFileName(article.title)}.png`;
+        a.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+        // 尽力复制到剪贴板（部分环境支持）
+        let copied = false;
+        try {
+          const CI = (window as unknown as { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
+          if (CI && navigator.clipboard && "write" in navigator.clipboard) {
+            await navigator.clipboard.write([new CI({ "image/png": blob })]);
+            copied = true;
+          }
+        } catch {
+          copied = false;
+        }
+
+        btn.textContent = "已生成 ✓";
+        new Notice(copied ? "分享图已下载并复制到剪贴板" : "分享图已下载");
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "未知错误";
+        new Notice(`生成分享图失败：${msg}`);
+        btn.textContent = orig;
+      } finally {
+        window.setTimeout(() => {
+          btn.textContent = orig;
+          btn.disabled = false;
+        }, 1800);
+      }
+    })();
   }
 
   private renderHeader(container: HTMLElement): void {

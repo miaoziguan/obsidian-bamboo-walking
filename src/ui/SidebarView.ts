@@ -4,20 +4,13 @@ import type { ArticleIndexEntry, CategoryGroup } from "../types";
 import { VIEW_TYPE_SIDEBAR } from "../types";
 import {
   PROFILE_NAME,
-  PROFILE_AVATAR,
   PROFILE_BIO,
   PROFILE_LINKS,
+  GITHUB_SVG,
+  AVATAR_DATA_URI,
+  CONTACT_EMAIL,
 } from "../constants";
-
-/** 头像加载失败时回退的 SVG 占位（羽鳞君首字） */
-const AVATAR_FALLBACK =
-  "data:image/svg+xml;utf8," +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">' +
-      '<rect width="96" height="96" rx="48" fill="#4a7c59"/>' +
-      '<text x="48" y="62" font-size="44" fill="#faf8f3" text-anchor="middle" ' +
-      'font-family="sans-serif" font-weight="600">羽</text></svg>',
-  );
+import { AboutModal } from "./AboutModal";
 
 type SidebarState = "loading" | "loaded" | "error" | "empty";
 
@@ -33,8 +26,18 @@ export class SidebarView extends ItemView {
   private filter: "all" | "unread" = "all";
   private groupMode: "category" | "time" = "category";
   private statusMsg = "";
+  /** 状态栏语义标记（""/"ok"/"stale"），用于配色 */
+  private statusState: "" | "ok" | "stale" = "";
+  /** 最近一次成功刷新的时间戳（ms），用于状态栏「更新于 hh:mm」 */
+  private lastRefreshAt = 0;
+  /** 刷新后新到达的文章 slug 集合，用于「新」标记 */
+  private newSlugs = new Set<string>();
   private onSelect: ((entry: ArticleIndexEntry) => void) | null = null;
   private getContent: ((slug: string) => string | null) | null = null;
+  /** 正文小写缓存：避免每次击键都重新 getContent + toLowerCase（搜索卡顿主因） */
+  private contentCache = new Map<string, string>();
+  /** render 时是否在过滤中纳入正文全文（默认 false，仅异步补充阶段置 true） */
+  private searchFullText = false;
   private onRefresh: (() => void) | null = null;
   private isReadFn: ((slug: string) => boolean) | null = null;
   private onReady: (() => void) | null = null;
@@ -49,11 +52,82 @@ export class SidebarView extends ItemView {
   setGetContentFn(fn: (slug: string) => string | null): void { this.getContent = fn; }
   setOnReady(cb: () => void): void { this.onReady = cb; }
 
-  /** 持久状态栏：显示最近一次刷新结果 */
-  setStatus(msg: string): void {
+  /** 持久状态栏：显示最近一次刷新结果。
+   *  @param state 可选状态标记，用于 CSS 区分正常/陈旧（离线或刷新失败）配色 */
+  setStatus(msg: string, state?: "ok" | "stale"): void {
     this.statusMsg = msg;
-    const el = this.containerEl.querySelector(".bws-status");
-    if (el) el.textContent = msg;
+    this.statusState = state ?? "";
+    const el = this.containerEl.querySelector<HTMLElement>(".bws-status");
+    if (el) {
+      el.textContent = msg;
+      if (this.statusState) el.setAttribute("data-state", this.statusState);
+      else el.removeAttribute("data-state");
+    }
+  }
+
+  /** 刷新成功后设置常驻状态栏：「N 篇新 · 更新于 hh:mm」或「已是最新 · 更新于 hh:mm」 */
+  setRefreshStatus(newCount: number): void {
+    this.lastRefreshAt = Date.now();
+    const time = this.formatClock(this.lastRefreshAt);
+    const head = newCount > 0 ? `发现 ${newCount} 篇新文章` : "已是最新";
+    this.setStatus(`${head} · 更新于 ${time}`, "ok");
+  }
+
+  /** 刷新失败 / 离线时的常驻提示：说明当前展示的是缓存及其新鲜度。
+   *  @param lastFetchTs 最近一次成功拉取时间戳（ms），0 表示无有效缓存时间
+   *  @param offline 是否处于离线（无网络）状态 */
+  setStaleStatus(lastFetchTs: number, offline: boolean): void {
+    const rel = lastFetchTs > 0 ? this.formatRelative(lastFetchTs) : "";
+    let msg: string;
+    if (offline) {
+      msg = rel ? `离线 · 显示的是 ${rel}的缓存` : "离线 · 显示的是本地缓存";
+    } else {
+      msg = rel ? `刷新失败 · 显示的是 ${rel}的缓存` : "刷新失败 · 显示的是本地缓存";
+    }
+    this.setStatus(msg, "stale");
+  }
+
+  /** 时间戳 → hh:mm（补零） */
+  private formatClock(ts: number): string {
+    const d = new Date(ts);
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    return `${hh}:${mm}`;
+  }
+
+  /** 时间戳 → 相对时间（「刚刚」「x 分钟前」「x 小时前」「x 天前」；更久则回退到日期） */
+  private formatRelative(ts: number): string {
+    const diff = Date.now() - ts;
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return "刚刚";
+    if (min < 60) return `${min} 分钟前`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `${hr} 小时前`;
+    const day = Math.floor(hr / 24);
+    if (day < 30) return `${day} 天前`;
+    const d = new Date(ts);
+    return `${d.getMonth() + 1}月${d.getDate()}日`;
+  }
+
+  /** 注入本次刷新新到达的文章，用于「新」标记。clear=true 时清空（如用户已阅读后）
+   *  仅更新集合，重绘由后续 updateArticles()/render() 负责，避免重复渲染 */
+  setNewSlugs(slugs: Iterable<string>, clear = false): void {
+    if (clear) {
+      this.newSlugs.clear();
+    } else {
+      for (const s of slugs) this.newSlugs.add(s);
+    }
+  }
+
+  /** 移除单个 slug 的「新」标记（用户点开即视为已关注） */
+  clearNewSlug(slug: string): void {
+    if (this.newSlugs.delete(slug)) {
+      const el = this.containerEl.querySelector(`.bws-article[data-slug="${CSS.escape(slug)}"]`);
+      el?.classList.remove("bws-is-new");
+      const badge = el?.querySelector(".bws-new-badge");
+      badge?.remove();
+      this.updateUnreadCount();
+    }
   }
 
   setLoading(): void {
@@ -90,8 +164,9 @@ export class SidebarView extends ItemView {
   private updateUnreadCount(): void {
     if (!this.isReadFn) return;
     const unreadCount = this.articles.filter((a) => !this.isReadFn!(a.slug)).length;
+    const newCount = this.articles.filter((a) => this.newSlugs.has(a.slug)).length;
     const tabs = this.containerEl.querySelectorAll(".bws-filter-tab");
-    if (tabs[0]) tabs[0].textContent = `全部 ${this.articles.length}`;
+    if (tabs[0]) tabs[0].textContent = newCount > 0 ? `全部 ${this.articles.length} · ${newCount} 新` : `全部 ${this.articles.length}`;
     if (tabs[1]) tabs[1].textContent = `未读 ${unreadCount}`;
   }
 
@@ -105,7 +180,21 @@ export class SidebarView extends ItemView {
     }
   }
 
-  async onOpen(): Promise<void> { this.render(); if (this.onReady) this.onReady(); }
+  async onOpen(): Promise<void> {
+    // 恢复上次的分组偏好（分类 / 时间）
+    const saved = this.app.loadLocalStorage("bw-group-mode");
+    if (saved === "time" || saved === "category") this.groupMode = saved;
+    this.render();
+    if (this.onReady) this.onReady();
+  }
+
+  /** 切换分组模式并持久化 */
+  private setGroupMode(mode: "category" | "time"): void {
+    if (this.groupMode === mode) return;
+    this.groupMode = mode;
+    this.app.saveLocalStorage("bw-group-mode", mode);
+    this.render();
+  }
   async onClose(): Promise<void> {
     if (this.searchDebounce !== null) window.clearTimeout(this.searchDebounce);
   }
@@ -137,45 +226,70 @@ export class SidebarView extends ItemView {
 
   /* ═══════ 渲染 ═══════ */
 
-  private render(): void {
+  /** 全量初始化（仅 onOpen 时调用一次），品牌区只创建一次 */
+  private initLayout(): void {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("bws-sidebar");
 
-    // ── 顶部栏：作者卡片（博客式简介）──
+    // 品牌区：只创建一次，后续不重建
     const header = contentEl.createDiv({ cls: "bws-header" });
-    const refreshBtn = this.renderAuthorCard(header);
-    refreshBtn.addEventListener("click", () => {
-      if (this.isRefreshing || !this.onRefresh) return;
-      this.isRefreshing = true;
-      refreshBtn.disabled = true;
-      refreshBtn.addClass("bws-spin");
-      this.onRefresh();
-    });
+    this.renderAuthorCard(header);
 
-    // ── 持久状态栏 ──
-    if (this.statusMsg) {
-      contentEl.createDiv({ cls: "bws-status", text: this.statusMsg });
-    } else if (this.state === "loading") {
-      contentEl.createDiv({ cls: "bws-status", text: "正在检查更新…" });
+    // 持久状态栏容器（占位，后续仅更新文本）
+    contentEl.createDiv({ cls: "bws-status" });
+
+    // 列表容器：后续 render() 只重建这部分
+    contentEl.createDiv({ cls: "bws-body" });
+  }
+
+  private render(): void {
+    const { contentEl } = this;
+
+    // 首次渲染走全量初始化
+    if (!contentEl.querySelector(".bws-header")) {
+      this.initLayout();
     }
+
+    // 更新状态栏文字（不重建 DOM）
+    const statusEl = contentEl.querySelector<HTMLElement>(".bws-status");
+    if (statusEl) {
+      if (this.statusMsg) {
+        statusEl.textContent = this.statusMsg;
+        statusEl.style.display = "";
+        if (this.statusState) statusEl.setAttribute("data-state", this.statusState);
+        else statusEl.removeAttribute("data-state");
+      } else if (this.state === "loading") {
+        statusEl.textContent = "正在检查更新…";
+        statusEl.style.display = "";
+        statusEl.removeAttribute("data-state");
+      } else {
+        statusEl.style.display = "none";
+      }
+    }
+
+    // 列表区：清空重建
+    const bodyEl = contentEl.querySelector<HTMLElement>(".bws-body");
+    if (!bodyEl) return;
+    bodyEl.empty();
 
     // ── 未读 / 全部 切换 ──
     if (this.state === "loaded" || (this.state !== "loading" && this.articles.length > 0)) {
       const unreadCount = this.isReadFn
         ? this.articles.filter((a) => !this.isReadFn!(a.slug)).length
         : this.articles.length;
+      const newCount = this.articles.filter((a) => this.newSlugs.has(a.slug)).length;
 
-      const filterBar = contentEl.createDiv({ cls: "bws-filter-tabs" });
+      const filterBar = bodyEl.createDiv({ cls: "bws-filter-tabs" });
 
       const allTab = filterBar.createEl("button", {
         cls: `bws-filter-tab${this.filter === "all" ? " is-active" : ""}`,
-        text: `全部 ${this.articles.length}`,
+        text: newCount > 0 ? `全部 ${this.articles.length} · ${newCount} 新` : `全部 ${this.articles.length}`,
       });
       allTab.addEventListener("click", () => {
         if (this.filter === "all") return;
         this.filter = "all";
-        this.renderList(contentEl);
+        this.render();
         allTab.addClass("is-active");
         unreadTab.removeClass("is-active");
       });
@@ -187,30 +301,50 @@ export class SidebarView extends ItemView {
       unreadTab.addEventListener("click", () => {
         if (this.filter === "unread") return;
         this.filter = "unread";
-        this.renderList(contentEl);
+        this.render();
         unreadTab.addClass("is-active");
         allTab.removeClass("is-active");
       });
 
-      // 排序切换（仅全部模式下显示）
-      if (this.filter === "all") {
-        const sortBtn = filterBar.createEl("button", {
-          cls: "bws-sort-btn",
-          attr: { "aria-label": "切换排序", title: this.groupMode === "category" ? "按时间排序" : "按分类排序" },
-        });
-        sortBtn.setText(this.groupMode === "category" ? "⇅" : "☰");
-        sortBtn.addEventListener("click", () => {
-          this.groupMode = this.groupMode === "category" ? "time" : "category";
-          sortBtn.setText(this.groupMode === "category" ? "⇅" : "☰");
-          sortBtn.setAttr("title", this.groupMode === "category" ? "按时间排序" : "按分类排序");
-          this.renderList(contentEl);
-        });
+      // 刷新按钮
+      const refreshBtn = filterBar.createEl("button", {
+        cls: "bws-btn-refresh bws-btn-refresh--inline",
+        attr: { "aria-label": "刷新文章", title: "刷新文章" },
+      });
+      refreshBtn.setText("↻");
+      if (this.isRefreshing) {
+        refreshBtn.addClass("bws-spin");
+        refreshBtn.disabled = true;
       }
+      refreshBtn.addEventListener("click", () => {
+        if (this.isRefreshing || !this.onRefresh) return;
+        this.isRefreshing = true;
+        refreshBtn.disabled = true;
+        refreshBtn.addClass("bws-spin");
+        this.onRefresh();
+      });
+
+      // ── 分组切换：分类 / 时间（平级双入口，永久可见，记忆选择） ──
+      const groupBar = bodyEl.createDiv({ cls: "bws-group-tabs" });
+      const catTab = groupBar.createEl("button", {
+        cls: `bws-group-tab${this.groupMode === "category" ? " is-active" : ""}`,
+        text: "分类",
+        attr: { title: "按分类浏览" },
+      });
+      catTab.addEventListener("click", () => this.setGroupMode("category"));
+      // 精致竖条分隔符
+      groupBar.createSpan({ cls: "bws-group-sep", text: "|" });
+      const timeTab = groupBar.createEl("button", {
+        cls: `bws-group-tab${this.groupMode === "time" ? " is-active" : ""}`,
+        text: "时间线",
+        attr: { title: "按时间浏览" },
+      });
+      timeTab.addEventListener("click", () => this.setGroupMode("time"));
     }
 
     // ── 搜索框（带清除按钮） ──
     if (this.state !== "loading" || this.articles.length > 0) {
-      const searchWrap = contentEl.createDiv({ cls: "bws-search-wrap" });
+      const searchWrap = bodyEl.createDiv({ cls: "bws-search-wrap" });
 
       const searchInput = searchWrap.createEl("input", {
         type: "text", placeholder: "搜索文章…", cls: "bws-search",
@@ -228,7 +362,9 @@ export class SidebarView extends ItemView {
         searchInput.value = "";
         this.searchQuery = "";
         clearBtn.addClass("bws-hidden");
-        this.renderList(contentEl);
+        this.setSearchMeta("hidden");
+        this.searchFullText = false;
+        this.renderListRegion();
         searchInput.focus();
       });
 
@@ -236,91 +372,105 @@ export class SidebarView extends ItemView {
         this.searchQuery = (e.target as HTMLInputElement).value.toLowerCase();
         if (this.searchQuery) {
           clearBtn.removeClass("bws-hidden");
+          // 输入即时反馈：先显示「搜索中…」，节流后再出结果
+          this.setSearchMeta("searching");
         } else {
           clearBtn.addClass("bws-hidden");
+          this.setSearchMeta("hidden");
         }
         if (this.searchDebounce !== null) window.clearTimeout(this.searchDebounce);
         this.searchDebounce = window.setTimeout(() => {
-          this.renderList(contentEl);
           this.searchDebounce = null;
+          // 1) 只局部重建列表区（保留搜索框 DOM 与焦点），轻量字段即时出结果
+          this.searchFullText = false;
+          this.renderListRegion();
+          this.updateSearchMeta(false);
+          // 2) 再异步补扫正文全文，命中数变了才补充列表 + 更新计数
+          window.setTimeout(() => this.applyFullTextResults(), 0);
         }, 200);
       });
+
+      // 搜索结果计数条（仅有搜索词时显示）
+      bodyEl.createDiv({ cls: `bws-search-meta${this.searchQuery ? "" : " bws-hidden"}` });
+      if (this.searchQuery) {
+        const count = this.searchResultCount();
+        this.setSearchMeta(count > 0 ? `${count} 篇匹配` : "no-result");
+      }
     }
 
-    // ── 内容区 ──
+    // ── 内容区（独立容器，搜索时只重建这块，保留搜索框焦点） ──
+    bodyEl.createDiv({ cls: "bws-list-region" });
+    this.renderListRegion();
+  }
+
+  /** 只重建列表区（不动头部/搜索框），供搜索时局部刷新，避免焦点丢失 */
+  private renderListRegion(): void {
+    const region = this.contentEl.querySelector<HTMLElement>(".bws-list-region");
+    if (!region) return;
+    // 保留滚动位置：empty 前存下，renderList 内会用同名 .bws-list 恢复
+    const prevScroll = region.querySelector<HTMLElement>(".bws-list")?.scrollTop ?? 0;
+    region.empty();
     switch (this.state) {
-      case "loading":  this.renderLoading(contentEl); break;
-      case "error":    this.renderError(contentEl); break;
-      case "empty":    this.renderEmpty(contentEl); break;
-      case "loaded":   this.renderList(contentEl); break;
+      case "loading":  this.renderLoading(region); break;
+      case "error":    this.renderError(region); break;
+      case "empty":    this.renderEmpty(region); break;
+      case "loaded":   this.renderList(region, prevScroll); break;
     }
   }
 
   /* ═══════ 作者卡片（左上角博客式简介）═══════ */
 
-  private renderAuthorCard(header: HTMLElement): HTMLButtonElement {
+  private renderAuthorCard(header: HTMLElement): void {
     const card = header.createDiv({ cls: "bws-author-card" });
 
-    // 刷新按钮（卡片右上角）
-    const refreshBtn = card.createEl("button", {
-      cls: "bws-btn-refresh",
-      attr: { "aria-label": "刷新文章", title: "刷新文章" },
-    });
-    refreshBtn.setText("↻");
-    if (this.isRefreshing) {
-      refreshBtn.addClass("bws-spin");
-      refreshBtn.disabled = true;
-    }
+    // 顶部一行：头像 + 名字/副标（刷新按钮已移至下方功能区）
+    const top = card.createDiv({ cls: "bws-author-top" });
 
-    // 圆形头像
-    const avatar = card.createEl("img", {
+    // 用专属 wrapper 做圆形裁剪，避免被主题 img 样式覆盖（无需 !important）
+    const avatarWrap = top.createDiv({ cls: "bws-author-avatar-wrap" });
+    const avatar = avatarWrap.createEl("img", {
       cls: "bws-author-avatar",
       attr: { alt: PROFILE_NAME, loading: "lazy" },
     });
-    avatar.src = AVATAR_FALLBACK; // 先放占位，加载成功再替换
-    this.loadAvatar(avatar);
+    avatar.src = AVATAR_DATA_URI;
 
-    // 文字信息区
+    const idBox = top.createDiv({ cls: "bws-author-idbox" });
+    const nameRow = idBox.createDiv({ cls: "bws-author-name-row" });
+    nameRow.createEl("div", { cls: "bws-author-name", text: PROFILE_NAME });
+    const ghUrl = PROFILE_LINKS[0]?.url;
+    if (ghUrl) {
+      const gh = nameRow.createEl("a", {
+        href: ghUrl,
+        cls: "bws-author-gh",
+        attr: { target: "_blank", rel: "noopener noreferrer", "aria-label": "GitHub", title: "GitHub" },
+      });
+      const ghIco = gh.createSpan({ cls: "bw-brand-link-ico-wrap" });
+      ghIco.innerHTML = GITHUB_SVG;
+    }
+    const handle = PROFILE_LINKS[0]?.url.split("/").pop() ?? "";
+    idBox.createEl("div", { cls: "bws-author-handle", text: handle ? "@" + handle : "" });
+
+    // 文字信息区：简介
     const info = card.createDiv({ cls: "bws-author-info" });
-    info.createEl("div", { cls: "bws-author-name", text: PROFILE_NAME });
-
     info.createEl("div", { cls: "bws-author-bio", text: PROFILE_BIO });
 
-    if (PROFILE_LINKS.length > 0) {
-      const links = info.createDiv({ cls: "bws-author-links" });
-      for (const link of PROFILE_LINKS) {
-        links.createEl("a", {
-          text: link.label,
-          href: link.url,
-          cls: "bws-author-link",
-          attr: { target: "_blank", rel: "noopener noreferrer" },
-        });
-      }
-    }
-
-    return refreshBtn;
-  }
-
-  /** 读取插件目录下的 avatar.png，转 data URI 显示；失败保留 SVG 占位 */
-  private async loadAvatar(img: HTMLImageElement): Promise<void> {
-    try {
-      const adapter = this.app.vault.adapter as any;
-      const basePath: string = adapter.getBasePath?.() ?? "";
-      if (!basePath) return;
-      // 插件目录 = vault/.obsidian/plugins/<manifest.id>
-      const pluginRoot = `${basePath}/.obsidian/plugins/bamboo-walking`;
-      const avatarPath = `${pluginRoot}/${PROFILE_AVATAR}`;
-      const buf: ArrayBuffer | null = await adapter.readBinary(avatarPath);
-      if (!buf) return;
-      const bytes = new Uint8Array(buf);
-      let binary = "";
-      const chunk = 0x8000;
-      for (let i = 0; i < bytes.length; i += chunk) {
-        binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
-      }
-      img.src = "data:image/png;base64," + btoa(binary);
-    } catch {
-      /* 保留 SVG 占位 */
+    // 作者连接入口：关于 · 投稿（把读者沉淀到作者其他触点）
+    const linksRow = card.createDiv({ cls: "bws-author-links" });
+    const aboutLink = linksRow.createEl("button", {
+      cls: "bws-author-link",
+      text: "关于",
+      attr: { title: "关于作者与其他平台" },
+    });
+    aboutLink.addEventListener("click", () => new AboutModal(this.app).open());
+    if (CONTACT_EMAIL) {
+      linksRow.createSpan({ cls: "bws-author-link-sep", text: "·" });
+      const submitLink = linksRow.createEl("button", {
+        cls: "bws-author-link",
+        text: "投稿",
+        attr: { title: "投稿 / 联系作者" },
+      });
+      // 投稿也走同一弹层（内含投稿说明与邮箱）
+      submitLink.addEventListener("click", () => new AboutModal(this.app).open());
     }
   }
 
@@ -355,14 +505,14 @@ export class SidebarView extends ItemView {
     });
   }
 
-  private renderList(contentEl: HTMLElement): void {
+  private renderList(contentEl: HTMLElement, prevScroll?: number): void {
     const oldList = contentEl.querySelector(".bws-list");
-    const scrollTop = oldList?.scrollTop ?? 0;
+    const scrollTop = prevScroll ?? oldList?.scrollTop ?? 0;
     oldList?.remove();
 
     const listEl = contentEl.createDiv({ cls: "bws-list" });
 
-    if (this.groupMode === "time" && this.filter === "all") {
+    if (this.groupMode === "time") {
       this.renderTimeline(listEl);
       listEl.scrollTop = scrollTop;
       return;
@@ -412,21 +562,113 @@ export class SidebarView extends ItemView {
 
   /* ═══════ 时间线模式（内部排序用，无独立 tab） ═══════ */
 
-  private filteredArticles(): ArticleIndexEntry[] {
+  /** 过滤后的文章列表。
+   *  includeFullText=false（默认）：搜索时只按轻量字段即时匹配，保证击键流畅；
+   *  includeFullText=true：额外纳入正文全文命中，用于异步补充，避免输入时阻塞主线程。 */
+  private filteredArticles(includeFullText = this.searchFullText): ArticleIndexEntry[] {
     let pool = this.articles;
+    // 未读过滤（让时间线在「未读」tab 下同样生效）
+    if (this.filter === "unread" && this.isReadFn) {
+      pool = pool.filter((a) => !this.isReadFn!(a.slug));
+    }
     if (this.searchQuery) {
-      pool = pool.filter((a) =>
-        a.title.toLowerCase().includes(this.searchQuery) ||
-        a.summary.toLowerCase().includes(this.searchQuery) ||
-        a.category.toLowerCase().includes(this.searchQuery) ||
-        (a.tags ?? []).some((t) => t.toLowerCase().includes(this.searchQuery)) ||
-        (this.getContent?.(a.slug) ?? "").toLowerCase().includes(this.searchQuery),
-      );
+      const q = this.searchQuery;
+      pool = pool.filter((a) => {
+        if (this.matchLight(a)) return true;
+        if (!includeFullText) return false;
+        return this.cachedContent(a.slug).includes(q);
+      });
     }
     return pool;
   }
 
-  /** 时间线模式：按月份分组 */
+  /** 当前搜索词命中的文章数（受未读过滤影响，与列表实际展示一致） */
+  private searchResultCount(includeFullText = false): number {
+    if (!this.searchQuery) return this.articles.length;
+    let pool = this.articles;
+    if (this.filter === "unread" && this.isReadFn) {
+      pool = pool.filter((a) => !this.isReadFn!(a.slug));
+    }
+    const q = this.searchQuery;
+    return pool.filter((a) => {
+      if (this.matchLight(a)) return true;
+      if (!includeFullText) return false;
+      return this.cachedContent(a.slug).includes(q);
+    }).length;
+  }
+
+  /** 更新搜索计数条文案（不触碰列表 DOM），includeFullText 决定口径 */
+  private updateSearchMeta(includeFullText: boolean): void {
+    if (!this.searchQuery) { this.setSearchMeta("hidden"); return; }
+    const count = this.searchResultCount(includeFullText);
+    this.setSearchMeta(count > 0 ? `${count} 篇匹配` : "no-result");
+  }
+
+  /** 异步补扫正文全文：在输入节流之后于宏任务执行，不阻塞击键。
+   *  轻量字段结果已即时渲染；这里再纳入正文命中并局部刷新列表 + 更新计数（不动搜索框）。 */
+  private applyFullTextResults(): void {
+    if (!this.searchQuery || this.searchDebounce !== null) return;
+    const full = this.filteredArticles(true).length;
+    const light = this.filteredArticles(false).length;
+    if (full !== light) {
+      // 正文有额外命中：局部重建列表区（含全文），保留搜索框焦点
+      this.searchFullText = true;
+      this.renderListRegion();
+      this.searchFullText = false;
+    }
+    this.updateSearchMeta(true);
+  }
+
+  /** 更新搜索结果计数条文案与状态 */
+  private setSearchMeta(state: "searching" | "no-result" | "hidden" | string): void {
+    const el = this.containerEl.querySelector<HTMLElement>(".bws-search-meta");
+    if (!el) return;
+    if (state === "hidden") {
+      el.addClass("bws-hidden");
+      el.textContent = "";
+      return;
+    }
+    el.removeClass("bws-hidden");
+    if (state === "searching") {
+      el.textContent = "搜索中…";
+      el.setAttribute("data-state", "searching");
+    } else if (state === "no-result") {
+      el.textContent = "没有匹配的文章";
+      el.setAttribute("data-state", "empty");
+    } else {
+      el.textContent = state;
+      el.setAttribute("data-state", "ok");
+    }
+  }
+
+  /** 取某 slug 的正文（小写），带缓存，避免每次击键重复读取+转换 */
+  private cachedContent(slug: string): string {
+    let c = this.contentCache.get(slug);
+    if (c === undefined) {
+      c = (this.getContent?.(slug) ?? "").toLowerCase();
+      this.contentCache.set(slug, c);
+    }
+    return c;
+  }
+
+  /** 轻量字段匹配：标题/摘要/分类/标签（同步、即时，不碰正文） */
+  private matchLight(a: ArticleIndexEntry): boolean {
+    const q = this.searchQuery;
+    return (
+      a.title.toLowerCase().includes(q) ||
+      a.summary.toLowerCase().includes(q) ||
+      a.category.toLowerCase().includes(q) ||
+      (a.tags ?? []).some((t) => t.toLowerCase().includes(q))
+    );
+  }
+
+  /** 统一匹配（含正文全文）。render 用轻量即时匹配，全文命中异步补充 */
+  private matchArticle(a: ArticleIndexEntry): boolean {
+    if (this.matchLight(a)) return true;
+    return this.cachedContent(a.slug).includes(this.searchQuery);
+  }
+
+  /** 时间线模式：相对时间桶（本季 / 今年 / 更早）→ 月份 → 周 */
   private renderTimeline(listEl: HTMLElement): void {
     const pool = this.filteredArticles();
     if (pool.length === 0) {
@@ -439,34 +681,141 @@ export class SidebarView extends ItemView {
       return;
     }
 
-    const months = new Map<string, ArticleIndexEntry[]>();
-    for (const a of pool) {
-      const key = a.date.substring(0, 7);
-      if (!months.has(key)) months.set(key, []);
-      months.get(key)!.push(a);
-    }
+    const buckets = this.bucketByRelative(pool);
 
-    const ML: Record<string, string> = {
-      "01": "1月", "02": "2月", "03": "3月", "04": "4月",
-      "05": "5月", "06": "6月", "07": "7月", "08": "8月",
-      "09": "9月", "10": "10月", "11": "11月", "12": "12月",
-    };
-
-    const sorted = Array.from(months.entries())
-      .sort((a, b) => b[0].localeCompare(a[0]));
-
-    for (const [ym, articles] of sorted) {
-      const [year, mm] = ym.split("-");
-      const section = listEl.createDiv({ cls: "bws-timeline" });
-      section.createDiv({
-        cls: "bws-timeline-head",
-        text: `${year}年${ML[mm] ?? mm}`,
-        attr: { role: "button", tabindex: "0" },   // 与 bws-article 同属性，吃相同默认样式
+    for (const bkt of buckets) {
+      const bucketEl = listEl.createDiv({ cls: "bws-timeline-bucket" });
+      bucketEl.createDiv({
+        cls: "bws-timeline-bucket-head",
+        text: bkt.label,
+        attr: { role: "button", tabindex: "0" },
       });
-      for (const a of articles.sort((a, b) => b.date.localeCompare(a.date))) {
-        this.renderArticleItem(section, a);
+
+      const months = this.groupByMonth(bkt.articles);
+      for (const [ym, mArts] of months) {
+        const [year, mm] = ym.split("-");
+        const monthEl = bucketEl.createDiv({ cls: "bws-timeline-month" });
+        const mHead = monthEl.createDiv({
+          cls: "bws-timeline-head",
+          text: `${year}年${mm}月`,
+          attr: { role: "button", tabindex: "0" },
+        });
+
+        const weeks = this.groupByWeek(mArts);
+        for (const wk of weeks) {
+          const wkEl = monthEl.createDiv({ cls: "bws-timeline-week" });
+          const wHead = wkEl.createDiv({
+            cls: "bws-timeline-week-head",
+            attr: { role: "button", tabindex: "0" },
+          });
+          wHead.createSpan({ cls: "bws-arrow", text: "▾" });
+          wHead.createSpan({ cls: "bws-week-label", text: wk.label });
+          // 周子层默认展开，点击周头可折叠
+          wHead.addEventListener("click", () => wkEl.classList.toggle("bws-collapsed"));
+
+          const wkItems = wkEl.createDiv({ cls: "bws-timeline-week-items" });
+          for (const a of wk.articles.sort((a, b) => b.date.localeCompare(a.date))) {
+            this.renderArticleItem(wkItems, a);
+          }
+        }
       }
     }
+  }
+
+  /** 把文章按「本季 / 今年 / 更早」分到三个相对桶 */
+  private bucketByRelative(pool: ArticleIndexEntry[]): {
+    key: string; label: string; articles: ArticleIndexEntry[];
+  }[] {
+    const now = new Date();
+    const y = now.getFullYear();
+    const q = Math.floor(now.getMonth() / 3); // 0..3
+    const qStart = new Date(y, q * 3, 1);
+    const qEnd = new Date(y, q * 3 + 3, 0); // 季末当天
+
+    const buckets: Record<string, ArticleIndexEntry[]> = {
+      quarter: [], year: [], older: [],
+    };
+
+    for (const a of pool) {
+      const d = new Date(a.date);
+      if (isNaN(d.getTime())) { buckets.older.push(a); continue; }
+      if (d >= qStart && d <= qEnd) buckets.quarter.push(a);
+      else if (d.getFullYear() === y) buckets.year.push(a);
+      else buckets.older.push(a);
+    }
+
+    const labels: Record<string, string> = {
+      quarter: `本季 · ${y} Q${q + 1}`,
+      year: `今年 · ${y}`,
+      older: "更早",
+    };
+    return ["quarter", "year", "older"]
+      .filter((k) => buckets[k].length > 0)
+      .map((k) => ({
+        key: k,
+        label: labels[k],
+        articles: buckets[k].sort((a, b) => b.date.localeCompare(a.date)),
+      }));
+  }
+
+  /** 按 YYYY-MM 分组并倒序 */
+  private groupByMonth(articles: ArticleIndexEntry[]): [string, ArticleIndexEntry[]][] {
+    const m = new Map<string, ArticleIndexEntry[]>();
+    for (const a of articles) {
+      const key = a.date.substring(0, 7);
+      if (!m.has(key)) m.set(key, []);
+      m.get(key)!.push(a);
+    }
+    return Array.from(m.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+  }
+
+  /** 按自然周（周一为界）拆分，标题形如「第3周 · 7/7–7/11」 */
+  private groupByWeek(articles: ArticleIndexEntry[]): {
+    label: string; articles: ArticleIndexEntry[];
+  }[] {
+    const m = new Map<string, ArticleIndexEntry[]>();
+    const meta = new Map<string, { start: Date; end: Date }>();
+
+    for (const a of articles) {
+      const d = new Date(a.date);
+      if (isNaN(d.getTime())) continue;
+      // 以周一为周起点
+      const day = d.getDay(); // 0=周日
+      const diff = (day === 0 ? 6 : day - 1);
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - diff);
+      const key = monday.toISOString().slice(0, 10);
+      if (!m.has(key)) {
+        m.set(key, []);
+        const end = new Date(monday);
+        end.setDate(monday.getDate() + 6);
+        meta.set(key, { start: monday, end });
+      }
+      m.get(key)!.push(a);
+    }
+
+    return Array.from(m.entries())
+      .sort((a, b) => b[0].localeCompare(a[0])) // 周倒序
+      .map(([k, arts]) => {
+        const { start, end } = meta.get(k)!;
+        const fmt = (x: Date) => `${x.getMonth() + 1}/${x.getDate()}`;
+        const ordinal = this.weekOrdinal(start);
+        return {
+          label: `第${ordinal}周 · ${fmt(start)}–${fmt(end)}`,
+          articles: arts,
+        };
+      });
+  }
+
+  /** 计算某日期在其年份中的第几周（ISO 周数近似） */
+  private weekOrdinal(monday: Date): number {
+    const d = new Date(Date.UTC(monday.getFullYear(), monday.getMonth(), monday.getDate()));
+    const dayNum = (d.getUTCDay() + 6) % 7;
+    d.setUTCDate(d.getUTCDate() - dayNum + 3);
+    const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+    const firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
+    firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
+    return 1 + Math.round((d.getTime() - firstThursday.getTime()) / (7 * 24 * 3600 * 1000));
   }
 
   private renderCategory(parent: HTMLElement, group: CategoryGroup): void {
@@ -496,35 +845,45 @@ export class SidebarView extends ItemView {
 
   /* ═══════ 文章条目：三行布局（标题 / 日期 / 摘要） ═══════ */
   private renderArticleItem(parent: HTMLElement, article: ArticleIndexEntry): void {
-    const isRead = this.isReadFn ? this.isReadFn(article.slug) : false;
+    try {
+      const isRead = this.isReadFn ? this.isReadFn(article.slug) : false;
 
-    const item = parent.createDiv({
-      cls: `bws-article${isRead ? " is-read" : ""}`,
-      attr: { "data-slug": article.slug, tabindex: "0", role: "button" },
-    });
-
-    if (article.slug === this.selectedSlug) item.addClass("is-active");
-
-    // 第一行：标题
-    item.createDiv({ cls: "bws-art-title", text: article.title });
-
-    // 第二行：日期（中文短格式）
-    item.createDiv({ cls: "bws-art-date", text: this.formatDate(article.date) });
-
-    // 第三行：摘要（两行截断 + 悬浮提示）
-    if (article.summary) {
-      item.createDiv({
-        cls: "bws-art-summary",
-        text: article.summary,
-        attr: { title: article.summary },
+      const item = parent.createDiv({
+        cls: `bws-article${isRead ? " is-read" : ""}${this.newSlugs.has(article.slug) ? " bws-is-new" : ""}`,
+        attr: { "data-slug": article.slug, tabindex: "0", role: "button" },
       });
-    }
 
-    const handleSelect = () => { if (this.onSelect) this.onSelect(article); };
-    item.addEventListener("click", handleSelect);
-    item.addEventListener("keydown", (e: KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSelect(); }
-    });
+      if (article.slug === this.selectedSlug) item.addClass("is-active");
+
+      // 第一行：标题行（标题 + 「新」徽章，flex 同行）
+      const titleRow = item.createDiv({ cls: "bws-art-title-row" });
+      titleRow.createDiv({ cls: "bws-art-title", text: article.title });
+      if (this.newSlugs.has(article.slug)) {
+        titleRow.createSpan({ cls: "bws-new-badge", text: "新" });
+      }
+
+      // 第二行：日期（中文短格式）
+      item.createDiv({ cls: "bws-art-date", text: this.formatDate(article.date) });
+
+      // 第三行：摘要（两行截断 + 悬浮提示）
+      if (article.summary) {
+        item.createDiv({
+          cls: "bws-art-summary",
+          text: article.summary,
+          attr: { title: article.summary },
+        });
+      }
+
+      const handleSelect = () => { if (this.onSelect) this.onSelect(article); };
+      item.addEventListener("click", handleSelect);
+      item.addEventListener("keydown", (e: KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSelect(); }
+      });
+    } catch (err) {
+      const errEl = parent.createDiv({ cls: "bws-article bws-article-error" });
+      errEl.createDiv({ cls: "bws-art-title", text: `渲染错误: ${article.title}` });
+      errEl.createDiv({ cls: "bws-art-date", text: String(err) });
+    }
   }
 
   private groupByCategory(): CategoryGroup[] {
@@ -537,13 +896,7 @@ export class SidebarView extends ItemView {
 
     // 搜索过滤
     if (this.searchQuery) {
-      pool = pool.filter((a) =>
-        a.title.toLowerCase().includes(this.searchQuery) ||
-        a.summary.toLowerCase().includes(this.searchQuery) ||
-        a.category.toLowerCase().includes(this.searchQuery) ||
-        (a.tags ?? []).some((t) => t.toLowerCase().includes(this.searchQuery)) ||
-        (this.getContent?.(a.slug) ?? "").toLowerCase().includes(this.searchQuery),
-      );
+      pool = pool.filter((a) => this.matchArticle(a));
     }
 
     const map = new Map<string, ArticleIndexEntry[]>();

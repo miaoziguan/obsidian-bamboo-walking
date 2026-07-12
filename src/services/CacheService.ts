@@ -48,6 +48,11 @@ export class CacheService {
     return this.data.index;
   }
 
+  /** 最近一次成功拉取索引的时间戳（ms），0 表示从未成功拉取 */
+  getLastFetch(): number {
+    return this.data.lastFetch;
+  }
+
   async setIndex(entries: ArticleIndexEntry[]): Promise<string[]> {
     const oldSlugs = new Set(this.data.lastSeenSlugs);
     const newSlugs = entries.map((e) => e.slug);

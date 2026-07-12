@@ -30,6 +30,10 @@
   --bw-radius-md: 8px;
   --bw-radius-lg: 10px;
   --bw-radius-pill: 50%;
+
+  /* ── 动效曲线 ── */
+  --bw-ease: cubic-bezier(0.2, 0, 0, 1);
+  --bw-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ── 全局按钮重置（插件内，覆盖 Obsidian 主题） ── */
@@ -54,94 +58,276 @@
 }
 
 /* ── 顶部标题栏 / 作者卡片 ── */
+/* 品牌区顶部多留白、不贴边；下方稍收，形成上松下紧的呼吸感 */
 .bws-header {
-  padding: 10px 12px 6px;
+  padding: var(--bw-space-2xl) 12px var(--bw-space-xl);
   border-bottom: 1px solid var(--background-modifier-border);
+}
+
+/* 状态栏：紧随品牌区，上下留白与品牌区节奏对齐，整体更松弛 */
+.bws-status {
+  padding: 0 12px;
+  margin: var(--bw-space-lg) 0 var(--bw-space-lg);
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+/* 陈旧态（离线 / 刷新失败，显示缓存）：橙色警示 + 左侧竖条，明确区分 */
+.bws-status[data-state="stale"] {
+  color: var(--text-warning, #c98a2b);
+  padding-left: 16px;
+  border-left: 2px solid var(--text-warning, #c98a2b);
+  margin-left: 12px;
 }
 
 /* 作者卡片（博客式简介） */
 .bws-author-card {
-  position: relative;
   display: flex;
+  flex-direction: column;
   gap: var(--bw-space-md);
-  align-items: flex-start;
-  padding: var(--bw-space-xs) 0;
+  /* 入场淡入 */
+  animation: bws-card-in 0.4s var(--bw-ease, cubic-bezier(0.2, 0, 0, 1)) both;
 }
 
-.bws-author-avatar {
+@keyframes bws-card-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 顶部行：头像 + 身份 */
+.bws-author-top {
+  display: flex;
+  align-items: center;
+  gap: var(--bw-space-md);
+}
+
+/* 圆形玻璃容器：专属类名，主题不会覆盖，无需 !important */
+.bws-author-avatar-wrap {
+  position: relative;
   flex: 0 0 auto;
-  width: 48px;
-  height: 48px;
-  border-radius: var(--bw-radius-pill);
-  object-fit: cover;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
   background: var(--bw-bamboo-pale);
-  border: 2px solid var(--bw-white);
-  box-shadow: 0 1px 3px var(--bw-shadow);
+  /* 玻璃壁厚度：上亮下暗 + 侧壁微光，严格关于圆心对称 */
+  border: 2px solid color-mix(in srgb, var(--bw-white) 82%, transparent);
+  box-shadow:
+    /* 玻璃壁内侧厚度感 */
+    inset 0 3px 5px color-mix(in srgb, var(--bw-white) 65%, transparent),
+    inset 0 -5px 9px color-mix(in srgb, var(--bw-bamboo-deep) 40%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--bw-bamboo-light) 35%, transparent),
+    /* 落地投影 + 外环境光晕 */
+    0 0 0 1px color-mix(in srgb, var(--bw-bamboo-pale) 45%, transparent),
+    0 4px 9px color-mix(in srgb, var(--bw-bamboo) 26%, transparent),
+    0 1px 2px color-mix(in srgb, var(--bw-ink) 16%, transparent);
+  transition: transform 0.3s var(--bw-ease-spring),
+              box-shadow 0.3s ease;
 }
 
-.bws-author-info {
+/* 顶部弧面月牙高光：窄、贴边、有弧度，边缘羽化 */
+.bws-author-avatar-wrap::before {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 5%;
+  height: 36%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--bw-white) 70%, transparent) 0%,
+    color-mix(in srgb, var(--bw-white) 16%, transparent) 60%,
+    transparent 100%);
+  /* 羽化高光边缘，去掉硬边界 */
+  filter: blur(2px);
+  z-index: 2;
+}
+
+/* 底部折射暗面 + 对角柔和反射亮斑 */
+.bws-author-avatar-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  /* 底部内阴影做出玻璃厚度暗面 */
+  box-shadow: inset 0 -10px 14px color-mix(in srgb, var(--bw-bamboo-deep) 32%, transparent);
+  /* 左下方一个柔和反射亮斑 */
+  background:
+    radial-gradient(circle at 30% 78%,
+      color-mix(in srgb, var(--bw-white) 28%, transparent) 0%,
+      transparent 26%);
+  z-index: 2;
+}
+
+.bws-author-avatar-wrap:hover {
+  transform: scale(1.06) translateY(-1px);
+  box-shadow:
+    inset 0 2px 4px color-mix(in srgb, var(--bw-white) 70%, transparent),
+    inset 0 -4px 6px color-mix(in srgb, var(--bw-bamboo-deep) 44%, transparent),
+    inset 2px 0 3px color-mix(in srgb, var(--bw-white) 28%, transparent),
+    inset -2px 0 3px color-mix(in srgb, var(--bw-bamboo-deep) 26%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--bw-bamboo-light) 48%, transparent),
+    0 7px 14px color-mix(in srgb, var(--bw-bamboo) 34%, transparent),
+    0 2px 4px color-mix(in srgb, var(--bw-ink) 20%, transparent);
+}
+
+/* 图片只负责填满容器，不依赖主题的圆角 */
+.bws-author-avatar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bws-author-idbox {
   flex: 1 1 auto;
   min-width: 0;
+  line-height: 1.2;
 }
 
 .bws-author-name {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--bw-bamboo-deep);
-  letter-spacing: 0.5px;
-  margin-bottom: 2px;
+  letter-spacing: 0.3px;
+}
+
+.bws-author-handle {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.bws-author-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bw-space-sm);
 }
 
 .bws-author-bio {
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.6;
   color: var(--text-muted);
-  margin-bottom: var(--bw-space-xs);
-  /* 多行截断 */
+  /* 放宽到 4 行截断，保留核心意境 */
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
+/* ── 作者连接入口：关于 · 投稿 ── */
 .bws-author-links {
   display: flex;
-  gap: var(--bw-space-sm);
+  align-items: center;
+  gap: var(--bw-space-xs);
+  margin-top: 2px;
 }
 
-.bws-author-link {
+button.bws-author-link {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
   font-size: 11px;
   color: var(--bw-bamboo);
-  text-decoration: none;
-  padding: 1px 8px;
-  border: 1px solid var(--bw-bamboo-pale);
-  border-radius: var(--bw-radius-pill);
-  transition: background 0.2s, color 0.2s;
+  opacity: 0.85;
+  transition: opacity 0.15s, color 0.15s;
 }
 
-.bws-author-link:hover {
-  background: var(--bw-bamboo);
-  color: var(--bw-white);
-  text-decoration: none;
+button.bws-author-link:hover {
+  opacity: 1;
+  color: var(--bw-bamboo-deep);
+  text-decoration: underline;
 }
 
-/* 刷新按钮（作者卡片右上角） */
+.bws-author-link-sep {
+  color: var(--text-faint);
+  font-size: 10px;
+  user-select: none;
+}
+
+/* ── 行内 GitHub 小图标（名字/作者后）── */
+.bws-author-name-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.bws-author-gh,
+.bw-about-author-gh {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  text-decoration: none;
+  opacity: 0.75;
+  transition: color 0.2s var(--bw-ease), opacity 0.2s var(--bw-ease),
+              transform 0.2s var(--bw-ease-spring);
+}
+
+.bws-author-gh:hover,
+.bw-about-author-gh:hover {
+  color: var(--bw-bamboo);
+  opacity: 1;
+  text-decoration: none;
+  transform: scale(1.12);
+}
+
+/* 图标容器（行内） */
+.bw-brand-link-ico-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.bw-brand-link-ico-wrap svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  fill: currentColor;
+}
+
+/* 设置页作者行 */
+.bw-about-author-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 刷新按钮：仅图标，无底框 */
 button.bws-btn-refresh {
-  position: absolute;
-  top: 2px;
-  right: 0;
+  flex: 0 0 auto;
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-faint);
-  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
+  padding: 2px;
+  border-radius: var(--bw-radius);
+  transition: color 0.2s ease, transform 0.12s ease;
 }
 
-button.bws-btn-refresh:hover { color: var(--bw-bamboo); }
+button.bws-btn-refresh:hover {
+  color: var(--bw-bamboo);
+}
+
+button.bws-btn-refresh:active { transform: scale(0.92); }
 
 button.bws-btn-refresh:disabled { cursor: not-allowed; opacity: 0.5; }
+
+/* 行内刷新按钮：位于功能区最右端，与筛选/排序成组 */
+button.bws-btn-refresh--inline {
+  margin-left: auto;
+  font-size: 15px;
+  padding: 2px 4px;
+}
 
 /* ── 搜索框 + 清除按钮 ── */
 .bws-search-wrap {
@@ -188,8 +374,16 @@ button.bws-btn-refresh:disabled { cursor: not-allowed; opacity: 0.5; }
 /* ── 未读 / 全部 切换 ── */
 .bws-filter-tabs {
   display: flex;
+  align-items: center;
   gap: var(--bw-space-xs);
   padding: 8px 12px 4px;
+  /* 与上方品牌区/状态栏之间留出明显呼吸空间 */
+  margin-top: var(--bw-space-lg);
+}
+
+/* 品牌区（无状态栏时）直接紧跟功能区：与品牌区下留白保持一致的呼吸节奏 */
+.bws-header + .bws-filter-tabs {
+  margin-top: var(--bw-space-lg);
 }
 
 .bws-filter-tab {
@@ -213,6 +407,70 @@ button.bws-btn-refresh:disabled { cursor: not-allowed; opacity: 0.5; }
   background: var(--bw-bamboo);
   color: var(--bw-white);
   border-color: var(--bw-bamboo);
+}
+
+/* ── 分组切换：分类 | 时间线（精致小字 + 竖条分隔，弱层级） ── */
+.bws-group-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--bw-space-xs);
+  padding: 2px 12px 0;
+  margin-top: 2px;
+}
+
+.bws-group-tab {
+  flex: 0 0 auto;
+  padding: 1px 2px 3px;
+  border: none;
+  border-bottom: 1.5px solid transparent;
+  background: none;
+  cursor: pointer;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  color: var(--text-faint);
+  transition: color 0.15s, border-color 0.15s;
+  box-shadow: none;
+}
+
+.bws-group-tab:hover {
+  color: var(--text-muted);
+}
+
+.bws-group-tab.is-active {
+  color: var(--bw-bamboo);
+  border-bottom-color: var(--bw-bamboo-light);
+  font-weight: 500;
+}
+
+/* 竖条分隔符：低对比、精致 */
+.bws-group-sep {
+  flex: 0 0 auto;
+  color: var(--background-modifier-border);
+  font-size: 10px;
+  line-height: 1;
+  user-select: none;
+  transform: translateY(-0.5px);
+}
+
+/* ── 搜索结果计数条 ── */
+.bws-search-meta {
+  padding: 0 14px 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.bws-search-meta[data-state="searching"] {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.bws-search-meta[data-state="empty"] {
+  color: var(--text-faint);
+}
+
+.bws-search-meta[data-state="ok"] {
+  color: var(--bw-bamboo);
 }
 
 /* ── 文章列表 ── */
@@ -292,26 +550,54 @@ button.bws-btn-refresh:disabled { cursor: not-allowed; opacity: 0.5; }
 
 .bws-article:hover { background: var(--background-modifier-hover); }
 
-/* 排序切换按钮 */
-button.bws-sort-btn {
-  flex: 0 0 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  color: var(--text-faint);
-  border-radius: var(--bw-radius);
-  transition: all 0.15s;
-}
-
-button.bws-sort-btn:hover {
-  color: var(--bw-bamboo);
-  background: var(--background-modifier-hover);
-}
-
 /* #3: 未读文章左侧竹青竖条（用 inset box-shadow，不占布局、不影响对齐） */
 .bws-article:not(.is-read) {
   box-shadow: inset 3px 0 0 var(--bw-bamboo);
+}
+
+/* ── 「新」内容标记：竹青实心圆点 + 胶囊徽章 ── */
+.bws-article.bws-is-new {
+  box-shadow: inset 3px 0 0 var(--bw-bamboo-deep);
+}
+
+.bws-article.bws-is-new .bws-art-title {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.bws-new-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  height: 15px;
+  padding: 0 5px;
+  margin-left: 6px;
+  border-radius: var(--bw-radius-pill);
+  background: var(--bw-bamboo);
+  color: var(--bw-white);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.5px;
+  animation: bws-new-pop 0.3s var(--bw-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
+}
+
+@keyframes bws-new-pop {
+  from { transform: scale(0.4); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* 标题行：标题 + 「新」徽章 同行 flex */
+.bws-art-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.bws-art-title-row .bws-art-title {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* #4: 选中态竹青竖条 + 深色背景 */
@@ -439,6 +725,18 @@ button.bwr-btn-zoom {
 }
 
 button.bwr-btn-zoom:hover { color: var(--bw-bamboo); }
+
+/* 轻量分享按钮：引用 / 图片 */
+button.bwr-btn-share {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 0 6px;
+  transition: color 0.15s;
+}
+
+button.bwr-btn-share:hover { color: var(--bw-bamboo); }
+
+button.bwr-btn-share:disabled { cursor: default; opacity: 0.6; }
 
 /* 浮动跳转按钮 */
 .bwr-fab {
@@ -811,8 +1109,197 @@ button.bwr-code-copy:hover { color: var(--bw-bamboo); }
   margin: 4px 0;
 }
 
-.bw-about-card a {
+.bw-about-card a:not(.bw-about-author-gh) {
   color: var(--bw-bamboo);
+}
+
+/* ═══════════ 关于 / 投稿 弹层 ═══════════ */
+
+.bw-about-modal .bw-about-head {
+  display: flex;
+  align-items: center;
+  gap: var(--bw-space-md);
+  margin-bottom: var(--bw-space-lg);
+}
+
+.bw-about-avatar-wrap {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--bw-bamboo-pale);
+  box-shadow: 0 2px 8px var(--bw-shadow);
+}
+
+.bw-about-avatar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bw-about-namebox { line-height: 1.3; }
+
+.bw-about-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--bw-bamboo-deep);
+  letter-spacing: 0.3px;
+}
+
+.bw-about-sub {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.bw-about-intro p {
+  margin: 0 0 var(--bw-space-sm);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+.bw-about-section {
+  margin-top: var(--bw-space-lg);
+  padding-top: var(--bw-space-md);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.bw-about-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: var(--bw-space-sm);
+}
+
+.bw-about-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bw-space-sm);
+}
+
+.bw-about-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--bw-radius-lg);
+  background: color-mix(in srgb, var(--bw-bamboo-pale) 30%, transparent);
+  color: var(--bw-bamboo-deep);
+  font-size: 12px;
+  text-decoration: none;
+  transition: background 0.15s, transform 0.15s var(--bw-ease-spring);
+}
+
+.bw-about-link:hover {
+  background: color-mix(in srgb, var(--bw-bamboo-pale) 55%, transparent);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.bw-about-link-ico {
+  display: inline-flex;
+  line-height: 0;
+}
+
+.bw-about-link-ico svg {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+}
+
+.bw-about-submit-text {
+  margin: 0 0 var(--bw-space-sm);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* 联系方式：独立卡片，两列并排 */
+.bw-about-contact-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--bw-space-md);
+  margin-top: var(--bw-space-sm);
+}
+
+.bw-about-contact-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: var(--bw-space-sm) var(--bw-space-md);
+  border-radius: var(--bw-radius-lg);
+  background: color-mix(in srgb, var(--bw-bamboo-pale) 25%, transparent);
+  border: 1px solid var(--background-modifier-border);
+}
+
+.bw-about-contact-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+
+.bw-about-contact-row {
+  display: flex;
+  align-items: center;
+  gap: var(--bw-space-sm);
+  flex-wrap: wrap;
+  margin-top: 1px;
+}
+
+.bw-about-contact-value {
+  font-size: 13px;
+  color: var(--text-normal);
+  text-decoration: none;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.bw-about-contact-value:hover {
+  color: var(--bw-bamboo);
+  text-decoration: underline;
+}
+
+button.bw-about-copy-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  padding: 0;
+  border: none;
+  border-radius: var(--bw-radius);
+  background: none;
+  box-shadow: none;
+  color: var(--text-normal);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+button.bw-about-copy-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  stroke: currentColor;
+}
+
+button.bw-about-copy-btn:hover {
+  color: var(--bw-bamboo);
+  background: color-mix(in srgb, var(--bw-bamboo-pale) 45%, transparent);
+}
+
+button.bw-about-copy-btn:active {
+  transform: scale(0.92);
 }
 
 /* ═══════════ 暗色模式精调 ═══════════ */
@@ -933,18 +1420,107 @@ button.bws-btn-retry {
 
 button.bws-btn-retry:hover { opacity: 0.7; }
 
-/* 时间线月份分隔 */
-/* 时间线月份头 —— 完全照搬 bws-article 的盒模型 + 同属性 */
-.bws-timeline-head {
+/* ═══════ 时间线：相对桶 → 月 → 周 ═══════ */
+
+/* 相对时间桶：本季 / 今年 / 更早 —— 极简分隔，无边框无底色 */
+.bws-timeline-bucket {
+  margin: 0;
+  padding: 0;
+}
+
+/* 桶头：细字距小标，竹青色点 + 文字，留白区分层级 */
+.bws-timeline-bucket-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   box-sizing: border-box;
-  padding: 6px 12px 8px 12px;        /* 与 bws-article 完全一致 */
+  padding: 18px 14px 8px 14px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--text-faint);
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
+  color: var(--bw-bamboo);
+  text-transform: none;
+  user-select: none;
+}
+
+.bws-timeline-bucket-head::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--bw-bamboo);
+  opacity: 0.85;
+  flex: 0 0 auto;
+}
+
+.bws-timeline-bucket:first-child > .bws-timeline-bucket-head {
+  padding-top: 8px;
+}
+
+/* 月份容器 */
+.bws-timeline-month {
+  margin: 0;
+  padding: 0;
+}
+
+/* 月份头 —— 沿用文章盒模型，纯灰小标，弱化存在感 */
+.bws-timeline-head {
+  box-sizing: border-box;
+  padding: 10px 12px 5px 14px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  user-select: none;
 }
 
 .bws-timeline-head:first-child { padding-top: 4px; }
+
+/* 周容器 */
+.bws-timeline-week {
+  margin: 0;
+  padding: 0;
+}
+
+.bws-timeline-week-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  padding: 4px 12px 4px 26px;   /* 比月份头再缩进一层，形成视觉层级 */
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-faint);
+  letter-spacing: 0.3px;
+  cursor: default;
+  border-radius: 4px;
+  transition: background 120ms ease;
+  user-select: none;
+}
+
+.bws-timeline-week-head:hover { background: var(--background-modifier-hover); }
+
+.bws-timeline-week-head .bws-arrow {
+  font-size: 9px;
+  color: var(--text-faint);
+  transition: transform 150ms ease;
+  flex: 0 0 auto;
+}
+
+.bws-timeline-week.bws-collapsed .bws-arrow { transform: rotate(-90deg); }
+
+.bws-timeline-week-items { padding: 0; }
+
+.bws-timeline-week.bws-collapsed .bws-timeline-week-items { display: none; }
+
+/* 文章渲染错误兜底 */
+.bws-article-error {
+  background: color-mix(in srgb, var(--bw-bamboo) 8%, transparent);
+  border-left: 3px solid var(--bw-bamboo);
+  color: var(--text-normal);
+}
+.bws-article-error .bws-art-title { color: var(--bw-bamboo); font-weight: 600; }
+.bws-article-error .bws-art-date { color: var(--text-muted); font-size: 10px; }
 
 /* ═══════════ 刷新按钮旋转 ═══════════ */
 
@@ -1159,8 +1735,9 @@ button.bws-btn-retry:hover { opacity: 0.7; }
   color: var(--text-muted);
 }
 
-.theme-dark button.bws-sort-btn:hover {
-  background: var(--background-modifier-active-hover);
+.theme-dark .bws-group-tab.is-active {
+  color: var(--bw-bamboo-light);
+  border-bottom-color: var(--bw-bamboo-light);
 }
 
 .theme-dark button.bwr-fab-btn {

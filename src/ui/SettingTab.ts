@@ -1,6 +1,7 @@
 /* ────────────── 插件设置面板 ────────────── */
 import { App, PluginSettingTab, Setting } from "obsidian";
 import type BambooWalkingPlugin from "../main";
+import { GITHUB_SVG } from "../constants";
 
 export class BambooWalkingSettingTab extends PluginSettingTab {
   constructor(
@@ -50,14 +51,14 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
       text: "竹杖芒鞋轻胜马，谁怕？一蓑烟雨任平生。",
       cls: "bw-about-quote",
     });
-    about.createEl("p", {
-      text: "作者：羽鳞君",
-      cls: "bw-about-author",
-    });
-    const link = about.createEl("a", {
-      text: "竹林系列作品",
+    const authorRow = about.createDiv({ cls: "bw-about-author-row" });
+    authorRow.createSpan({ text: "作者：羽鳞君", cls: "bw-about-author" });
+    const gh = authorRow.createEl("a", {
       href: "https://github.com/miaoziguan",
+      cls: "bw-about-author-gh",
+      attr: { target: "_blank", rel: "noopener noreferrer", "aria-label": "GitHub", title: "GitHub" },
     });
-    link.setAttr("target", "_blank");
+    const ghIco = gh.createSpan({ cls: "bw-brand-link-ico-wrap" });
+    ghIco.innerHTML = GITHUB_SVG;
   }
 }
