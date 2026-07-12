@@ -58,9 +58,9 @@
 }
 
 /* ── 顶部标题栏 / 作者卡片 ── */
-/* 品牌区顶部多留白、不贴边；下方稍收，形成上松下紧的呼吸感 */
+/* 品牌区顶部留白，不贴边；下方稍收，形成上松下紧的呼吸感 */
 .bws-header {
-  padding: var(--bw-space-2xl) 12px var(--bw-space-xl);
+  padding: var(--bw-space-lg) 12px var(--bw-space-xl);
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
