@@ -861,6 +861,7 @@ export class SidebarView extends ItemView {
 
       // 封面缩略图（若有）
       if (article.cover) {
+        item.addClass("bws-has-cover");
         const coverEl = item.createDiv({ cls: "bws-art-cover" });
         coverEl.createEl("img", {
           cls: "bws-art-cover-img",
