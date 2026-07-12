@@ -113,13 +113,14 @@ export default class BambooWalkingPlugin extends Plugin {
     this.addRibbonIcon("book-open", "竹杖芒鞋", () => { void this.activateViews(); });
     this.addSettingTab(new BambooWalkingSettingTab(this.app, this, this.manifest.version));
 
-    // ── 首次启动：自动打开视图 ──
+    // ── 首次启动：自动打开视图并立即加载文章 ──
     const isFirstLaunch = !this.cacheService.getIndex().length;
     if (isFirstLaunch) {
       // 延迟 500ms 等 workspace 就绪
       this.firstLaunchTimer = window.setTimeout(() => {
         void this.activateViews();
-        new Notice("竹杖芒鞋：点击左侧栏图标开始阅读");
+        void this.refreshArticles(); // 首次启动立即加载文章，避免侧边栏卡在"正在检查更新…"
+        new Notice("竹杖芒鞋：正在加载文章…");
       }, 500);
     }
 
