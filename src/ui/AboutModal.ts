@@ -82,6 +82,7 @@ export class AboutModal extends Modal {
         cls: "bw-about-copy-btn",
         attr: { title: "复制邮箱地址", "aria-label": "复制邮箱地址" },
       });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setIcon 是 Obsidian 官方 API
       setIcon(copyMail, "copy");
       copyMail.addEventListener("click", () => {
         void navigator.clipboard.writeText(CONTACT_EMAIL).then(

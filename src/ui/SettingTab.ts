@@ -58,6 +58,7 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
       attr: { target: "_blank", rel: "noopener noreferrer", "aria-label": "GitHub", title: "GitHub" },
     });
     const ghIco = gh.createSpan({ cls: "bw-brand-link-ico-wrap" });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setIcon 是 Obsidian 官方 API
     setIcon(ghIco, "github");
   }
 }

@@ -181,9 +181,10 @@ export class SidebarView extends ItemView {
 
   async onOpen(): Promise<void> {
     // 恢复上次的分组偏好（分类 / 时间）
-    const saved = this.app.loadLocalStorage("bw-group-mode");
+    // loadLocalStorage 返回 unknown，显式收窄为 string | null 以消除 unsafe assignment
+    const saved = this.app.loadLocalStorage("bw-group-mode") as string | null;
     if (saved === "time" || saved === "category") {
-      this.groupMode = saved as "time" | "category";
+      this.groupMode = saved;
     }
     this.render();
     if (this.onReady) this.onReady();
@@ -446,6 +447,7 @@ export class SidebarView extends ItemView {
         attr: { target: "_blank", rel: "noopener noreferrer", "aria-label": "GitHub", title: "GitHub" },
       });
       const ghIco = gh.createSpan({ cls: "bw-brand-link-ico-wrap" });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setIcon 是 Obsidian 官方 API
       setIcon(ghIco, "github");
     }
     const handle = PROFILE_LINKS[0]?.url.split("/").pop() ?? "";
@@ -621,6 +623,7 @@ export class SidebarView extends ItemView {
   }
 
   /** 更新搜索结果计数条文案与状态 */
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents -- 需保留 string 以兼容动态文案调用
   private setSearchMeta(state: "searching" | "no-result" | "hidden" | string): void {
     const el = this.containerEl.querySelector<HTMLElement>(".bws-search-meta");
     if (!el) return;
