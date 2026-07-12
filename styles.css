@@ -544,12 +544,38 @@ button.bws-btn-refresh--inline {
 
 .bws-category.bws-collapsed .bws-cat-items { display: none; }
 
-/* ── 文章条目：三行布局 ── */
+/* ── 文章条目：左封面 + 右文字 ── */
 .bws-article {
   box-sizing: border-box;
-  padding: 6px 12px 8px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 12px;
   cursor: pointer;
   transition: all 0.12s;
+}
+
+/* 封面缩略图 */
+.bws-art-cover {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--bw-radius-sm);
+  overflow: hidden;
+  background: var(--background-modifier-border);
+}
+
+.bws-art-cover-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 右侧文字容器 */
+.bws-art-body {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .bws-article:hover { background: var(--background-modifier-hover); }

@@ -847,7 +847,7 @@ export class SidebarView extends ItemView {
     for (const article of group.articles) this.renderArticleItem(items, article);
   }
 
-  /* ═══════ 文章条目：三行布局（标题 / 日期 / 摘要） ═══════ */
+  /* ═══════ 文章条目：左侧封面缩略图 + 右侧三行文字 ═══════ */
   private renderArticleItem(parent: HTMLElement, article: ArticleIndexEntry): void {
     try {
       const isRead = this.isReadFn ? this.isReadFn(article.slug) : false;
@@ -859,19 +859,31 @@ export class SidebarView extends ItemView {
 
       if (article.slug === this.selectedSlug) item.addClass("is-active");
 
+      // 封面缩略图（若有）
+      if (article.cover) {
+        const coverEl = item.createDiv({ cls: "bws-art-cover" });
+        coverEl.createEl("img", {
+          cls: "bws-art-cover-img",
+          attr: { src: article.cover, alt: article.title, loading: "lazy" },
+        });
+        coverEl.addEventListener("error", () => coverEl.remove());
+      }
+
+      const bodyEl = item.createDiv({ cls: "bws-art-body" });
+
       // 第一行：标题行（标题 + 「新」徽章，flex 同行）
-      const titleRow = item.createDiv({ cls: "bws-art-title-row" });
+      const titleRow = bodyEl.createDiv({ cls: "bws-art-title-row" });
       titleRow.createDiv({ cls: "bws-art-title", text: article.title });
       if (this.newSlugs.has(article.slug)) {
         titleRow.createSpan({ cls: "bws-new-badge", text: "新" });
       }
 
       // 第二行：日期（中文短格式）
-      item.createDiv({ cls: "bws-art-date", text: this.formatDate(article.date) });
+      bodyEl.createDiv({ cls: "bws-art-date", text: this.formatDate(article.date) });
 
       // 第三行：摘要（两行截断 + 悬浮提示）
       if (article.summary) {
-        item.createDiv({
+        bodyEl.createDiv({
           cls: "bws-art-summary",
           text: article.summary,
           attr: { title: article.summary },
