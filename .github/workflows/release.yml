@@ -37,7 +37,7 @@ jobs:
 
       - name: Sync content
         env:
-          BAMBOO_COLUMN_ROOT: ${{ github.workspace }}/../bamboo-column
+          BAMBOO_COLUMN_ROOT: ${{ github.workspace }}/bamboo-column
         run: npm run sync:content
 
       - name: Build plugin
