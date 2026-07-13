@@ -112,7 +112,7 @@ export class ReaderView extends ItemView {
     this.headingElements = [];
     this.tocProgressBar = null;
     this.tocProgressPct = null;
-    if (this.scrollHandler) { this.scrollHandler = null; }
+    this.scrollHandler = null;
 
     if (!this.article) {
       this.renderEmpty();
