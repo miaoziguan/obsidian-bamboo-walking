@@ -9,7 +9,6 @@
 
 const fs = require("fs");
 const path = require("path");
-const { runGenerate } = require("../../bamboo-column/scripts/generate-index");
 
 const PLUGIN_ROOT = path.resolve(__dirname, "..");
 // CI 下通过 BAMBOO_COLUMN_ROOT 注入（checkout 到 workspace 内）；
@@ -17,6 +16,9 @@ const PLUGIN_ROOT = path.resolve(__dirname, "..");
 const SRC_ROOT = process.env.BAMBOO_COLUMN_ROOT
   ? path.resolve(process.env.BAMBOO_COLUMN_ROOT)
   : path.resolve(__dirname, "..", "..", "bamboo-column");
+
+// 动态加载内容源的 generate-index（路径随 SRC_ROOT 而定，兼容 CI 与本地）
+const { runGenerate } = require(path.join(SRC_ROOT, "scripts", "generate-index"));
 const DEST_ARTICLES = path.join(PLUGIN_ROOT, "content", "articles");
 
 function cpDir(src, dest) {
