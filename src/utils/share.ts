@@ -28,6 +28,9 @@ const W = 1080;
 const H = 1080;
 const PAD = 96;
 
+/** 分享卡片右下角水印（诗句落款） */
+const SHARE_WATERMARK = "一蓑烟雨任平生";
+
 /** 把长文本按最大宽度折行 */
 function wrapText(
   ctx: CanvasRenderingContext2D,
@@ -101,7 +104,7 @@ export async function renderShareCard(article: Article): Promise<Blob> {
   ctx.fillStyle = THEME.bamboo;
   ctx.font = "600 30px -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif";
   ctx.textBaseline = "alphabetic";
-  ctx.fillText("竹杖芒鞋 · 专栏", contentX, cardY + 128);
+  ctx.fillText(`${AUTHOR_NAME} · 专栏`, contentX, cardY + 128);
 
   // 分类
   if (article.category) {
@@ -156,7 +159,7 @@ export async function renderShareCard(article: Article): Promise<Blob> {
   ctx.textAlign = "right";
   ctx.fillStyle = THEME.bamboo;
   ctx.font = "italic 400 24px -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif";
-  ctx.fillText("一蓑烟雨任平生", contentR, footerY + 40);
+  ctx.fillText(SHARE_WATERMARK, contentR, footerY + 40);
   ctx.textAlign = "left";
 
   return await new Promise<Blob>((resolve, reject) => {
