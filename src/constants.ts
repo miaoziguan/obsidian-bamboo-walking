@@ -28,6 +28,9 @@ export const REFRESH_INTERVAL = 30 * 60 * 1000;
 /** 插件数据缓存键名 */
 export const CACHE_KEY = "bamboo-walking-cache";
 
+/** 缓存数据结构版本。升级 CacheData 字段时 +1，旧缓存读时自动重建 */
+export const CACHE_VERSION = 1;
+
 /** 作者显示名（用于文章头部署名） */
 export const AUTHOR_NAME = "竹杖芒鞋";
 

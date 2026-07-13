@@ -38,6 +38,7 @@ export interface BambooWalkingSettings {
 
 /** 缓存数据结构 */
 export interface CacheData {
+  version: number;        // 缓存 schema 版本
   index: ArticleIndexEntry[];
   articles: Record<string, CachedArticle>;
   lastFetch: number;

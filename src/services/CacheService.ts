@@ -1,6 +1,6 @@
 /* ────────────── 本地缓存服务 ────────────── */
 import type { Article, ArticleIndexEntry, CacheData } from "../types";
-import { CACHE_KEY } from "../constants";
+import { CACHE_KEY, CACHE_VERSION } from "../constants";
 
 export class CacheService {
   private data: CacheData;
@@ -11,6 +11,7 @@ export class CacheService {
     private saveData: (data: Record<string, unknown>) => Promise<void>,
   ) {
     this.data = {
+      version: CACHE_VERSION,
       index: [],
       articles: {},
       lastFetch: 0,
@@ -21,9 +22,21 @@ export class CacheService {
 
   async load(): Promise<void> {
     const saved = await this.loadData();
-    if (saved?.[CACHE_KEY]) {
-      const cached = saved[CACHE_KEY] as CacheData;
+    const cached = saved?.[CACHE_KEY] as CacheData | undefined;
+    if (cached && cached.version === CACHE_VERSION) {
+      // 版本匹配：正常加载
       this.data = { ...cached, readSlugs: cached.readSlugs ?? [] };
+    } else {
+      // 版本不匹配（旧缓存/无版本）：丢弃索引与文章，但保留旧缓存的已读记录
+      const keptRead = cached?.readSlugs ?? this.data.readSlugs;
+      this.data = {
+        version: CACHE_VERSION,
+        index: [],
+        articles: {},
+        lastFetch: 0,
+        lastSeenSlugs: [],
+        readSlugs: keptRead,
+      };
     }
   }
 
@@ -90,6 +103,7 @@ export class CacheService {
 
   async clear(): Promise<void> {
     this.data = {
+      version: CACHE_VERSION,
       index: [],
       articles: {},
       lastFetch: 0,
