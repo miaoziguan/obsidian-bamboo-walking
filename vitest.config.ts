@@ -6,7 +6,6 @@ export default defineConfig({
     include: [
       "src/**/*.test.ts",
       "scripts/**/*.test.ts",
-      "bamboo-column/scripts/**/*.test.ts",
     ],
     globals: false,
   },
