@@ -12,6 +12,7 @@
     "sync:dev": "bash sync.sh --dev",
     "sync:content": "node scripts/sync-content.js",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest"
   },
@@ -35,7 +36,10 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
     "esbuild": "^0.20.0",
+    "eslint": "^8.57.1",
     "obsidian": "^1.0.0",
     "typescript": "^5.0.0",
     "vitest": "^1.6.1"
