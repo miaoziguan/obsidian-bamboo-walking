@@ -8,13 +8,9 @@
     "allowJs": true,
     "strict": true,
     "moduleResolution": "node",
-    "importHelpers": true,
     "isolatedModules": true,
     "skipLibCheck": true,
-    "lib": ["DOM", "ES2020"],
-    "paths": {
-      "@/*": ["src/*"]
-    }
+    "lib": ["DOM", "ES2020"]
   },
   "include": ["src/**/*.ts"]
 }

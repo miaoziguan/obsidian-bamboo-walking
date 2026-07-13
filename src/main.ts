@@ -10,6 +10,7 @@ import { SidebarView } from "./ui/SidebarView";
 import { ReaderView } from "./ui/ReaderView";
 import { BambooWalkingSettingTab } from "./ui/SettingTab";
 import { yamlEscape } from "./utils/yaml";
+import { safeFileName } from "./utils/share";
 
 // esbuild define 注入，开发构建=true，生产构建=false
 declare const DEV_MODE: boolean;
@@ -46,6 +47,7 @@ export default class BambooWalkingPlugin extends Plugin {
   private service!: ArticleService;
   private refreshTimer: number | null = null;
   private firstLaunchTimer: number | null = null;
+  private isFirstLaunch = false;
   private currentIndex: ArticleIndexEntry[] = [];
   /** 最近一次刷新发现的新 slug，供侧边栏延迟打开时补注「新」标记 */
   private lastNewSlugs: string[] = [];
@@ -114,12 +116,12 @@ export default class BambooWalkingPlugin extends Plugin {
     this.addSettingTab(new BambooWalkingSettingTab(this.app, this, this.manifest.version));
 
     // ── 首次启动：自动打开视图并立即加载文章 ──
-    const isFirstLaunch = !this.cacheService.getIndex().length;
-    if (isFirstLaunch) {
+    this.isFirstLaunch = !this.cacheService.getIndex().length;
+    if (this.isFirstLaunch) {
       // 延迟 500ms 等 workspace 就绪
       this.firstLaunchTimer = window.setTimeout(() => {
         void this.activateViews();
-        void this.refreshArticles(); // 首次启动立即加载文章，避免侧边栏卡在"正在检查更新…"
+        void this.refreshArticles(true); // 首次启动立即加载文章（静默，避免把全部文章误报为"新"）
         new Notice("竹杖芒鞋：正在加载文章…");
       }, 500);
     }
@@ -137,7 +139,7 @@ export default class BambooWalkingPlugin extends Plugin {
     if (REFRESH_INTERVAL > 0) {
       this.refreshTimer = window.setInterval(
         () => { void this.refreshArticles(true); },
-        REFRESH_INTERVAL * 60 * 1000,
+        REFRESH_INTERVAL,
       );
       if (this.refreshTimer !== null) {
         this.registerInterval(this.refreshTimer);
@@ -285,7 +287,8 @@ export default class BambooWalkingPlugin extends Plugin {
     }
 
     const { savePath } = this.settings;
-    const filePath = `${savePath}/${article.title}.md`;
+    const fileName = safeFileName(article.title);
+    const filePath = `${savePath}/${fileName}.md`;
 
     try {
       if (!(await this.app.vault.adapter.exists(savePath))) {

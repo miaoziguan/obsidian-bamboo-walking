@@ -396,7 +396,11 @@ export class SidebarView extends ItemView {
       bodyEl.createDiv({ cls: `bws-search-meta${this.searchQuery ? "" : " bws-hidden"}` });
       if (this.searchQuery) {
         const count = this.searchResultCount();
-        this.setSearchMeta(count > 0 ? `${count} 篇匹配` : "no-result");
+        if (count > 0) {
+          this.setSearchMeta("ok", `${count} 篇匹配`);
+        } else {
+          this.setSearchMeta("no-result");
+        }
       }
     }
 
@@ -518,6 +522,7 @@ export class SidebarView extends ItemView {
     if (this.groupMode === "time") {
       this.renderTimeline(listEl);
       listEl.scrollTop = scrollTop;
+      this.bindKeyboardNavigation(listEl);
       return;
     }
 
@@ -540,7 +545,12 @@ export class SidebarView extends ItemView {
     for (const group of groups) this.renderCategory(listEl, group);
     listEl.scrollTop = scrollTop;
 
-    // 键盘导航
+    // 键盘导航（分类与时间线两种模式都需要）
+    this.bindKeyboardNavigation(listEl);
+  }
+
+  /** 绑定列表键盘导航：↑/↓ 移动焦点，Enter 打开 */
+  private bindKeyboardNavigation(listEl: HTMLElement): void {
     listEl.addEventListener("keydown", (e: KeyboardEvent) => {
       const items = Array.from(listEl.querySelectorAll<HTMLElement>(".bws-article"));
       if (items.length === 0) return;
@@ -587,11 +597,11 @@ export class SidebarView extends ItemView {
 
   /** 当前搜索词命中的文章数（受未读过滤影响，与列表实际展示一致） */
   private searchResultCount(includeFullText = false): number {
-    if (!this.searchQuery) return this.articles.length;
     let pool = this.articles;
     if (this.filter === "unread" && this.isReadFn) {
       pool = pool.filter((a) => !this.isReadFn!(a.slug));
     }
+    if (!this.searchQuery) return pool.length;
     const q = this.searchQuery;
     return pool.filter((a) => {
       if (this.matchLight(a)) return true;
@@ -604,7 +614,11 @@ export class SidebarView extends ItemView {
   private updateSearchMeta(includeFullText: boolean): void {
     if (!this.searchQuery) { this.setSearchMeta("hidden"); return; }
     const count = this.searchResultCount(includeFullText);
-    this.setSearchMeta(count > 0 ? `${count} 篇匹配` : "no-result");
+    if (count > 0) {
+      this.setSearchMeta("ok", `${count} 篇匹配`);
+    } else {
+      this.setSearchMeta("no-result");
+    }
   }
 
   /** 异步补扫正文全文：在输入节流之后于宏任务执行，不阻塞击键。
@@ -622,14 +636,14 @@ export class SidebarView extends ItemView {
     this.updateSearchMeta(true);
   }
 
-  /** 更新搜索结果计数条文案与状态 */
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents -- 需保留 string 以兼容动态文案调用
-  private setSearchMeta(state: "searching" | "no-result" | "hidden" | string): void {
+  /** 搜索计数条状态：hidden=隐藏 / searching=搜索中 / ok=有结果 / no-result=无结果 */
+  private setSearchMeta(state: "hidden" | "searching" | "ok" | "no-result", text?: string): void {
     const el = this.containerEl.querySelector<HTMLElement>(".bws-search-meta");
     if (!el) return;
     if (state === "hidden") {
       el.addClass("bws-hidden");
       el.textContent = "";
+      el.removeAttribute("data-state");
       return;
     }
     el.removeClass("bws-hidden");
@@ -640,7 +654,7 @@ export class SidebarView extends ItemView {
       el.textContent = "没有匹配的文章";
       el.setAttribute("data-state", "empty");
     } else {
-      el.textContent = state;
+      el.textContent = text ?? "";
       el.setAttribute("data-state", "ok");
     }
   }

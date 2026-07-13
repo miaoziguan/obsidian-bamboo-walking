@@ -4,8 +4,7 @@ import { CACHE_KEY } from "../constants";
 
 export class CacheService {
   private data: CacheData;
-  private saving = false;
-  private pendingSave = false;
+  private saveQueue: Promise<void> = Promise.resolve();
 
   constructor(
     private loadData: () => Promise<Record<string, unknown> | null>,
@@ -28,20 +27,16 @@ export class CacheService {
     }
   }
 
+  /** 串行化所有写操作，避免并发 save 交错覆盖 */
   async save(): Promise<void> {
-    if (this.saving) { this.pendingSave = true; return; }
-    this.saving = true;
-    try {
+    const run = this.saveQueue.then(async () => {
       const all = ((await this.loadData()) ?? {}) as Record<string, CacheData>;
       all[CACHE_KEY] = this.data;
       await this.saveData(all);
-      if (this.pendingSave) {
-        this.pendingSave = false;
-        await this.save();
-      }
-    } finally {
-      this.saving = false;
-    }
+    });
+    // 让后续 save 排在同一链条之后；吞掉错误避免整条链断裂
+    this.saveQueue = run.catch(() => {});
+    return run;
   }
 
   getIndex(): ArticleIndexEntry[] {

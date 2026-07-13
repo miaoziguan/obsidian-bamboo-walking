@@ -27,6 +27,9 @@ export class LocalArticleService {
 
   async fetchArticle(entry: ArticleIndexEntry): Promise<Article> {
     const filePath = `${this.basePath}/${entry.slug}.md`;
+    if (!(await this.adapter.exists(filePath))) {
+      throw new Error(`文章文件缺失：${filePath}`);
+    }
     const raw = await this.adapter.read(filePath);
     const { frontmatter, body } = parseFrontmatter(raw);
     // index.json 优先，frontmatter 仅作后备

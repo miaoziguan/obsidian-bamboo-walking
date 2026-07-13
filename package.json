@@ -8,7 +8,8 @@
     "build": "node esbuild.config.mjs production",
     "build:dev": "node esbuild.config.mjs build-dev",
     "sync": "bash sync.sh",
-    "sync:dev": "bash sync.sh --dev"
+    "sync:dev": "bash sync.sh --dev",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": ["obsidian", "plugin", "writing", "column", "bamboo-walking", "竹杖芒鞋"],
   "author": "羽鳞君",

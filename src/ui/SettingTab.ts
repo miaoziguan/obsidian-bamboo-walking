@@ -1,5 +1,5 @@
 /* ────────────── 插件设置面板 ────────────── */
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, PluginSettingTab, Setting, setIcon } from "obsidian";
 import type BambooWalkingPlugin from "../main";
 
 export class BambooWalkingSettingTab extends PluginSettingTab {

@@ -1,5 +1,6 @@
 /* ────────────── 分享工具：生成分享图 ────────────── */
 import type { Article } from "../types";
+import { AUTHOR_NAME } from "../constants";
 
 /* ── 分享图：竹林风格卡片，Canvas 绘制导出 PNG ── */
 
