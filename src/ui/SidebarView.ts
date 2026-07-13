@@ -10,6 +10,7 @@ import {
   CONTACT_EMAIL,
 } from "../constants";
 import { AboutModal } from "./AboutModal";
+import { matchArticle } from "../utils/search";
 
 type SidebarState = "loading" | "loaded" | "error" | "empty";
 
@@ -586,11 +587,12 @@ export class SidebarView extends ItemView {
     }
     if (this.searchQuery) {
       const q = this.searchQuery;
-      pool = pool.filter((a) => {
-        if (this.matchLight(a)) return true;
-        if (!includeFullText) return false;
-        return this.cachedContent(a.slug).includes(q);
-      });
+      pool = pool.filter((a) =>
+        matchArticle(q, a, {
+          fullText: includeFullText,
+          getContent: (s) => this.cachedContent(s),
+        }),
+      );
     }
     return pool;
   }
@@ -603,11 +605,12 @@ export class SidebarView extends ItemView {
     }
     if (!this.searchQuery) return pool.length;
     const q = this.searchQuery;
-    return pool.filter((a) => {
-      if (this.matchLight(a)) return true;
-      if (!includeFullText) return false;
-      return this.cachedContent(a.slug).includes(q);
-    }).length;
+    return pool.filter((a) =>
+      matchArticle(q, a, {
+        fullText: includeFullText,
+        getContent: (s) => this.cachedContent(s),
+      }),
+    ).length;
   }
 
   /** 更新搜索计数条文案（不触碰列表 DOM），includeFullText 决定口径 */
@@ -667,23 +670,6 @@ export class SidebarView extends ItemView {
       this.contentCache.set(slug, c);
     }
     return c;
-  }
-
-  /** 轻量字段匹配：标题/摘要/分类/标签（同步、即时，不碰正文） */
-  private matchLight(a: ArticleIndexEntry): boolean {
-    const q = this.searchQuery;
-    return (
-      a.title.toLowerCase().includes(q) ||
-      a.summary.toLowerCase().includes(q) ||
-      a.category.toLowerCase().includes(q) ||
-      (a.tags ?? []).some((t) => t.toLowerCase().includes(q))
-    );
-  }
-
-  /** 统一匹配（含正文全文）。render 用轻量即时匹配，全文命中异步补充 */
-  private matchArticle(a: ArticleIndexEntry): boolean {
-    if (this.matchLight(a)) return true;
-    return this.cachedContent(a.slug).includes(this.searchQuery);
   }
 
   /** 时间线模式：相对时间桶（本季 / 今年 / 更早）→ 月份 → 周 */
@@ -925,9 +911,14 @@ export class SidebarView extends ItemView {
       pool = pool.filter((a) => !this.isReadFn!(a.slug));
     }
 
-    // 搜索过滤
+    // 搜索过滤（分类模式使用全文匹配，与统一语义一致）
     if (this.searchQuery) {
-      pool = pool.filter((a) => this.matchArticle(a));
+      pool = pool.filter((a) =>
+        matchArticle(this.searchQuery, a, {
+          fullText: true,
+          getContent: (s) => this.cachedContent(s),
+        }),
+      );
     }
 
     const map = new Map<string, ArticleIndexEntry[]>();
