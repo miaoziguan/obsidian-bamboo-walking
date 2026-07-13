@@ -9,6 +9,7 @@
     "build:dev": "node esbuild.config.mjs build-dev",
     "sync": "bash sync.sh",
     "sync:dev": "bash sync.sh --dev",
+    "sync:content": "node scripts/sync-content.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest"
