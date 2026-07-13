@@ -9,9 +9,18 @@
     "build:dev": "node esbuild.config.mjs build-dev",
     "sync": "bash sync.sh",
     "sync:dev": "bash sync.sh --dev",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest"
   },
-  "keywords": ["obsidian", "plugin", "writing", "column", "bamboo-walking", "竹杖芒鞋"],
+  "keywords": [
+    "obsidian",
+    "plugin",
+    "writing",
+    "column",
+    "bamboo-walking",
+    "竹杖芒鞋"
+  ],
   "author": "羽鳞君",
   "license": "MIT",
   "repository": {
@@ -26,6 +35,7 @@
     "@types/node": "^20.0.0",
     "esbuild": "^0.20.0",
     "obsidian": "^1.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^1.6.1"
   }
 }
