@@ -237,7 +237,7 @@ export default class BambooWalkingPlugin extends Plugin {
         new Notice(
           offline
             ? "竹杖芒鞋：当前离线，显示的是本地缓存"
-            : "竹杖芒鞋：刷新失败，点击刷新按钮重试",
+            : `竹杖芒鞋：刷新失败（${msg}），点击刷新按钮重试`,
         );
       }
     }
