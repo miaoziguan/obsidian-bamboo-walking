@@ -12,8 +12,11 @@ const path = require("path");
 const { runGenerate } = require("../../bamboo-column/scripts/generate-index");
 
 const PLUGIN_ROOT = path.resolve(__dirname, "..");
-// bamboo-column 与 obsidian-bamboo-walking 同级
-const SRC_ROOT = path.resolve(__dirname, "..", "..", "bamboo-column");
+// CI 下通过 BAMBOO_COLUMN_ROOT 注入（checkout 到 workspace 内）；
+// 本地开发与 GitHub 拉取通道下，bamboo-column 与 obsidian-bamboo-walking 同级。
+const SRC_ROOT = process.env.BAMBOO_COLUMN_ROOT
+  ? path.resolve(process.env.BAMBOO_COLUMN_ROOT)
+  : path.resolve(__dirname, "..", "..", "bamboo-column");
 const DEST_ARTICLES = path.join(PLUGIN_ROOT, "content", "articles");
 
 function cpDir(src, dest) {
