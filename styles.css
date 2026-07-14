@@ -64,12 +64,23 @@
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
-/* 状态栏：紧随品牌区，上下留白与品牌区节奏对齐，整体更松弛 */
+/* 品牌区 + 状态栏：吸顶固定背景（与侧边栏底色一致），让"不随列表滚动"的效果更明显 */
+.bws-header,
+.bws-status {
+  position: relative;
+  z-index: 2;
+  background-color: var(--background-secondary);
+}
+
+/* 状态栏下沿加一条分隔阴影，与下方滚动内容拉开层次 */
 .bws-status {
   padding: 0 12px;
   margin: var(--bw-space-lg) 0 var(--bw-space-lg);
   font-size: 11px;
   color: var(--text-faint);
+  padding-bottom: var(--bw-space-lg);
+  box-shadow: 0 6px 10px -8px var(--background-modifier-box-shadow, rgba(0,0,0,0.25));
+  border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .bws-status.bws-hidden {
@@ -374,6 +385,25 @@ button.bws-btn-refresh--inline {
 }
 
 .bws-search-clear:hover { color: var(--text-normal); }
+
+/* ── 内容区容器：吃掉品牌区/状态栏之外的剩余高度，并把滚动锁在内部列表 ── */
+/* 关键：min-height:0 允许在 flex 列里收缩，否则会被内容撑破 .bws-sidebar 的高度约束，
+   导致整页（含品牌区）一起滚动；overflow:hidden 让滚动只发生在 .bws-list 内部 */
+.bws-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 列表包裹层：接通高度链，让内部 .bws-list 的 flex:1 + overflow 生效 */
+.bws-list-region {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 
 /* ── 未读 / 全部 切换 ── */
 .bws-filter-tabs {
