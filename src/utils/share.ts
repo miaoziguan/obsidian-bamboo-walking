@@ -148,7 +148,7 @@ export async function renderShareCard(article: Article): Promise<Blob> {
   ctx.fillStyle = THEME.bambooDeep;
   ctx.font = "600 32px -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif";
   // 显式收敛为 string，消除 unsafe assignment 警告
-  const author = (article.author ?? AUTHOR_NAME) as string;
+  const author = article.author ?? AUTHOR_NAME;
   ctx.fillText(author, contentX, footerY);
 
   ctx.fillStyle = THEME.inkLight;
