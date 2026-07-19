@@ -260,7 +260,7 @@ export class ReaderView extends ItemView {
     this.renderRelated(contentCol);
 
     // 知识回流：本文在你本地知识库（竹叶飞刃）里的相关原子笔记
-    this.renderRelatedNotes(contentCol);
+    void this.renderRelatedNotes(contentCol);
 
     // 浮动跳转按钮
     const fab = contentCol.createDiv({ cls: "bwr-fab" });
@@ -410,12 +410,14 @@ export class ReaderView extends ItemView {
     // 提炼原子笔记：联动「竹叶飞刃」，把本文一键沉淀为可检索的知识节点
     const extractBtn = actions.createEl("button", {
       cls: "bwr-btn bwr-btn-extract",
-      text: "⚛ 提炼笔记",
       attr: {
         title: "用竹叶飞刃把本文提炼为原子笔记",
         "aria-label": "提炼为原子笔记",
       },
     });
+    // 线性漏斗图标：表达「提炼 / 蒸馏」语义
+    this.appendIcon(extractBtn, "M2.5 3h11l-4 5.6V13l-3-1.4V8.6L2.5 3z");
+    extractBtn.createSpan({ text: "提炼笔记" });
     extractBtn.addEventListener("click", () => this.extractToAtomicNotes());
 
     const saveBtn = actions.createEl("button", {
@@ -846,11 +848,11 @@ export class ReaderView extends ItemView {
     if (!this.article || this.article.slug !== anchorSlug) return;
 
     const section = container.createDiv({ cls: "bwr-atomic-related" });
-    section.createDiv({
-      cls: "bwr-related-title",
-      text: "📚 你记过的相关笔记",
-    });
-    const list = section.createEl("div", { cls: "bwr-atomic-related-list" });
+    const titleEl = section.createDiv({ cls: "bwr-related-title" });
+    // 线性叠书图标：呼应原 📚 表情，表达"你记过的知识库"
+    this.appendIcon(titleEl, "M3 3.2h9v3.2H3z M3 7.2h9v3.2H3z M3 11.2h9v3.2H3z");
+    titleEl.createSpan({ text: "你记过的相关笔记" });
+    const list = section.createDiv({ cls: "bwr-atomic-related-list" });
     for (const n of notes) {
       const row = list.createEl("a", {
         cls: "bwr-atomic-related-item",
@@ -864,9 +866,31 @@ export class ReaderView extends ItemView {
       row.addEventListener("click", (e) => {
         e.preventDefault();
         // 跳转到本地原子笔记（竹叶飞刃的知识节点）
-        this.app.workspace.openLinkText(n.path, "", false);
+        void this.app.workspace.openLinkText(n.path, "", false);
       });
     }
+  }
+
+  /**
+   * 向指定父元素追加一个线性 SVG 图标（自有风格）：
+   * viewBox 16×16，stroke=currentColor，stroke-width=1.5，圆头连接。
+   * 颜色与尺寸由父元素上的 .bwr-icon / .bwr-related-title 控制。
+   * 用 createElementNS 创建 SVG 元素，避开 HTMLElement 命名空间与类型限制。
+   */
+  private appendIcon(parent: HTMLElement, pathD: string): void {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 16 16");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "1.5");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+    svg.setAttribute("aria-hidden", "true");
+    svg.classList.add("bwr-icon");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", pathD);
+    svg.appendChild(path);
+    parent.appendChild(svg);
   }
 
   private renderEmpty(): void {

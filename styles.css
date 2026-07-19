@@ -818,6 +818,20 @@ button.bwr-btn-extract {
 
 button.bwr-btn-extract:hover { color: var(--bw-bamboo); }
 
+/* 线性图标统一容器：内联 SVG，颜色继承 currentColor */
+.bwr-icon {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  display: inline-block;
+  vertical-align: -2px;
+  margin-right: 4px;
+  color: currentColor;
+}
+
+button.bwr-btn .bwr-icon { color: var(--text-muted); }
+button.bwr-btn:hover .bwr-icon { color: var(--bw-bamboo); }
+
 /* 浮动跳转按钮 */
 .bwr-fab {
   position: sticky;
@@ -1182,6 +1196,16 @@ button.bwr-fab-btn:hover {
   font-weight: 600;
   color: var(--text-muted);
   margin-bottom: var(--bw-space-sm);
+  display: inline-flex;
+  align-items: center;
+}
+
+.bwr-related-title .bwr-icon {
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
+  margin-right: 6px;
+  color: var(--bw-bamboo);
 }
 
 .bwr-related-link {
