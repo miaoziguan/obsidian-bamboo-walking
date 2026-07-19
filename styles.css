@@ -942,11 +942,12 @@ button.bwr-fab-btn:hover {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  /* 中文标点避头尾；中英间距已由预处理注入 \u2009 字面空格，故关闭 text-autospace 防双重间距 */
+  /* 中文标点避头尾：用 strict 强制 CJK 禁则，禁止标点出现在行首/行尾
+     （loose 会放开此限制，导致句号、逗号等出现在行首，故必须用 strict） */
   text-spacing-trim: trim-start;
   -webkit-text-spacing-trim: trim-start;
   text-autospace: none;
-  line-break: loose;
+  line-break: strict;
   word-break: auto-phrase;
   font-variant-east-asian: normal;
 }
