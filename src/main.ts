@@ -15,6 +15,30 @@ import { safeFileName } from "./utils/share";
 // esbuild define 注入，开发构建=true，生产构建=false
 declare const DEV_MODE: boolean;
 
+/**
+ * 防御性去重：按「分类 + 规范化标题」合并同一篇文章的重复索引条目
+ * （slug 嵌入日期/标题，更新文章时可能生成多条）。保留日期最新的一条。
+ * 与内容源 generate-index.js 的去重逻辑保持一致，作为列表层的最后防线。
+ */
+function dedupeArticles(entries: ArticleIndexEntry[]): ArticleIndexEntry[] {
+  const best = new Map<string, ArticleIndexEntry>();
+  const kept: ArticleIndexEntry[] = [];
+  for (const e of entries) {
+    const key = `${e.category}||${(e.title ?? "").trim()}`;
+    const prev = best.get(key);
+    if (prev === undefined || String(e.date) > String(prev.date)) {
+      if (prev !== undefined) {
+        const i = kept.indexOf(prev);
+        if (i >= 0) kept[i] = e;
+      } else {
+        kept.push(e);
+      }
+      best.set(key, e);
+    }
+  }
+  return kept;
+}
+
 /** 简单确认弹窗 */
 class ConfirmModal extends Modal {
   private onResult: (ok: boolean) => void;
@@ -202,7 +226,8 @@ export default class BambooWalkingPlugin extends Plugin {
     }
 
     try {
-      const entries = await this.service.fetchIndex();
+      const rawEntries = await this.service.fetchIndex();
+      const entries = dedupeArticles(rawEntries);
       const newSlugs = await this.cacheService.setIndex(entries);
       this.currentIndex = entries;
       this.lastNewSlugs = newSlugs;
