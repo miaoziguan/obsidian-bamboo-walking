@@ -868,7 +868,6 @@ button.bwr-fab-btn:hover {
   text-align: left;
   text-wrap: pretty;
   word-break: auto-phrase;
-  hanging-punctuation: first;
 }
 
 .bwr-title::after {
@@ -949,7 +948,6 @@ button.bwr-fab-btn:hover {
   text-autospace: none;
   line-break: loose;
   word-break: auto-phrase;
-  hanging-punctuation: first allow-end last;
   font-variant-east-asian: normal;
 }
 
