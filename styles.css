@@ -960,7 +960,7 @@ button.bwr-fab-btn:hover {
 /* 正文内的段落间距 */
 .bwr-body p {
   margin-bottom: 1.2em;
-  text-align: left;
+  text-align: justify;
   /* 长 URL / 英文词不撑破阅读列 */
   overflow-wrap: break-word;
 }
@@ -1038,6 +1038,7 @@ button.bwr-fab-btn:hover {
 .bwr-body li {
   margin-bottom: 0.4em;
   line-height: 1.75;
+  text-align: justify;
 }
 
 /* 任务列表 */
@@ -1095,6 +1096,7 @@ button.bwr-fab-btn:hover {
   margin: 1.2em 0;
   border-radius: 0 4px 4px 0;
   color: var(--text-muted);
+  text-align: justify;
 }
 
 /* 正文内的代码块 */
