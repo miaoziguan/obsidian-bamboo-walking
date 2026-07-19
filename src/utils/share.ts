@@ -154,6 +154,8 @@ export interface ShareOptions {
   form?: ShareForm;
   /** form='series' 时使用的文章列表（同专栏/系列） */
   series?: ArticleIndexEntry[];
+  /** 用户在阅读视图中选中的文字；提供时 quote 形态优先使用它（而非自动抽取金句） */
+  selectedText?: string;
 }
 
 /* ────────────── 文本工具 ────────────── */
@@ -382,7 +384,7 @@ function drawSummaryCard(meta: CardMeta, size: ShareSize): Promise<Blob> {
 
 /* ────────────── 形态二：金句卡（Pull Quote · 极简宣纸） ────────────── */
 
-function drawQuoteCard(article: Article, size: ShareSize): Promise<Blob> {
+function drawQuoteCard(article: Article, size: ShareSize, selectedText?: string): Promise<Blob> {
   const spec = SIZE_SPECS[size];
   const w = spec.w;
   const h = typeof spec.h === "number" ? spec.h : 1080;
@@ -401,8 +403,12 @@ function drawQuoteCard(article: Article, size: ShareSize): Promise<Blob> {
   ctx.font = serif(700, Math.round(w * 0.26));
   ctx.fillText("“", pad - Math.round(w * 0.01), Math.round(h * 0.3));
 
-  // 金句（墨黑衬线大字）
-  const quote = pickQuote(article.content) || article.summary || article.title;
+  // 金句（墨黑衬线大字）：优先用用户选中的文字，否则自动抽取 / 兜底
+  const quote =
+    (selectedText && selectedText.trim()) ||
+    pickQuote(article.content) ||
+    article.summary ||
+    article.title;
   const qSize = Math.round(w * 0.055);
   ctx.fillStyle = INK;
   ctx.font = serif(700, qSize);
@@ -544,7 +550,7 @@ export async function renderShareCards(
 
   switch (form) {
     case "quote":
-      return [await drawQuoteCard(article, size)];
+      return [await drawQuoteCard(article, size, opts.selectedText)];
     case "long":
       return [await drawLongCard(article, size)];
     case "series": {

@@ -35,6 +35,8 @@ export class ShareModal extends Modal {
   private article: Article;
   private allEntries: ArticleIndexEntry[];
   private series: ArticleIndexEntry[];
+  /** 用户在阅读视图中选中的文字；提供时默认走金句卡形态 */
+  private selectedText?: string;
 
   private size: ShareSize = "square";
   private form: ShareForm = "summary";
@@ -50,10 +52,11 @@ export class ShareModal extends Modal {
   private sizeChips = new Map<ShareSize, HTMLElement>();
   private formChips = new Map<ShareForm, HTMLElement>();
 
-  constructor(app: App, article: Article, allEntries: ArticleIndexEntry[]) {
+  constructor(app: App, article: Article, allEntries: ArticleIndexEntry[], selectedText?: string) {
     super(app);
     this.article = article;
     this.allEntries = allEntries;
+    this.selectedText = selectedText;
     const cat = article.category;
     this.series = allEntries
       .slice()
@@ -63,6 +66,10 @@ export class ShareModal extends Modal {
           (a.category === cat ? -1 : 0) - (b.category === cat ? -1 : 0),
       )
       .slice(0, 6);
+    // 有选中文字时默认金句卡形态，直接出用户选的那句
+    if (selectedText && selectedText.trim()) {
+      this.form = "quote";
+    }
   }
 
   onOpen(): void {
@@ -167,6 +174,7 @@ export class ShareModal extends Modal {
         size: this.size,
         form: this.form,
         series: this.series,
+        selectedText: this.selectedText,
       });
       this.blobs = blobs;
       if (this.previewUrl) {
@@ -185,7 +193,9 @@ export class ShareModal extends Modal {
       this.previewNote.setText(
         blobs.length > 1
           ? `共 ${blobs.length} 张卡片，将依次下载`
-          : `${SIZE_LABELS[this.size]} · ${FORM_LABELS[this.form]}`,
+          : this.selectedText && this.form === "quote"
+            ? `选中文字 · ${SIZE_LABELS[this.size]} · ${FORM_LABELS[this.form]}`
+            : `${SIZE_LABELS[this.size]} · ${FORM_LABELS[this.form]}`,
       );
     } catch (e) {
       const msg = e instanceof Error ? e.message : "未知错误";

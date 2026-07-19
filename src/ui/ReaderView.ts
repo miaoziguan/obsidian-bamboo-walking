@@ -1,5 +1,5 @@
 /* ────────────── 主区域：文章阅读视图 ────────────── */
-import { ItemView, WorkspaceLeaf, MarkdownRenderer, Component, Notice, setIcon } from "obsidian";
+import { ItemView, WorkspaceLeaf, MarkdownRenderer, Component, Notice, Menu, setIcon } from "obsidian";
 import type { Article, ArticleIndexEntry } from "../types";
 import { VIEW_TYPE_READER } from "../types";
 import { AUTHOR_NAME } from "../constants";
@@ -165,6 +165,8 @@ export class ReaderView extends ItemView {
     // ── 正文区域 ──
     const body = contentCol.createDiv({ cls: "bwr-body markdown-preview-view" });
     this.bodyEl = body;
+    // 右键正文选区 → 弹出自定义菜单（生成分享卡片 / 复制选中文字）
+    body.addEventListener("contextmenu", (e) => this.onBodyContextMenu(e));
     this.applyFontSize();
     await MarkdownRenderer.render(
       this.app,
@@ -681,11 +683,53 @@ export class ReaderView extends ItemView {
     new Notice("朗读偏机械？去系统装增强/神经中文语音可更自然。\n" + guide, 9000);
   }
 
-  /** 打开分享卡片浮层 */
-  private openShareModal(): void {
+  /** 打开分享卡片浮层。selected 为已确定的选中文字（右键菜单传入）；省略时自动读取正文选区 */
+  private openShareModal(selected?: string): void {
     if (!this.article) return;
     const all = this.getArticles ? this.getArticles() : [];
-    new ShareModal(this.app, this.article, all).open();
+    const selText = selected ?? this.getReaderSelection();
+    new ShareModal(this.app, this.article, all, selText).open();
+  }
+
+  /** 正文右键菜单：仅当存在文字选区时拦截，提供「生成分享卡片 / 复制选中文字」；否则放行系统菜单 */
+  private onBodyContextMenu(e: MouseEvent): void {
+    const sel = this.getReaderSelection();
+    if (!sel) return;
+    e.preventDefault();
+    const menu = new Menu();
+    menu.addItem((item) =>
+      item
+        .setTitle("生成分享卡片")
+        .setIcon("image")
+        .onClick(() => this.openShareModal(sel)),
+    );
+    menu.addItem((item) =>
+      item
+        .setTitle("复制选中文字")
+        .setIcon("copy")
+        .onClick(() => {
+          // 仅写入用户主动选中的文字，从不读取剪贴板
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- navigator.clipboard 是浏览器标准 API
+            void navigator.clipboard.writeText(sel).then(
+              () => new Notice("已复制选中文字"),
+              () => new Notice("复制失败"),
+            );
+          } catch {
+            new Notice("复制失败");
+          }
+        }),
+    );
+    menu.showAtMouseEvent(e);
+  }
+
+  /** 取阅读正文内的当前文字选区，归一化为单行空格；非正文选区或为空则返回 undefined */
+  private getReaderSelection(): string | undefined {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return undefined;
+    if (!sel.anchorNode || !this.contentEl.contains(sel.anchorNode)) return undefined;
+    const text = sel.toString().replace(/\s+/g, " ").trim();
+    return text.length > 0 ? text : undefined;
   }
 
   /** 联动竹叶飞刃：把当前文章提炼为原子笔记 */
@@ -875,21 +919,23 @@ export class ReaderView extends ItemView {
    * 向指定父元素追加一个线性 SVG 图标（自有风格）：
    * viewBox 16×16，stroke=currentColor，stroke-width=1.5，圆头连接。
    * 颜色与尺寸由父元素上的 .bwr-icon / .bwr-related-title 控制。
-   * 用 createElementNS 创建 SVG 元素，避开 HTMLElement 命名空间与类型限制。
+   * 用 Obsidian 自带的 createSvg（规则 prefer-create-el 推荐的 SVG 写法，
+   * 自动创建正确命名空间元素），不使用 document.createElementNS。
    */
   private appendIcon(parent: HTMLElement, pathD: string): void {
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("viewBox", "0 0 16 16");
-    svg.setAttribute("fill", "none");
-    svg.setAttribute("stroke", "currentColor");
-    svg.setAttribute("stroke-width", "1.5");
-    svg.setAttribute("stroke-linecap", "round");
-    svg.setAttribute("stroke-linejoin", "round");
-    svg.setAttribute("aria-hidden", "true");
-    svg.classList.add("bwr-icon");
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", pathD);
-    svg.appendChild(path);
+    const svg = createSvg("svg", {
+      cls: "bwr-icon",
+      attr: {
+        viewBox: "0 0 16 16",
+        fill: "none",
+        stroke: "currentColor",
+        "stroke-width": "1.5",
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round",
+        "aria-hidden": "true",
+      },
+    });
+    svg.createSvg("path", { attr: { d: pathD } });
     parent.appendChild(svg);
   }
 
