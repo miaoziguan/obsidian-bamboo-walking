@@ -78,3 +78,47 @@ describe("CacheService 版本兼容", () => {
     expect(disk.readSlugs).toContain("new");
   });
 });
+
+describe("CacheService 字数统计", () => {
+  it("setArticle 预计算 wordCount，getWordCount / getTotalWordCount 命中", async () => {
+    const svc = makeService(null);
+    await svc.load();
+    await svc.setArticle(
+      "技术随想/a",
+      { ...oldEntry, content: "这是一篇中文测试文章" } as any,
+      "h1",
+    );
+    expect(svc.getWordCount("技术随想/a")).toBe(10); // 这/是/一/篇/中/文/测/试/文/章
+    expect(svc.getTotalWordCount()).toBe(10);
+  });
+
+  it("旧缓存缺 wordCount 时 getWordCount 懒补算并回写内存", async () => {
+    const article = { ...oldEntry, content: "你好世界" } as any;
+    const old: any = {
+      [CACHE_KEY]: {
+        version: CACHE_VERSION,
+        index: [oldEntry],
+        articles: { "技术随想/a": { article, fetchedAt: 1, hash: "h" } },
+        lastFetch: 1,
+        lastSeenSlugs: ["技术随想/x"],
+        readSlugs: [],
+      },
+    };
+    const svc = makeService(old);
+    await svc.load();
+
+    // 懒补算前：getTotalWordCount 仅累加已知项，应为 0
+    expect(svc.getTotalWordCount()).toBe(0);
+    // 首次查询触发懒补算
+    expect(svc.getWordCount("技术随想/a")).toBe(4); // 你/好/世/界
+    // 补算结果回写内存，下次直接命中
+    expect((svc as any)["data"].articles["技术随想/a"].wordCount).toBe(4);
+    expect(svc.getTotalWordCount()).toBe(4);
+  });
+
+  it("未缓存文章 getWordCount 返回 undefined", async () => {
+    const svc = makeService(null);
+    await svc.load();
+    expect(svc.getWordCount("技术随想/不存在")).toBeUndefined();
+  });
+});

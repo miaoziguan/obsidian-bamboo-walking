@@ -1,5 +1,6 @@
 /* ────────────── 本地缓存服务 ────────────── */
 import type { Article, ArticleIndexEntry, CacheData } from "../types";
+import { countWords } from "../utils/text";
 import { CACHE_KEY, CACHE_VERSION } from "../constants";
 
 export class CacheService {
@@ -80,8 +81,35 @@ export class CacheService {
   }
 
   async setArticle(slug: string, article: Article, hash?: string): Promise<void> {
-    this.data.articles[slug] = { article, fetchedAt: Date.now(), hash };
+    this.data.articles[slug] = {
+      article,
+      fetchedAt: Date.now(),
+      hash,
+      wordCount: countWords(article.content),
+    };
     await this.save();
+  }
+
+  /** 取某篇文章的「字数」；缓存命中但缺字段（旧缓存）时懒补算并落盘，未缓存则返回 undefined */
+  getWordCount(slug: string): number | undefined {
+    const cached = this.data.articles[slug];
+    if (!cached) return undefined;
+    if (typeof cached.wordCount === "number") return cached.wordCount;
+    // 旧缓存缺字段：用正文现算并回写，下次直接命中
+    const wc = countWords(cached.article.content);
+    cached.wordCount = wc;
+    void this.save().catch(() => {}); // fire-and-forget 落盘
+    return wc;
+  }
+
+  /** 全站已统计字数之和（仅累加已知 wordCount 的文章） */
+  getTotalWordCount(): number {
+    let total = 0;
+    for (const slug of Object.keys(this.data.articles)) {
+      const wc = this.data.articles[slug].wordCount;
+      if (typeof wc === "number") total += wc;
+    }
+    return total;
   }
 
   /* ── 已读追踪 ── */

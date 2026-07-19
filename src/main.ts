@@ -83,6 +83,7 @@ export default class BambooWalkingPlugin extends Plugin {
       view.setOnRefresh(() => { void this.refreshArticles(); });
       view.setIsReadFn((slug) => this.cacheService.isRead(slug));
       view.setGetContentFn((slug) => this.cacheService.getCachedArticle(slug)?.content ?? null);
+      view.setGetWordCountFn((slug) => this.cacheService.getWordCount(slug));
       view.setOnReady(() => {
         const idx = this.currentIndex.length > 0
           ? this.currentIndex
@@ -275,6 +276,9 @@ export default class BambooWalkingPlugin extends Plugin {
     if (readerView) {
       await readerView.showArticle(article);
     }
+
+    // 打开文章后字数已写入缓存，重绘侧边栏以即时显示该篇字数 + 作者区汇总
+    if (sidebarView) sidebarView.updateArticles(this.currentIndex);
   }
 
   async saveCurrentAsNote(): Promise<void> {

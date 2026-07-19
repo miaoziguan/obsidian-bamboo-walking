@@ -11,6 +11,7 @@ import {
 } from "../constants";
 import { AboutModal } from "./AboutModal";
 import { matchArticle } from "../utils/search";
+import { formatWordCount } from "../utils/text";
 
 type SidebarState = "loading" | "loaded" | "error" | "empty";
 
@@ -41,6 +42,10 @@ export class SidebarView extends ItemView {
   private onRefresh: (() => void) | null = null;
   private isReadFn: ((slug: string) => boolean) | null = null;
   private onReady: (() => void) | null = null;
+  /** 字数查询回调（由 main 绑定到 CacheService.getWordCount），首屏未读缓存时为 null */
+  private getWordCountFn: ((slug: string) => number | undefined) | null = null;
+  /** 作者卡片下的全站字数汇总行（只创建一次，后续仅更新文本） */
+  private authorStatsEl: HTMLElement | null = null;
 
   getViewType(): string { return VIEW_TYPE_SIDEBAR; }
   getDisplayText(): string { return "竹杖芒鞋"; }
@@ -51,6 +56,7 @@ export class SidebarView extends ItemView {
   setIsReadFn(fn: (slug: string) => boolean): void { this.isReadFn = fn; }
   setGetContentFn(fn: (slug: string) => string | null): void { this.getContent = fn; }
   setOnReady(cb: () => void): void { this.onReady = cb; }
+  setGetWordCountFn(fn: (slug: string) => number | undefined): void { this.getWordCountFn = fn; }
 
   /** 持久状态栏：显示最近一次刷新结果。
    *  @param state 可选状态标记，用于 CSS 区分正常/陈旧（离线或刷新失败）配色 */
@@ -142,6 +148,24 @@ export class SidebarView extends ItemView {
   updateArticles(articles: ArticleIndexEntry[]): void {
     this.articles = articles; this.isRefreshing = false;
     this.state = articles.length > 0 ? "loaded" : "empty"; this.render();
+    this.refreshWordStats();
+  }
+
+  /** 刷新作者区全站字数汇总：累加已缓存文章的 wordCount，未统计时隐藏。 */
+  private refreshWordStats(): void {
+    if (!this.authorStatsEl || !this.getWordCountFn) return;
+    let total = 0;
+    let counted = 0;
+    for (const a of this.articles) {
+      const wc = this.getWordCountFn(a.slug);
+      if (typeof wc === "number") { total += wc; counted++; }
+    }
+    if (counted > 0) {
+      this.authorStatsEl.setText(`已撰写 ${formatWordCount(total)} · ${counted}/${this.articles.length} 篇`);
+      this.authorStatsEl.style.display = "";
+    } else {
+      this.authorStatsEl.style.display = "none";
+    }
   }
 
   refreshReadState(): void {
@@ -314,7 +338,7 @@ export class SidebarView extends ItemView {
         cls: "bws-btn-refresh bws-btn-refresh--inline",
         attr: { "aria-label": "刷新文章", title: "刷新文章" },
       });
-      refreshBtn.setText("↻");
+      setIcon(refreshBtn.createEl("span", { cls: "bws-btn-icon" }), "refresh-cw");
       if (this.isRefreshing) {
         refreshBtn.addClass("bws-spin");
         refreshBtn.disabled = true;
@@ -477,9 +501,13 @@ export class SidebarView extends ItemView {
         text: "投稿",
         attr: { title: "投稿 / 联系作者" },
       });
-      // 投稿也走同一弹层（内含投稿说明与邮箱）
-      submitLink.addEventListener("click", () => new AboutModal(this.app).open());
-    }
+    // 投稿也走同一弹层（内含投稿说明与邮箱）
+    submitLink.addEventListener("click", () => new AboutModal(this.app).open());
+
+    // 全站字数汇总（渐进补全，首屏无统计时隐藏）
+    this.authorStatsEl = card.createDiv({ cls: "bws-author-stats" });
+    this.authorStatsEl.style.display = "none";
+  }
   }
 
   private renderLoading(c: HTMLElement): void {
@@ -495,11 +523,13 @@ export class SidebarView extends ItemView {
   private renderError(c: HTMLElement): void {
     const wrap = c.createDiv({ cls: "bws-list" });
     const err = wrap.createDiv({ cls: "bws-error" });
-    err.createEl("span", { cls: "bws-error-icon", text: "⚠" });
+    setIcon(err.createEl("span", { cls: "bws-error-icon" }), "alert-triangle");
     err.createEl("div", { text: "加载失败", cls: "bws-error-title" });
     err.createEl("div", { text: this.errorMessage || "请检查网络后重试", cls: "bws-error-msg" });
-    err.createEl("button", { cls: "bws-btn-retry", text: "↻ 重试" })
-      .addEventListener("click", () => { if (this.onRefresh) this.onRefresh(); });
+    const retryBtn = err.createEl("button", { cls: "bws-btn-retry" });
+    setIcon(retryBtn.createEl("span", { cls: "bws-btn-icon" }), "rotate-cw");
+    retryBtn.createSpan({ text: "重试" });
+    retryBtn.addEventListener("click", () => { if (this.onRefresh) this.onRefresh(); });
   }
 
   private renderEmpty(c: HTMLElement): void {
@@ -881,6 +911,14 @@ export class SidebarView extends ItemView {
 
       // 第二行：日期（中文短格式）
       bodyEl.createDiv({ cls: "bws-art-date", text: this.formatDate(article.date) });
+
+      // 字数（打开文章后才有缓存，缺则省略，渐进补全）
+      if (this.getWordCountFn) {
+        const wc = this.getWordCountFn(article.slug);
+        if (typeof wc === "number") {
+          bodyEl.createDiv({ cls: "bws-art-words", text: formatWordCount(wc) });
+        }
+      }
 
       // 第三行：摘要（两行截断 + 悬浮提示）
       if (article.summary) {

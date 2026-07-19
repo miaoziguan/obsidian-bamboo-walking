@@ -1,9 +1,14 @@
 /* ────────────── 主区域：文章阅读视图 ────────────── */
-import { ItemView, WorkspaceLeaf, MarkdownRenderer, Component, Notice } from "obsidian";
+import { ItemView, WorkspaceLeaf, MarkdownRenderer, Component, Notice, setIcon } from "obsidian";
 import type { Article, ArticleIndexEntry } from "../types";
 import { VIEW_TYPE_READER } from "../types";
 import { AUTHOR_NAME } from "../constants";
-import { renderShareCard, safeFileName } from "../utils/share";
+import { countWords, formatWordCount, estimateReadingTime } from "../utils/text";
+import { ShareModal } from "./ShareModal";
+import { TtsService, type TtsSegment, type TtsState } from "../services/TtsService";
+
+/** 语速档位 */
+const TTS_RATES = [0.75, 1.0, 1.25, 1.5];
 
 interface TocEntry {
   level: number;
@@ -28,6 +33,18 @@ export class ReaderView extends ItemView {
   private bodyEl: HTMLElement | null = null;
   private layoutEl: HTMLElement | null = null;
   private fabEl: HTMLElement | null = null;
+  private focusMode = false; // 专注模式：隐藏侧栏/TOC，仅留正文
+  private focusExitHandler: ((e: KeyboardEvent) => void) | null = null;
+
+  // ── 朗读（TTS）状态 ──
+  private ttsService: TtsService | null = null;
+  private ttsActiveEl: HTMLElement | null = null; // 当前高亮的朗读段落
+  private ttsRate = 1.0; // 语速（记忆）
+  private ttsVoice: SpeechSynthesisVoice | null = null; // 选中语音（记忆）
+  private ttsPlayBtn: HTMLButtonElement | null = null;
+  private ttsStopBtn: HTMLButtonElement | null = null;
+  private ttsRateSel: HTMLSelectElement | null = null;
+  private ttsVoiceSel: HTMLSelectElement | null = null;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -78,13 +95,14 @@ export class ReaderView extends ItemView {
     contentEl.empty();
     contentEl.addClass("bwr-reader");
     const wrap = contentEl.createDiv({ cls: "bwr-error-state" });
-    wrap.createEl("span", { text: "⚠", cls: "bwr-error-icon" });
+    setIcon(wrap.createEl("span", { cls: "bwr-error-icon" }), "alert-triangle");
     wrap.createEl("p", { text: "加载失败", cls: "bwr-error-title" });
     wrap.createEl("p", { text: msg, cls: "bwr-error-msg" });
   }
 
   /** 展示文章 */
   async showArticle(article: Article): Promise<void> {
+    this.ttsStop();
     this.component.unload();
     this.component = new Component();
     this.component.load();
@@ -101,6 +119,7 @@ export class ReaderView extends ItemView {
   }
 
   async onClose(): Promise<void> {
+    this.ttsStop();
     this.component.unload();
   }
 
@@ -108,6 +127,11 @@ export class ReaderView extends ItemView {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("bwr-reader");
+    // 恢复专注模式（持久化）
+    if (this.loadLocalString("bw-focus-mode") === "1") {
+      this.focusMode = true;
+      contentEl.addClass("bwr-focus-mode");
+    }
     this.tocElements.clear();
     this.headingElements = [];
     this.tocProgressBar = null;
@@ -130,8 +154,11 @@ export class ReaderView extends ItemView {
     layout.style.setProperty("--bwr-topbar-h", `${topBar.offsetHeight}px`);
     const contentCol = layout.createDiv({ cls: "bwr-content" });
 
+    // ── Markdown 预处理（排版规范化）：统一中英间距、标点等 ──
+    const processedContent = this.preprocessMarkdown(this.article.content);
+
     // ── TOC 侧栏（始终占位，保持内容列宽度稳定） ──
-    const toc = this.extractToc(this.article.content);
+    const toc = this.extractToc(processedContent);
     this.renderToc(layout, toc);
 
     // ── 正文区域 ──
@@ -140,7 +167,7 @@ export class ReaderView extends ItemView {
     this.applyFontSize();
     await MarkdownRenderer.render(
       this.app,
-      this.article.content,
+      processedContent,
       body,
       "",
       this.component,
@@ -219,6 +246,9 @@ export class ReaderView extends ItemView {
       }
     });
 
+    // 链接行为定制：内部链接优先在插件内打开，外部链接新标签打开
+    this.interceptLinks(body);
+
     // 给标题加 id，收集用于 scroll spy
     body.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((el) => {
       const text = el.textContent?.trim() ?? "";
@@ -283,6 +313,43 @@ export class ReaderView extends ItemView {
     }
   }
 
+  /* ── Markdown 预处理：中英混排 + 排版规范化 ── */
+
+  /** 预处理 Markdown，使渲染结果排版更规范 */
+  private preprocessMarkdown(md: string): string {
+    // 步骤 1：保护代码块和内联代码，避免正则误伤
+    const codeBlocks: string[] = [];
+    const inlineCodes: string[] = [];
+
+    // 提取 ``` 围栏代码块，用占位符替换
+    let processed = md.replace(/```[\s\S]*?```/g, (match) => {
+      codeBlocks.push(match);
+      return `\x00CODEBLOCK${codeBlocks.length - 1}\x00`;
+    });
+
+    // 提取 `行内代码`（需注意已替换的占位符不被误匹配）
+    // eslint-disable-next-line no-control-regex -- \x00 为有意使用的占位符分隔符
+    processed = processed.replace(/(?<![\x00])(`[^`]*`)/g, (match) => {
+      inlineCodes.push(match);
+      return `\x00INLINECODE${inlineCodes.length - 1}\x00`;
+    });
+
+    // 步骤 2：中英/中数之间加细空格（\u2009 窄空格，视觉更精致）
+    processed = processed
+      // 中文后跟英文或数字：在中间插窄空格
+      .replace(/([\u4e00-\u9fff\u3400-\u4dbf\uff00-\uffef])([a-zA-Z0-9@&%$#])/g, "$1\u2009$2")
+      // 英文或数字后跟中文：在中间插窄空格
+      .replace(/([a-zA-Z0-9@&%$#])([\u4e00-\u9fff\u3400-\u4dbf\uff00-\uffef])/g, "$1\u2009$2");
+
+    // 步骤 3：还原被保护的内容
+    // eslint-disable-next-line no-control-regex -- \x00 为有意使用的占位符分隔符
+    processed = processed.replace(/\x00INLINECODE(\d+)\x00/g, (_, idx) => inlineCodes[parseInt(idx, 10)] ?? "``");
+    // eslint-disable-next-line no-control-regex -- \x00 为有意使用的占位符分隔符
+    processed = processed.replace(/\x00CODEBLOCK(\d+)\x00/g, (_, idx) => codeBlocks[parseInt(idx, 10)] ?? "```");
+
+    return processed;
+  }
+
   /** 持久化当前文章的滚动位置 */
   private saveProgress(scrollTop: number): void {
     if (!this.article) return;
@@ -305,26 +372,44 @@ export class ReaderView extends ItemView {
 
     // 字号缩放
     const zoom = bar.createDiv({ cls: "bwr-zoom" });
-    zoom.createEl("button", { cls: "bwr-btn bwr-btn-zoom", text: "A⁻" })
-      .addEventListener("click", () => this.zoomFont(-1));
-    zoom.createEl("button", { cls: "bwr-btn bwr-btn-zoom", text: "A" })
-      .addEventListener("click", () => this.zoomFont(0));
-    zoom.createEl("button", { cls: "bwr-btn bwr-btn-zoom", text: "A⁺" })
-      .addEventListener("click", () => this.zoomFont(1));
+    zoom.createEl("button", {
+      cls: "bwr-btn bwr-btn-zoom",
+      text: "A⁻",
+      attr: { "aria-label": "减小字号", title: "减小字号" },
+    }).addEventListener("click", () => this.zoomFont(-1));
+    zoom.createEl("button", {
+      cls: "bwr-btn bwr-btn-zoom",
+      text: "A",
+      attr: { "aria-label": "重置字号", title: "重置字号" },
+    }).addEventListener("click", () => this.zoomFont(0));
+    zoom.createEl("button", {
+      cls: "bwr-btn bwr-btn-zoom",
+      text: "A⁺",
+      attr: { "aria-label": "增大字号", title: "增大字号" },
+    }).addEventListener("click", () => this.zoomFont(1));
 
     const actions = bar.createDiv({ cls: "bwr-actions" });
 
-    // 轻量分享动作：分享为图片
+    // 专注模式：隐藏 TOC / 顶栏装饰，仅留正文
+    const focusBtn = actions.createEl("button", {
+      cls: "bwr-btn bwr-btn-focus",
+      text: "◎ 专注",
+      attr: { title: "专注阅读（隐藏侧栏，Esc 退出）" },
+    });
+    focusBtn.addEventListener("click", () => this.toggleFocusMode());
+
+    // 分享动作：弹出分享卡片浮层（多形态）
     const imgBtn = actions.createEl("button", {
       cls: "bwr-btn bwr-btn-share",
-      text: "◱ 图片",
-      attr: { title: "分享为图片卡片" },
+      text: "◱ 分享卡片",
+      attr: { title: "生成分享卡片", "aria-label": "生成分享卡片" },
     });
-    imgBtn.addEventListener("click", () => this.shareAsImage(imgBtn));
+    imgBtn.addEventListener("click", () => this.openShareModal());
 
     const saveBtn = actions.createEl("button", {
       cls: "bwr-btn bwr-btn-save",
       text: "↓ 保存为笔记",
+      attr: { "aria-label": "保存为笔记" },
     });
     saveBtn.addEventListener("click", () => {
       void (async () => {
@@ -347,53 +432,246 @@ export class ReaderView extends ItemView {
         }
       })();
     });
+
+    // ── 朗读（TTS）控件 ──
+    this.renderTtsControls(bar);
   }
 
-  /** 生成分享图并下载 +（尽力）复制到剪贴板 */
-  private shareAsImage(btn: HTMLButtonElement): void {
-    if (!this.article) return;
-    const article = this.article;
-    const orig = btn.textContent ?? "◱ 图片";
-    btn.disabled = true;
-    btn.textContent = "生成中…";
-    void (async () => {
-      try {
-        const blob = await renderShareCard(article);
+  /** 渲染朗读控件：播放/暂停、停止、语速、语音下拉 */
+  private renderTtsControls(bar: HTMLElement): void {
+    const group = bar.createDiv({ cls: "bwr-tts" });
 
-        // 触发下载
-        const url = URL.createObjectURL(blob);
-        const a = this.contentEl.ownerDocument.createElement("a");
-        a.href = url;
-        a.download = `竹杖芒鞋-${safeFileName(article.title)}.png`;
-        a.click();
-        window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+    const playBtn = group.createEl("button", {
+      cls: "bwr-btn bwr-btn-tts-play",
+      text: "朗读",
+      attr: { title: "朗读全文（可暂停/继续）", "aria-label": "朗读全文" },
+    });
+    const stopBtn = group.createEl("button", {
+      cls: "bwr-btn bwr-btn-tts-stop",
+      text: "停止",
+      attr: { title: "停止朗读", "aria-label": "停止朗读" },
+    });
+    stopBtn.disabled = true;
 
-        // 尽力复制到剪贴板（部分环境支持）
-        let copied = false;
-        try {
-          const CI = (window as unknown as { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
-          if (CI && navigator.clipboard && "write" in navigator.clipboard) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- navigator.clipboard 是浏览器标准 API
-            await navigator.clipboard.write([new CI({ "image/png": blob })]);
-            copied = true;
-          }
-        } catch {
-          copied = false;
-        }
+    const rateSel = group.createEl("select", {
+      cls: "bwr-tts-select",
+      attr: { title: "语速", "aria-label": "语速" },
+    }) as HTMLSelectElement;
+    for (const r of TTS_RATES) {
+      rateSel.createEl("option", { text: `${r}x`, value: String(r) });
+    }
 
-        btn.textContent = "已生成 ✓";
-        new Notice(copied ? "分享图已下载并复制到剪贴板" : "分享图已下载");
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : "未知错误";
-        new Notice(`生成分享图失败：${msg}`);
-        btn.textContent = orig;
-      } finally {
-        window.setTimeout(() => {
-          btn.textContent = orig;
-          btn.disabled = false;
-        }, 1800);
+    const voiceSel = group.createEl("select", {
+      cls: "bwr-tts-select",
+      attr: { title: "朗读语音", "aria-label": "朗读语音" },
+    });
+
+    this.ttsPlayBtn = playBtn;
+    this.ttsStopBtn = stopBtn;
+    this.ttsRateSel = rateSel;
+    this.ttsVoiceSel = voiceSel as HTMLSelectElement;
+
+    // 语速记忆
+    const savedRate = this.loadLocalString("bw-tts-rate");
+    if (savedRate) {
+      this.ttsRate = parseFloat(savedRate);
+      rateSel.value = savedRate;
+    }
+
+    playBtn.addEventListener("click", () => this.toggleTtsPlay());
+    stopBtn.addEventListener("click", () => this.ttsStop());
+    rateSel.addEventListener("change", () => {
+      this.ttsRate = parseFloat(rateSel.value);
+      this.app.saveLocalStorage("bw-tts-rate", String(this.ttsRate));
+      this.getTts()?.setRate(this.ttsRate);
+    });
+    voiceSel.addEventListener("change", () => {
+      const name = voiceSel.value;
+      const v = name
+        ? (this.getTts()?.getVoices().find((vv) => vv.name === name) ?? null)
+        : null;
+      this.ttsVoice = v;
+      if (name) this.app.saveLocalStorage("bw-tts-voice", name);
+      this.getTts()?.setVoice(v);
+      // 切换语音需先停止，避免朗读中重排抖动
+      if (this.getTts()?.getState() !== "idle") {
+        this.ttsStop();
       }
-    })();
+    });
+
+    // 填充语音下拉；不支持时禁用整组
+    const tts = this.getTts();
+    if (!tts || !tts.isSupported()) {
+      for (const el of [playBtn, stopBtn, rateSel, voiceSel]) {
+        (el as HTMLButtonElement | HTMLSelectElement).disabled = true;
+      }
+      playBtn.setAttr("title", "当前平台暂不支持朗读（需桌面端 Obsidian）");
+      return;
+    }
+    this.populateVoices();
+  }
+
+  /** 懒初始化朗读服务（绑定回调） */
+  private getTts(): TtsService | null {
+    if (this.ttsService) return this.ttsService;
+    const svc = new TtsService({
+      onSegmentStart: (i, seg) => this.onTtsSegmentStart(i, seg),
+      onStateChange: (s) => this.onTtsStateChange(s),
+      onEnd: () => this.onTtsEnd(),
+    });
+    this.ttsService = svc;
+    return svc;
+  }
+
+  /** 从已渲染正文提取可朗读段落（保留 DOM 引用用于高亮+滚动） */
+  private extractReadableSegments(): TtsSegment[] {
+    if (!this.bodyEl) return [];
+    const nodes = Array.from(
+      this.bodyEl.querySelectorAll("p, h1, h2, h3, h4, h5, h6, li, blockquote"),
+    ) as HTMLElement[];
+    const segs: TtsSegment[] = [];
+    for (const el of nodes) {
+      const text = el.textContent?.trim();
+      if (text) segs.push({ text, el });
+    }
+    return segs;
+  }
+
+  /** 播放/暂停/继续 三态切换 */
+  private toggleTtsPlay(): void {
+    const tts = this.getTts();
+    if (!tts || !tts.isSupported()) return;
+
+    const state = tts.getState();
+    if (state === "playing") {
+      tts.pause();
+      return;
+    }
+    if (state === "paused") {
+      tts.resume();
+      return;
+    }
+
+    // idle → 从头或续读开始
+    // 仅在用户真正点击朗读、且系统只有机械音时，才提示一次去装增强语音
+    if (!tts.hasEnhancedChineseVoice()) {
+      ReaderView.promptEnhancedVoiceOnce();
+    }
+
+    const segs = this.extractReadableSegments();
+    if (segs.length === 0) return;
+    let start = 0;
+    if (this.article) {
+      const saved = this.loadLocalString(`bw-tts-pos-${this.article.slug}`);
+      if (saved) start = Math.max(0, parseInt(saved, 10) || 0);
+    }
+    tts.setRate(this.ttsRate);
+    tts.setVoice(this.ttsVoice);
+    tts.speakSegments(segs, start);
+  }
+
+  /** 停止朗读并复位 UI */
+  private ttsStop(): void {
+    this.getTts()?.stop();
+    this.resetTtsUi();
+  }
+
+  private onTtsSegmentStart(index: number, seg: TtsSegment): void {
+    if (this.ttsActiveEl && this.ttsActiveEl !== seg.el) {
+      this.ttsActiveEl.removeClass("bwr-tts-active");
+    }
+    this.ttsActiveEl = seg.el;
+    seg.el.addClass("bwr-tts-active");
+    seg.el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (this.article) {
+      this.app.saveLocalStorage(`bw-tts-pos-${this.article.slug}`, String(index));
+    }
+  }
+
+  private onTtsStateChange(state: TtsState): void {
+    if (!this.ttsPlayBtn) return;
+    if (state === "playing") {
+      this.ttsPlayBtn.setText("暂停");
+      if (this.ttsStopBtn) this.ttsStopBtn.disabled = false;
+    } else if (state === "paused") {
+      this.ttsPlayBtn.setText("继续");
+    } else {
+      this.ttsPlayBtn.setText("朗读");
+      if (this.ttsStopBtn) this.ttsStopBtn.disabled = true;
+    }
+  }
+
+  private onTtsEnd(): void {
+    // 自然读完：清除续读进度，回到开头
+    if (this.article) {
+      this.app.saveLocalStorage(`bw-tts-pos-${this.article.slug}`, "0");
+    }
+    this.resetTtsUi();
+  }
+
+  /** 清除当前高亮段落 */
+  private clearTtsHighlight(): void {
+    if (this.ttsActiveEl) {
+      this.ttsActiveEl.removeClass("bwr-tts-active");
+      this.ttsActiveEl = null;
+    }
+  }
+
+  /** 复位朗读 UI：清除高亮 + 按钮回到初始态 */
+  private resetTtsUi(): void {
+    this.clearTtsHighlight();
+    if (this.ttsPlayBtn) this.ttsPlayBtn.setText("朗读");
+    if (this.ttsStopBtn) this.ttsStopBtn.disabled = true;
+  }
+
+  /** 填充中文语音下拉；列表异步加载时监听 voiceschanged 再填充 */
+  private populateVoices(): void {
+    const tts = this.getTts();
+    if (!tts || !this.ttsVoiceSel) return;
+    const zh = tts.getChineseVoices();
+    if (zh.length === 0) {
+      tts.setVoicesChangedHandler(() => this.populateVoices());
+      return;
+    }
+    this.ttsVoiceSel.empty();
+    for (const v of zh) {
+      this.ttsVoiceSel.createEl("option", { text: v.name, value: v.name });
+    }
+    const savedName = this.loadLocalString("bw-tts-voice");
+    const match =
+      (savedName ? zh.find((v) => v.name === savedName) : undefined) ?? zh[0];
+    if (match) {
+      this.ttsVoice = match;
+      this.ttsVoiceSel.value = match.name;
+    }
+    // 仅机械音时：下拉常驻引导 + 一次性安装提示，引导用户装增强中文语音
+    if (!tts.hasEnhancedChineseVoice()) {
+      this.ttsVoiceSel.setAttr(
+        "title",
+        "当前系统只有机械音。想更自然？去系统装增强/神经中文语音（如 macOS「婷婷(增强)」、Windows「Microsoft Xiaoxiao Neural」），下次自动优先。",
+      );
+    }
+  }
+
+  /** 仅弹一次「去装增强语音」提示（用户点击朗读时触发），避免重复打扰 */
+  private static enhancedVoiceNoticeShown = false;
+  private static promptEnhancedVoiceOnce(): void {
+    if (ReaderView.enhancedVoiceNoticeShown) return;
+    ReaderView.enhancedVoiceNoticeShown = true;
+    const guide =
+      typeof process !== "undefined" && process.platform === "darwin"
+        ? "系统设置 → 辅助功能 → 朗读内容 → 系统嗓音 → 管理嗓音，下载「婷婷(增强)」或「Yue」"
+        : typeof process !== "undefined" && process.platform === "win32"
+          ? "设置 → 时间和语言 → 语音 → 管理语音，下载「Microsoft Xiaoxiao Neural」等神经语音"
+          : "当前系统未提供增强中文语音，朗读偏机械属正常；可尝试安装系统增强/神经中文语音";
+    new Notice("朗读偏机械？去系统装增强/神经中文语音可更自然。\n" + guide, 9000);
+  }
+
+  /** 打开分享卡片浮层 */
+  private openShareModal(): void {
+    if (!this.article) return;
+    const all = this.getArticles ? this.getArticles() : [];
+    new ShareModal(this.app, this.article, all).open();
   }
 
   private renderHeader(container: HTMLElement): void {
@@ -409,13 +687,13 @@ export class ReaderView extends ItemView {
     meta.createSpan({ cls: "bwr-sep", text: "·" });
     meta.createSpan({ cls: "bwr-category", text: this.article.category });
 
-    if (this.article.readingTime) {
-      meta.createSpan({ cls: "bwr-sep", text: "·" });
-      meta.createSpan({
-        cls: "bwr-reading-time",
-        text: `约 ${this.article.readingTime} 分钟`,
-      });
-    }
+    const words = countWords(this.article.content);
+    const reading = this.article.readingTime ?? estimateReadingTime(words);
+    meta.createSpan({ cls: "bwr-sep", text: "·" });
+    meta.createSpan({
+      cls: "bwr-words",
+      text: `约 ${formatWordCount(words)} · ${reading} 分钟`,
+    });
 
     if (this.article.tags && this.article.tags.length > 0) {
       const tagRow = header.createDiv({ cls: "bwr-tags" });
@@ -549,6 +827,8 @@ export class ReaderView extends ItemView {
   }
 
   private applyFontSize(): void {
+    // 同步基准字号变量，标题（h1.bwr-title）用 calc 跟随缩放，保证与正文比例一致
+    this.contentEl.style.setProperty("--bwr-base-size", `${this.fontSize}px`);
     if (this.bodyEl) {
       this.bodyEl.style.fontSize = `${this.fontSize}px`;
     }
@@ -564,5 +844,59 @@ export class ReaderView extends ItemView {
     doc.addEventListener("keydown", (e) => {
       if (e.key === "Escape") overlay.remove();
     }, { once: true });
+  }
+
+  /** 链接行为定制：正文内链接点击不再盲目跳出插件 */
+  private interceptLinks(body: HTMLElement): void {
+    body.querySelectorAll("a").forEach((a) => {
+      const href = a.getAttribute("href") ?? a.dataset.href ?? "";
+      if (!href) return;
+
+      if (a.classList.contains("external-link")) {
+        // 外部链接：新标签打开
+        a.setAttr("target", "_blank");
+        a.setAttr("rel", "noopener noreferrer");
+        return;
+      }
+
+      // 内部链接：优先在插件内打开对应文章
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        const match =
+          this.getArticles?.()?.find((entry) =>
+            entry.slug === href ||
+            entry.title === href ||
+            entry.slug === `技术随想/${href}` ||
+            entry.slug.split("/").pop() === href,
+          );
+        if (match && this.onOpenArticle) {
+          this.onOpenArticle(match.slug);
+        } else {
+          // 非本专栏文章：交回 Obsidian 标准打开逻辑
+          void this.app.workspace.openLinkText(href, "", e.ctrlKey || e.metaKey);
+        }
+      });
+    });
+  }
+
+  /** 专注模式：隐藏 TOC 与顶栏装饰，仅留正文；Esc 退出 */
+  private toggleFocusMode(): void {
+    this.focusMode = !this.focusMode;
+    this.contentEl.toggleClass("bwr-focus-mode", this.focusMode);
+    this.app.saveLocalStorage("bw-focus-mode", this.focusMode ? "1" : "0");
+    if (this.focusMode) {
+      const doc = this.contentEl.ownerDocument;
+      const exit = (e: KeyboardEvent) => {
+        if (e.key === "Escape" && this.focusMode) {
+          this.toggleFocusMode();
+          doc.removeEventListener("keydown", exit);
+        }
+      };
+      doc.addEventListener("keydown", exit);
+      this.focusExitHandler = exit;
+    } else if (this.focusExitHandler) {
+      this.contentEl.ownerDocument.removeEventListener("keydown", this.focusExitHandler);
+      this.focusExitHandler = null;
+    }
   }
 }

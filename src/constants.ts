@@ -40,7 +40,7 @@ export const PROFILE_NAME = "羽鳞君";
 
 /** 作者简介 */
 export const PROFILE_BIO =
-  "竹杖芒鞋轻胜马，谁怕？一蓑烟雨任平生。欢迎来到喵字馆创始人羽鳞君的Obsidian后室。";
+  "竹杖芒鞋轻胜马，谁怕？一蓑烟雨任平生。欢迎来到喵字馆创始人羽鳞君的 Obsidian 后室。";
 
 /** 作者社交/链接 */
 export const PROFILE_LINKS: { label: string; url: string }[] = [
