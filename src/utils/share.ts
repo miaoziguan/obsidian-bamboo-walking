@@ -228,10 +228,13 @@ function toPlain(text: string): string {
 function pickQuote(content: string): string {
   const body = toPlain(content);
   if (!body) return "";
-  const sents = body
-    .split(/(?<=[。！？”])/)
-    .map((s) => s.trim())
-    .filter((s) => s.length >= 12 && s.length <= 60);
+  const parts = body.split(/([。！？”])/);
+  const raw: string[] = [];
+  for (let i = 0; i < parts.length; i += 2) {
+    const seg = (parts[i] + (parts[i + 1] ?? "")).trim();
+    if (seg) raw.push(seg);
+  }
+  const sents = raw.filter((s) => s.length >= 12 && s.length <= 60);
   if (sents.length === 0) {
     const fallback = body.split(/\n+/).map((s) => s.trim()).filter(Boolean);
     return fallback[0] ?? "";
@@ -264,7 +267,7 @@ function extractExcerpts(content: string, count: number): string[] {
 /* ────────────── 通用绘制原语 ────────────── */
 
 function newCanvas(w: number, h: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
-  const canvas = activeDocument.createElement("canvas");
+  const canvas = createEl("canvas");
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d");

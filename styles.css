@@ -87,7 +87,7 @@
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
-.bws-status.bws-hidden {
+.bws-hidden {
   display: none;
 }
 

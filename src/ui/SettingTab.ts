@@ -1,6 +1,9 @@
 /* ────────────── 插件设置面板 ────────────── */
-import { App, PluginSettingTab, Setting, setIcon } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting, setIcon } from "obsidian";
+import type { SettingDefinitionItem } from "obsidian";
 import type BambooWalkingPlugin from "../main";
+
+const DEFAULT_SAVE_PATH = "竹杖芒鞋";
 
 export class BambooWalkingSettingTab extends PluginSettingTab {
   constructor(
@@ -11,6 +14,65 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
     super(app, plugin);
   }
 
+  /**
+   * Declarative definitions — used by Obsidian 1.13.0+ for rendering and
+   * settings search. Falls back to {@link display} on older versions.
+   */
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    return [
+      {
+        type: "group",
+        heading: "竹杖芒鞋 · 设置",
+        items: [
+          {
+            name: "保存路径",
+            desc: "将文章保存为笔记时，存放在 vault 的哪个文件夹",
+            control: {
+              type: "text",
+              key: "savePath",
+              placeholder: DEFAULT_SAVE_PATH,
+              defaultValue: DEFAULT_SAVE_PATH,
+            },
+          },
+          {
+            name: "清除缓存",
+            desc: "清除本地缓存的文章数据，下次打开时重新拉取",
+            action: () => {
+              void this.plugin.cacheService.clear();
+              new Notice("缓存已清除");
+            },
+          },
+        ],
+      },
+      {
+        type: "group",
+        heading: `竹杖芒鞋 v${this.pluginVersion}`,
+        items: [
+          {
+            name: "关于",
+            desc: "竹杖芒鞋 · 轻胜马",
+            render: (setting) => {
+              this.buildAboutCard(setting.controlEl);
+            },
+          },
+        ],
+      },
+    ];
+  }
+
+  getControlValue(key: string): unknown {
+    if (key === "savePath") return this.plugin.settings.savePath;
+    return undefined;
+  }
+
+  setControlValue(key: string, value: unknown): void {
+    if (key === "savePath") {
+      this.plugin.settings.savePath = String(value).trim() || DEFAULT_SAVE_PATH;
+      void this.plugin.saveSettings();
+    }
+  }
+
+  /** Imperative fallback for Obsidian < 1.13.0 (display is not called on 1.13.0+). */
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
@@ -45,7 +107,11 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
 
     // ── 关于 ──
     new Setting(containerEl).setName(`竹杖芒鞋 v${this.pluginVersion}`).setHeading();
-    const about = containerEl.createDiv({ cls: "bw-about-card" });
+    this.buildAboutCard(containerEl);
+  }
+
+  private buildAboutCard(parent: HTMLElement): void {
+    const about = parent.createDiv({ cls: "bw-about-card" });
     about.createEl("p", {
       text: "竹杖芒鞋轻胜马，谁怕？一蓑烟雨任平生。",
       cls: "bw-about-quote",

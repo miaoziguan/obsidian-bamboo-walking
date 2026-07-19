@@ -145,7 +145,7 @@ export class ShareModal extends Modal {
     this.downloadBtn = dlBtn;
 
     const cpBtn = actions.createEl("button", { cls: "bw-share-btn", text: "复制" });
-    cpBtn.addEventListener("click", () => this.copy());
+    cpBtn.addEventListener("click", () => { void this.copy(); });
     this.copyBtn = cpBtn;
 
     this.syncChips();
@@ -196,11 +196,10 @@ export class ShareModal extends Modal {
   /** 下载全部卡片 */
   private download(): void {
     if (this.blobs.length === 0) return;
-    const doc = this.contentEl.ownerDocument;
     const tag = `${this.form}-${this.size}`;
     this.blobs.forEach((blob, i) => {
       const url = URL.createObjectURL(blob);
-      const a = doc.createElement("a");
+      const a = createEl("a");
       a.href = url;
       const suffix = this.blobs.length > 1 ? `-${i + 1}` : "";
       a.download = `竹杖芒鞋-${safeFileName(this.article.title)}${suffix}-${tag}.png`;

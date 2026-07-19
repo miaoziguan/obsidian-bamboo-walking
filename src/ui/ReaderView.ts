@@ -151,7 +151,7 @@ export class ReaderView extends ItemView {
     // 正文 + TOC 容器，顶部留出 topbar 高度
     const layout = contentEl.createDiv({ cls: "bwr-layout" });
     this.layoutEl = layout;
-    layout.style.setProperty("--bwr-topbar-h", `${topBar.offsetHeight}px`);
+    layout.setCssProps({ "--bwr-topbar-h": `${topBar.offsetHeight}px` });
     const contentCol = layout.createDiv({ cls: "bwr-content" });
 
     // ── Markdown 预处理（排版规范化）：统一中英间距、标点等 ──
@@ -231,9 +231,7 @@ export class ReaderView extends ItemView {
         // 构建行号 span
         const frag = ownerDoc.createDocumentFragment();
         for (let i = 0; i < lines.length; i++) {
-          const span = ownerDoc.createElement("span");
-          span.className = "bwr-line";
-          span.setAttribute("data-line", String(i + 1));
+          const span = createSpan({ cls: "bwr-line", attr: { "data-line": String(i + 1) } });
           for (const n of lines[i]) {
             span.appendChild(n);
           }
@@ -276,7 +274,7 @@ export class ReaderView extends ItemView {
       // TOC 进度条 + 百分比
       const pct = scrollHeight > 0 ? Math.min(scrollTop / scrollHeight, 1) : 0;
       if (this.tocProgressBar) {
-        this.tocProgressBar.style.width = `${pct * 100}%`;
+        this.tocProgressBar.setCssStyles({ width: `${pct * 100}%` });
       }
       if (this.tocProgressPct) {
         this.tocProgressPct.textContent = `${Math.round(pct * 100)}%`;
@@ -327,9 +325,8 @@ export class ReaderView extends ItemView {
       return `\x00CODEBLOCK${codeBlocks.length - 1}\x00`;
     });
 
-    // 提取 `行内代码`（需注意已替换的占位符不被误匹配）
-    // eslint-disable-next-line no-control-regex -- \x00 为有意使用的占位符分隔符
-    processed = processed.replace(/(?<![\x00])(`[^`]*`)/g, (match) => {
+    // 提取 `行内代码`（占位符不含反引号，不会被误匹配）
+    processed = processed.replace(/`[^`]*`/g, (match) => {
       inlineCodes.push(match);
       return `\x00INLINECODE${inlineCodes.length - 1}\x00`;
     });
@@ -343,9 +340,9 @@ export class ReaderView extends ItemView {
 
     // 步骤 3：还原被保护的内容
     // eslint-disable-next-line no-control-regex -- \x00 为有意使用的占位符分隔符
-    processed = processed.replace(/\x00INLINECODE(\d+)\x00/g, (_, idx) => inlineCodes[parseInt(idx, 10)] ?? "``");
+    processed = processed.replace(/\x00INLINECODE(\d+)\x00/g, (_, idx: string) => inlineCodes[parseInt(idx, 10)] ?? "``");
     // eslint-disable-next-line no-control-regex -- \x00 为有意使用的占位符分隔符
-    processed = processed.replace(/\x00CODEBLOCK(\d+)\x00/g, (_, idx) => codeBlocks[parseInt(idx, 10)] ?? "```");
+    processed = processed.replace(/\x00CODEBLOCK(\d+)\x00/g, (_, idx: string) => codeBlocks[parseInt(idx, 10)] ?? "```");
 
     return processed;
   }
@@ -456,7 +453,7 @@ export class ReaderView extends ItemView {
     const rateSel = group.createEl("select", {
       cls: "bwr-tts-select",
       attr: { title: "语速", "aria-label": "语速" },
-    }) as HTMLSelectElement;
+    });
     for (const r of TTS_RATES) {
       rateSel.createEl("option", { text: `${r}x`, value: String(r) });
     }
@@ -469,7 +466,7 @@ export class ReaderView extends ItemView {
     this.ttsPlayBtn = playBtn;
     this.ttsStopBtn = stopBtn;
     this.ttsRateSel = rateSel;
-    this.ttsVoiceSel = voiceSel as HTMLSelectElement;
+    this.ttsVoiceSel = voiceSel;
 
     // 语速记忆
     const savedRate = this.loadLocalString("bw-tts-rate");
@@ -503,7 +500,7 @@ export class ReaderView extends ItemView {
     const tts = this.getTts();
     if (!tts || !tts.isSupported()) {
       for (const el of [playBtn, stopBtn, rateSel, voiceSel]) {
-        (el as HTMLButtonElement | HTMLSelectElement).disabled = true;
+        el.disabled = true;
       }
       playBtn.setAttr("title", "当前平台暂不支持朗读（需桌面端 Obsidian）");
       return;
@@ -527,8 +524,8 @@ export class ReaderView extends ItemView {
   private extractReadableSegments(): TtsSegment[] {
     if (!this.bodyEl) return [];
     const nodes = Array.from(
-      this.bodyEl.querySelectorAll("p, h1, h2, h3, h4, h5, h6, li, blockquote"),
-    ) as HTMLElement[];
+      this.bodyEl.querySelectorAll<HTMLElement>("p, h1, h2, h3, h4, h5, h6, li, blockquote"),
+    );
     const segs: TtsSegment[] = [];
     for (const el of nodes) {
       const text = el.textContent?.trim();
@@ -828,9 +825,9 @@ export class ReaderView extends ItemView {
 
   private applyFontSize(): void {
     // 同步基准字号变量，标题（h1.bwr-title）用 calc 跟随缩放，保证与正文比例一致
-    this.contentEl.style.setProperty("--bwr-base-size", `${this.fontSize}px`);
+    this.contentEl.setCssProps({ "--bwr-base-size": `${this.fontSize}px` });
     if (this.bodyEl) {
-      this.bodyEl.style.fontSize = `${this.fontSize}px`;
+      this.bodyEl.setCssStyles({ fontSize: `${this.fontSize}px` });
     }
   }
 

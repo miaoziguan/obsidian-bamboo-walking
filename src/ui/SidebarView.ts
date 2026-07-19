@@ -162,9 +162,9 @@ export class SidebarView extends ItemView {
     }
     if (counted > 0) {
       this.authorStatsEl.setText(`已撰写 ${formatWordCount(total)} · ${counted}/${this.articles.length} 篇`);
-      this.authorStatsEl.style.display = "";
+      this.authorStatsEl.removeClass("bws-hidden");
     } else {
-      this.authorStatsEl.style.display = "none";
+      this.authorStatsEl.addClass("bws-hidden");
     }
   }
 
@@ -505,8 +505,7 @@ export class SidebarView extends ItemView {
     submitLink.addEventListener("click", () => new AboutModal(this.app).open());
 
     // 全站字数汇总（渐进补全，首屏无统计时隐藏）
-    this.authorStatsEl = card.createDiv({ cls: "bws-author-stats" });
-    this.authorStatsEl.style.display = "none";
+    this.authorStatsEl = card.createDiv({ cls: "bws-author-stats bws-hidden" });
   }
   }
 
