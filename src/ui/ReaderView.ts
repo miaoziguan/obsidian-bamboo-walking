@@ -6,6 +6,7 @@ import { AUTHOR_NAME } from "../constants";
 import { countWords, formatWordCount, estimateReadingTime } from "../utils/text";
 import { ShareModal } from "./ShareModal";
 import { TtsService, type TtsSegment, type TtsState } from "../services/TtsService";
+import { getAtomicNotesApi, buildExtractionText, findRelatedNotes } from "../services/AtomicNotesBridge";
 
 /** 语速档位 */
 const TTS_RATES = [0.75, 1.0, 1.25, 1.5];
@@ -258,6 +259,9 @@ export class ReaderView extends ItemView {
     // 相关阅读推荐
     this.renderRelated(contentCol);
 
+    // 知识回流：本文在你本地知识库（竹叶飞刃）里的相关原子笔记
+    this.renderRelatedNotes(contentCol);
+
     // 浮动跳转按钮
     const fab = contentCol.createDiv({ cls: "bwr-fab" });
     this.fabEl = fab;
@@ -402,6 +406,17 @@ export class ReaderView extends ItemView {
       attr: { title: "生成分享卡片", "aria-label": "生成分享卡片" },
     });
     imgBtn.addEventListener("click", () => this.openShareModal());
+
+    // 提炼原子笔记：联动「竹叶飞刃」，把本文一键沉淀为可检索的知识节点
+    const extractBtn = actions.createEl("button", {
+      cls: "bwr-btn bwr-btn-extract",
+      text: "⚛ 提炼笔记",
+      attr: {
+        title: "用竹叶飞刃把本文提炼为原子笔记",
+        "aria-label": "提炼为原子笔记",
+      },
+    });
+    extractBtn.addEventListener("click", () => this.extractToAtomicNotes());
 
     const saveBtn = actions.createEl("button", {
       cls: "bwr-btn bwr-btn-save",
@@ -671,6 +686,27 @@ export class ReaderView extends ItemView {
     new ShareModal(this.app, this.article, all).open();
   }
 
+  /** 联动竹叶飞刃：把当前文章提炼为原子笔记 */
+  private extractToAtomicNotes(): void {
+    if (!this.article) return;
+    const api = getAtomicNotesApi(this.app);
+    if (!api) {
+      new Notice(
+        "未检测到「竹叶飞刃」插件。请先安装并启用竹叶飞刃（Bamboo Darts），即可把本文一键提炼为原子笔记。",
+        8000,
+      );
+      return;
+    }
+    const text = buildExtractionText(this.article);
+    if (!text) {
+      new Notice("本文暂无可提炼的正文");
+      return;
+    }
+    // 交给竹叶飞刃接管后续（质量门控 / 去重 / 提炼 / 保存及其进度提示）
+    void api.extractFromText(text);
+    new Notice("已发送至竹叶飞刃提炼…");
+  }
+
   private renderHeader(container: HTMLElement): void {
     if (!this.article) return;
     const header = container.createDiv({ cls: "bwr-header" });
@@ -792,6 +828,43 @@ export class ReaderView extends ItemView {
         e.preventDefault();
         const slug = (e.currentTarget as HTMLElement).getAttribute("data-slug");
         if (slug && this.onOpenArticle) this.onOpenArticle(slug);
+      });
+    }
+  }
+
+  /**
+   * 知识回流：展示竹叶飞刃知识库中与本文明相关的原子笔记。
+   * 仅当装了「竹叶飞刃」且存在相关笔记时渲染；其余情况安静隐藏。
+   * 异步查询，不阻塞正文渲染；若查询期间已切换文章则丢弃结果。
+   */
+  private async renderRelatedNotes(container: HTMLElement): Promise<void> {
+    if (!this.article) return;
+    const anchorSlug = this.article.slug;
+    const notes = await findRelatedNotes(this.app, this.article.content, { topK: 5 });
+    if (!notes || notes.length === 0) return;
+    // 文章已切换，放弃渲染（旧的 detached 容器不再可见）
+    if (!this.article || this.article.slug !== anchorSlug) return;
+
+    const section = container.createDiv({ cls: "bwr-atomic-related" });
+    section.createDiv({
+      cls: "bwr-related-title",
+      text: "📚 你记过的相关笔记",
+    });
+    const list = section.createEl("div", { cls: "bwr-atomic-related-list" });
+    for (const n of notes) {
+      const row = list.createEl("a", {
+        cls: "bwr-atomic-related-item",
+        attr: { href: "#", title: `${n.title}（相关度 ${(n.score * 100).toFixed(0)}%）` },
+      });
+      row.createSpan({ cls: "bwr-atomic-related-title", text: n.title });
+      row.createSpan({
+        cls: "bwr-atomic-related-score",
+        text: `${(n.score * 100).toFixed(0)}%`,
+      });
+      row.addEventListener("click", (e) => {
+        e.preventDefault();
+        // 跳转到本地原子笔记（竹叶飞刃的知识节点）
+        this.app.workspace.openLinkText(n.path, "", false);
       });
     }
   }

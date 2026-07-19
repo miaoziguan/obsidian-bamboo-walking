@@ -808,6 +808,16 @@ button.bwr-btn-share:hover { color: var(--bw-bamboo); }
 
 button.bwr-btn-share:disabled { cursor: default; opacity: 0.6; }
 
+/* 提炼笔记按钮（联动竹叶飞刃） */
+button.bwr-btn-extract {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 0 6px;
+  transition: color 0.15s;
+}
+
+button.bwr-btn-extract:hover { color: var(--bw-bamboo); }
+
 /* 浮动跳转按钮 */
 .bwr-fab {
   position: sticky;
@@ -1185,6 +1195,58 @@ button.bwr-fab-btn:hover {
 }
 
 .bwr-related-link:hover { color: var(--bw-bamboo-light); }
+
+/* 知识回流：相关原子笔记（竹叶飞刃） */
+.bwr-atomic-related {
+  margin-top: var(--bw-space-xl);
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--bw-bamboo-pale) 40%, transparent);
+  border-radius: var(--bw-radius-md);
+  background: color-mix(in srgb, var(--bw-bamboo-pale) 8%, transparent);
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.bwr-atomic-related .bwr-related-title { margin-bottom: var(--bw-space-sm); }
+
+.bwr-atomic-related-list { display: flex; flex-direction: column; gap: 2px; }
+
+.bwr-atomic-related-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-normal);
+  text-decoration: none;
+  border-bottom: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.bwr-atomic-related-item:hover {
+  background: color-mix(in srgb, var(--bw-bamboo-pale) 18%, transparent);
+}
+
+.bwr-atomic-related-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bwr-atomic-related-score {
+  flex: none;
+  font-size: 11px;
+  color: var(--bw-bamboo);
+  font-variant-numeric: tabular-nums;
+}
 
 /* 代码块 */
 pre.bwr-code {
