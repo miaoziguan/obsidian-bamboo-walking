@@ -338,7 +338,7 @@ export class SidebarView extends ItemView {
         cls: "bws-btn-refresh bws-btn-refresh--inline",
         attr: { "aria-label": "刷新文章", title: "刷新文章" },
       });
-      setIcon(refreshBtn.createEl("span", { cls: "bws-btn-icon" }), "refresh-cw");
+      setIcon(refreshBtn.createSpan({ cls: "bws-btn-icon" }), "refresh-cw");
       if (this.isRefreshing) {
         refreshBtn.addClass("bws-spin");
         refreshBtn.disabled = true;
@@ -467,7 +467,7 @@ export class SidebarView extends ItemView {
 
     const idBox = top.createDiv({ cls: "bws-author-idbox" });
     const nameRow = idBox.createDiv({ cls: "bws-author-name-row" });
-    nameRow.createEl("div", { cls: "bws-author-name", text: PROFILE_NAME });
+    nameRow.createDiv({ cls: "bws-author-name", text: PROFILE_NAME });
     const ghUrl = PROFILE_LINKS[0]?.url;
     if (ghUrl) {
       const gh = nameRow.createEl("a", {
@@ -480,11 +480,11 @@ export class SidebarView extends ItemView {
       setIcon(ghIco, "github");
     }
     const handle = PROFILE_LINKS[0]?.url.split("/").pop() ?? "";
-    idBox.createEl("div", { cls: "bws-author-handle", text: handle ? "@" + handle : "" });
+    idBox.createDiv({ cls: "bws-author-handle", text: handle ? "@" + handle : "" });
 
     // 文字信息区：简介
     const info = card.createDiv({ cls: "bws-author-info" });
-    info.createEl("div", { cls: "bws-author-bio", text: PROFILE_BIO });
+    info.createDiv({ cls: "bws-author-bio", text: PROFILE_BIO });
 
     // 作者连接入口：关于 · 投稿（把读者沉淀到作者其他触点）
     const linksRow = card.createDiv({ cls: "bws-author-links" });
@@ -522,11 +522,11 @@ export class SidebarView extends ItemView {
   private renderError(c: HTMLElement): void {
     const wrap = c.createDiv({ cls: "bws-list" });
     const err = wrap.createDiv({ cls: "bws-error" });
-    setIcon(err.createEl("span", { cls: "bws-error-icon" }), "alert-triangle");
-    err.createEl("div", { text: "加载失败", cls: "bws-error-title" });
-    err.createEl("div", { text: this.errorMessage || "请检查网络后重试", cls: "bws-error-msg" });
+    setIcon(err.createSpan({ cls: "bws-error-icon" }), "alert-triangle");
+    err.createDiv({ text: "加载失败", cls: "bws-error-title" });
+    err.createDiv({ text: this.errorMessage || "请检查网络后重试", cls: "bws-error-msg" });
     const retryBtn = err.createEl("button", { cls: "bws-btn-retry" });
-    setIcon(retryBtn.createEl("span", { cls: "bws-btn-icon" }), "rotate-cw");
+    setIcon(retryBtn.createSpan({ cls: "bws-btn-icon" }), "rotate-cw");
     retryBtn.createSpan({ text: "重试" });
     retryBtn.addEventListener("click", () => { if (this.onRefresh) this.onRefresh(); });
   }

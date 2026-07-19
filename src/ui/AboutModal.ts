@@ -31,8 +31,8 @@ export class AboutModal extends Modal {
     });
     avatar.src = AVATAR_DATA_URI;
     const nameBox = head.createDiv({ cls: "bw-about-namebox" });
-    nameBox.createEl("div", { cls: "bw-about-name", text: PROFILE_NAME });
-    nameBox.createEl("div", { cls: "bw-about-sub", text: "竹杖芒鞋 · 个人写作专栏" });
+    nameBox.createDiv({ cls: "bw-about-name", text: PROFILE_NAME });
+    nameBox.createDiv({ cls: "bw-about-sub", text: "竹杖芒鞋 · 个人写作专栏" });
 
     // ── 介绍 ──
     const intro = contentEl.createDiv({ cls: "bw-about-intro" });
@@ -43,7 +43,7 @@ export class AboutModal extends Modal {
     // ── 其他平台 ──
     if (PROFILE_PLATFORMS.length > 0) {
       const sec = contentEl.createDiv({ cls: "bw-about-section" });
-      sec.createEl("div", { cls: "bw-about-section-title", text: "其他平台" });
+      sec.createDiv({ cls: "bw-about-section-title", text: "其他平台" });
       const list = sec.createDiv({ cls: "bw-about-links" });
       for (const p of PROFILE_PLATFORMS) {
         const a = list.createEl("a", {
@@ -63,14 +63,14 @@ export class AboutModal extends Modal {
     // ── 投稿 / 联系 ──
     if (CONTACT_EMAIL) {
       const sec = contentEl.createDiv({ cls: "bw-about-section" });
-      sec.createEl("div", { cls: "bw-about-section-title", text: "投稿 · 联系" });
+      sec.createDiv({ cls: "bw-about-section-title", text: "投稿 · 联系" });
       sec.createEl("p", { cls: "bw-about-submit-text", text: SUBMIT_TEXT });
 
       const cards = sec.createDiv({ cls: "bw-about-contact-cards" });
 
       // 邮箱卡片
       const mailCard = cards.createDiv({ cls: "bw-about-contact-card" });
-      mailCard.createEl("div", { cls: "bw-about-contact-label", text: "邮箱" });
+      mailCard.createDiv({ cls: "bw-about-contact-label", text: "邮箱" });
       const mailRow = mailCard.createDiv({ cls: "bw-about-contact-row" });
       mailRow.createEl("a", {
         cls: "bw-about-contact-value",
@@ -96,9 +96,9 @@ export class AboutModal extends Modal {
       // 微信卡片（若有）
       if (CONTACT_WECHAT) {
         const wxCard = cards.createDiv({ cls: "bw-about-contact-card" });
-        wxCard.createEl("div", { cls: "bw-about-contact-label", text: "微信" });
+        wxCard.createDiv({ cls: "bw-about-contact-label", text: "微信" });
         const wxRow = wxCard.createDiv({ cls: "bw-about-contact-row" });
-        wxRow.createEl("div", {
+        wxRow.createDiv({
           cls: "bw-about-contact-value",
           text: CONTACT_WECHAT,
         });

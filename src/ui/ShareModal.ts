@@ -75,7 +75,7 @@ export class ShareModal extends Modal {
 
     // ── 平台预设 ──
     const platSec = contentEl.createDiv({ cls: "bw-share-section" });
-    platSec.createEl("div", { cls: "bw-share-label", text: "平台预设" });
+    platSec.createDiv({ cls: "bw-share-label", text: "平台预设" });
     const platRow = platSec.createDiv({ cls: "bw-share-chips" });
     for (const p of PLATFORM_PRESETS) {
       const chip = platRow.createEl("button", {
@@ -93,7 +93,7 @@ export class ShareModal extends Modal {
 
     // ── 比例 ──
     const sizeSec = contentEl.createDiv({ cls: "bw-share-section" });
-    sizeSec.createEl("div", { cls: "bw-share-label", text: "画布比例" });
+    sizeSec.createDiv({ cls: "bw-share-label", text: "画布比例" });
     const sizeRow = sizeSec.createDiv({ cls: "bw-share-chips" });
     for (const s of SIZE_ORDER) {
       const chip = sizeRow.createEl("button", {
@@ -111,7 +111,7 @@ export class ShareModal extends Modal {
 
     // ── 形态 ──
     const formSec = contentEl.createDiv({ cls: "bw-share-section" });
-    formSec.createEl("div", { cls: "bw-share-label", text: "内容形态" });
+    formSec.createDiv({ cls: "bw-share-label", text: "内容形态" });
     const formRow = formSec.createDiv({ cls: "bw-share-chips" });
     for (const f of FORM_ORDER) {
       const chip = formRow.createEl("button", {

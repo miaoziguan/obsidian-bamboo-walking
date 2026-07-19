@@ -95,7 +95,7 @@ export class ReaderView extends ItemView {
     contentEl.empty();
     contentEl.addClass("bwr-reader");
     const wrap = contentEl.createDiv({ cls: "bwr-error-state" });
-    setIcon(wrap.createEl("span", { cls: "bwr-error-icon" }), "alert-triangle");
+    setIcon(wrap.createSpan({ cls: "bwr-error-icon" }), "alert-triangle");
     wrap.createEl("p", { text: "加载失败", cls: "bwr-error-title" });
     wrap.createEl("p", { text: msg, cls: "bwr-error-msg" });
   }
@@ -229,7 +229,7 @@ export class ReaderView extends ItemView {
         }
 
         // 构建行号 span
-        const frag = ownerDoc.createDocumentFragment();
+        const frag = createFragment();
         for (let i = 0; i < lines.length; i++) {
           const span = createSpan({ cls: "bwr-line", attr: { "data-line": String(i + 1) } });
           for (const n of lines[i]) {
