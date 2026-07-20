@@ -12,7 +12,7 @@ import {
 import { AboutModal } from "./AboutModal";
 import { StrategyReportModal } from "./StrategyReportModal";
 import {
-  getStrategyOverview,
+  getBambooImmortalsApi,
   getCultivationRealm,
   getBambooCoinBalance,
   type GoalStats,
@@ -565,7 +565,11 @@ export class SidebarView extends ItemView {
       });
 
       card.addEventListener("click", () => {
-        if (this.strategyMiniEl?.classList.contains("is-disabled")) return;
+        if (this.strategyMiniEl?.classList.contains("is-disabled")) {
+          // 灰卡（未启用/无数据/失败）：点击触发重新核算，而非什么都不做
+          if (!this.strategyMiniLoading) void this.refreshStrategyMini();
+          return;
+        }
         new StrategyReportModal(this.app).open();
       });
 
@@ -586,22 +590,25 @@ export class SidebarView extends ItemView {
     const card = this.strategyMiniEl;
     if (!info || !card) return;
     this.strategyMiniLoading = true;
+    // 区分竹林不可用与数据为空：卡片始终可见，给出明确文案（解决「还是没有出现」）
+    const api = getBambooImmortalsApi(this.app);
+    if (!api || typeof api.getStrategyOverview !== "function") {
+      // 竹林未装 / 未启用 / 版本过旧（未实现该接口）：明确提示，卡片可见可点重试
+      info.textContent = "启用竹林修仙传以查看";
+      card.classList.add("is-disabled");
+      this.strategyMiniLoading = false;
+      void this.refreshCultivation();
+      return;
+    }
     info.textContent = "核算中…";
     try {
-      const data = await getStrategyOverview(this.app);
+      const data = await api.getStrategyOverview();
       if (!data) {
-        // 竹林未启用 / 尚未就绪：直接隐藏整张卡片，不占位、不报错（解决「不该出现」）
-        card.classList.add("bws-hidden");
-        // 自愈：竹林可能晚于本插件加载，2s 后重试一次，就绪则自动恢复
-        if (!card.dataset.bwsRetried) {
-          card.dataset.bwsRetried = "1";
-          window.setTimeout(() => {
-            if (this.strategyMiniEl) void this.refreshStrategyMini();
-          }, 2000);
-        }
+        // 竹林已启用且有 API，但暂无数据：可见、可点重试
+        info.textContent = "暂无数据，点此重试";
+        card.classList.add("is-disabled");
         return;
       }
-      card.classList.remove("bws-hidden");
       const goals = Array.isArray(data.goals) ? data.goals : [];
       const overview = (data.overview ?? {}) as GoalStats;
       // 优先消费竹林返回的权威整体健康分；旧版竹林未提供 health 时回退到本地二次平均
@@ -624,9 +631,9 @@ export class SidebarView extends ItemView {
       info.createEl("strong", { cls: "bws-stat-num", text: String(alerts) });
       card.classList.remove("is-disabled");
     } catch {
-      // 读取失败：给出明确文案而非留白，并保留入口可重试（解决「空白」）
+      // 读取失败：给出明确文案，保留入口可重试
       info.textContent = "暂不可用，点此重试";
-      card.classList.remove("bws-hidden");
+      card.classList.add("is-disabled");
     } finally {
       this.strategyMiniLoading = false;
       // 境界 / 竹币独立于战略复盘总览，始终一并刷新
