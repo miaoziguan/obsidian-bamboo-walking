@@ -15,6 +15,7 @@ import {
   getStrategyOverview,
   getCultivationRealm,
   getBambooCoinBalance,
+  type GoalStats,
 } from "../services/BambooReviewBridge";
 import { svgIcon } from "./icons";
 import { matchArticle } from "../utils/search";
@@ -526,6 +527,16 @@ export class SidebarView extends ItemView {
 
   /** 左栏竹林概览卡：头部(标题+重算) / 健康预警行 / 境界竹币行，点击打开完整抽屉 */
   private renderStrategyMini(parent: HTMLElement): void {
+    // 幂等：若卡片已存在（如反复渲染 / onOpen 重入），复用 DOM 仅刷新数据，杜绝重复创建
+    const existing = parent.querySelector<HTMLElement>(".bws-strategy-mini");
+    if (existing) {
+      this.strategyMiniEl = existing;
+      this.strategyMiniInfoEl = existing.querySelector(".bws-strategy-mini-info");
+      this.strategyMiniCultEl = existing.querySelector(".bws-strategy-mini-cult");
+      void this.refreshStrategyMini();
+      void this.refreshCultivation();
+      return;
+    }
     // 战略复盘为增强功能：整体兜底，任何异常都不得阻断作者卡与主侧栏渲染
     try {
       const card = parent.createDiv({ cls: "bws-strategy-mini" });
@@ -572,37 +583,50 @@ export class SidebarView extends ItemView {
   /** 拉取并刷新极简条上的数字（实时核算，零缓存） */
   private async refreshStrategyMini(): Promise<void> {
     const info = this.strategyMiniInfoEl;
-    if (!info) return;
+    const card = this.strategyMiniEl;
+    if (!info || !card) return;
     this.strategyMiniLoading = true;
     info.textContent = "核算中…";
     try {
       const data = await getStrategyOverview(this.app);
       if (!data) {
-        info.textContent = "未启用竹林";
-        this.strategyMiniEl?.classList.add("is-disabled");
+        // 竹林未启用 / 尚未就绪：直接隐藏整张卡片，不占位、不报错（解决「不该出现」）
+        card.classList.add("bws-hidden");
+        // 自愈：竹林可能晚于本插件加载，2s 后重试一次，就绪则自动恢复
+        if (!card.dataset.bwsRetried) {
+          card.dataset.bwsRetried = "1";
+          window.setTimeout(() => {
+            if (this.strategyMiniEl) void this.refreshStrategyMini();
+          }, 2000);
+        }
         return;
       }
+      card.classList.remove("bws-hidden");
+      const goals = Array.isArray(data.goals) ? data.goals : [];
+      const overview = (data.overview ?? {}) as GoalStats;
       // 优先消费竹林返回的权威整体健康分；旧版竹林未提供 health 时回退到本地二次平均
       const score =
         data.health && typeof data.health.avgScore === "number"
           ? data.health.avgScore
-          : data.goals.length > 0
+          : goals.length > 0
             ? Math.round(
-                data.goals.reduce((s, g) => s + g.score, 0) / data.goals.length,
+                goals.reduce((s, g) => s + (g.score ?? 0), 0) / goals.length,
               )
             : 0;
       const alerts =
-        data.overview.urgentGoals.length +
-        data.overview.overdueGoals.length +
-        data.overview.stagnantGoals.length;
+        (overview.urgentGoals?.length ?? 0) +
+        (overview.overdueGoals?.length ?? 0) +
+        (overview.stagnantGoals?.length ?? 0);
       info.textContent = "";
       info.append("健康 ");
       info.createEl("strong", { cls: "bws-stat-num", text: String(score) });
       info.append(" · 预警 ");
       info.createEl("strong", { cls: "bws-stat-num", text: String(alerts) });
-      this.strategyMiniEl?.classList.remove("is-disabled");
+      card.classList.remove("is-disabled");
     } catch {
-      info.textContent = "读取失败";
+      // 读取失败：给出明确文案而非留白，并保留入口可重试（解决「空白」）
+      info.textContent = "暂不可用，点此重试";
+      card.classList.remove("bws-hidden");
     } finally {
       this.strategyMiniLoading = false;
       // 境界 / 竹币独立于战略复盘总览，始终一并刷新
