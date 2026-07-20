@@ -44,7 +44,7 @@ export class StrategyReportModal extends Modal {
   }
 
   private async load(): Promise<void> {
-    const root = this.contentEl.querySelector(".bw-strategy-modal");
+    const root = this.contentEl.querySelector<HTMLElement>(".bw-strategy-modal");
     if (!root) return;
     this.loading = true;
     this.renderLoading(root);
@@ -62,7 +62,7 @@ export class StrategyReportModal extends Modal {
   private renderLoading(root: HTMLElement): void {
     root.empty();
     const title = root.createDiv({ cls: "bw-strategy-title" });
-    title.appendChild(svgIcon("chart"));
+    svgIcon(title, "chart");
     title.append(" 战略复盘");
     root.createDiv({
       cls: "bw-strategy-loading",
@@ -81,7 +81,7 @@ export class StrategyReportModal extends Modal {
     const head = root.createDiv({ cls: "bw-strategy-head" });
     const titleBox = head.createDiv({ cls: "bw-strategy-titlebox" });
     const t = titleBox.createDiv({ cls: "bw-strategy-title" });
-    t.appendChild(svgIcon("chart"));
+    svgIcon(t, "chart");
     t.append(" 战略复盘");
     const updated = new Date(this.data.updatedAt);
     const hh = String(updated.getHours()).padStart(2, "0");
@@ -91,7 +91,7 @@ export class StrategyReportModal extends Modal {
       text: `更新于 ${hh}:${mm}`,
     });
     const refresh = head.createEl("button", { cls: "bw-strategy-refresh" });
-    refresh.appendChild(svgIcon("refresh"));
+    svgIcon(refresh, "refresh");
     refresh.createSpan({ text: "重新核算" });
     refresh.addEventListener("click", () => {
       if (this.loading) return;
@@ -110,10 +110,10 @@ export class StrategyReportModal extends Modal {
   private renderEmpty(root: HTMLElement): void {
     root.empty();
     const title = root.createDiv({ cls: "bw-strategy-title" });
-    title.appendChild(svgIcon("chart"));
+    svgIcon(title, "chart");
     title.append(" 战略复盘");
     const empty = root.createDiv({ cls: "bw-strategy-empty" });
-    empty.appendChild(svgIcon("chart"));
+    svgIcon(empty, "chart");
     empty.createEl("p", {
       text: "未检测到「竹林修仙传」的修行数据。",
     });
@@ -229,7 +229,7 @@ export class StrategyReportModal extends Modal {
     ];
     if (alerts.every((a) => a.list.length === 0)) {
       const good = alertG.createDiv({ cls: "bw-strategy-allgood" });
-      good.appendChild(svgIcon("pulse"));
+      svgIcon(good, "pulse");
       const gtxt = good.createDiv();
       gtxt.createDiv({ cls: "bw-strategy-allgood-title", text: "一切顺利" });
       gtxt.createDiv({
@@ -243,7 +243,7 @@ export class StrategyReportModal extends Modal {
         const card = cards.createDiv({ cls: `bw-strategy-acard ${a.cls}` });
         const top = card.createDiv({ cls: "bw-strategy-acard-top" });
         const ico = top.createDiv({ cls: "bw-strategy-acard-icon" });
-        ico.appendChild(svgIcon(a.icon));
+        svgIcon(ico, a.icon);
         top.createDiv({
           cls: "bw-strategy-acard-count",
           text: String(a.list.length),

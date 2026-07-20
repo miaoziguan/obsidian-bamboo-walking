@@ -544,7 +544,7 @@ export class SidebarView extends ItemView {
       const head = card.createDiv({ cls: "bws-strategy-mini-head" });
       const left = head.createDiv({ cls: "bws-strategy-mini-left" });
       const label = left.createDiv({ cls: "bws-strategy-mini-label" });
-      label.appendChild(svgIcon("chart", "bws-strategy-mini-ico"));
+      svgIcon(label, "chart", "bws-strategy-mini-ico");
       label.append(" 战略复盘");
 
       this.strategyMiniInfoEl = left.createDiv({
@@ -556,7 +556,7 @@ export class SidebarView extends ItemView {
         cls: "bws-strategy-mini-refresh",
         attr: { "aria-label": "重新核算战略复盘", title: "重新核算" },
       });
-      refresh.appendChild(svgIcon("refresh"));
+      svgIcon(refresh, "refresh");
       refresh.addEventListener("click", (e) => {
         e.stopPropagation();
         if (this.strategyMiniLoading) return;
