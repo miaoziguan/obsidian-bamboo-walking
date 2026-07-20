@@ -14,7 +14,7 @@ import { StrategyReportModal } from "./StrategyReportModal";
 import {
   getBambooImmortalsApi,
   getCultivationRealm,
-  getBambooCoinBalance,
+  getBambooCoinAvailableBalance,
 } from "../services/BambooReviewBridge";
 import { svgIcon } from "./icons";
 import { matchArticle } from "../utils/search";
@@ -653,7 +653,7 @@ export class SidebarView extends ItemView {
     try {
       const [realm, balance] = await Promise.all([
         getCultivationRealm(this.app),
-        getBambooCoinBalance(this.app),
+        getBambooCoinAvailableBalance(this.app),
       ]);
       if (realm == null && balance == null) {
         el.classList.add("bws-hidden");

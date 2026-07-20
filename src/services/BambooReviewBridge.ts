@@ -110,10 +110,16 @@ export interface BambooReviewApi {
    */
   getCultivationRealm?: () => Promise<CultivationRealm | null>;
   /**
-   * 当前竹币余额。
+   * 当前竹币余额（总额）。
    * 可选：旧版竹林修仙传未实现时返回 undefined，调用方据此优雅降级。
    */
   getBambooCoinBalance?: () => Promise<number | null>;
+  /**
+   * 当前「可用竹币余额」（总额 − 今日收入；今日收入次日才可用，界面标注为「冻结」）。
+   * 与竹林修仙传商店界面口径一致。可选：旧版竹林修仙传未实现时返回 undefined，
+   * 调用方回退到 getBambooCoinBalance 保证兼容。
+   */
+  getBambooCoinAvailableBalance?: () => Promise<number | null>;
 }
 
 /**
@@ -200,6 +206,26 @@ export async function getBambooCoinBalance(
   app: App,
 ): Promise<number | null> {
   const api = getBambooImmortalsApi(app);
+  if (api && typeof api.getBambooCoinBalance === "function") {
+    return api.getBambooCoinBalance();
+  }
+  return null;
+}
+
+/**
+ * 拉取「竹林修仙传」的当前「可用竹币余额」（总额 − 今日收入，与商店界面一致）。
+ * 优先调用 getBambooCoinAvailableBalance；旧版竹林修仙传未实现该契约时，
+ * 优雅回退到 getBambooCoinBalance（总额），保证不破版、不白屏。
+ * 未安装 / 未启用竹林修仙传时返回 null，调用方据此隐藏竹币区块。
+ */
+export async function getBambooCoinAvailableBalance(
+  app: App,
+): Promise<number | null> {
+  const api = getBambooImmortalsApi(app);
+  if (api && typeof api.getBambooCoinAvailableBalance === "function") {
+    return api.getBambooCoinAvailableBalance();
+  }
+  // 旧版竹林的优雅降级：回退到总额
   if (api && typeof api.getBambooCoinBalance === "function") {
     return api.getBambooCoinBalance();
   }
