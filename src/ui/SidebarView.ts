@@ -579,8 +579,13 @@ export class SidebarView extends ItemView {
       const cult = card.createDiv({ cls: "bws-strategy-mini-cult bws-hidden" });
       this.strategyMiniCultEl = cult;
       void this.refreshCultivation();
-    } catch {
-      // 不抛出：主侧栏其余内容（作者卡 / 状态栏 / 列表）正常渲染
+    } catch (e) {
+      // 不抛出：主侧栏其余内容（作者卡 / 状态栏 / 列表）正常渲染，但记录并给出可见提示
+      console.error("[bamboo-walking] 战略复盘卡片渲染失败：", e);
+      try {
+        const errCard = parent.createDiv({ cls: "bws-strategy-mini bws-strategy-mini-err" });
+        errCard.setText("战略复盘加载失败，详见控制台");
+      } catch {}
     }
   }
 
@@ -588,7 +593,10 @@ export class SidebarView extends ItemView {
   private async refreshStrategyMini(): Promise<void> {
     const info = this.strategyMiniInfoEl;
     const card = this.strategyMiniEl;
-    if (!info || !card) return;
+    if (!info || !card) {
+      console.error("[bamboo-walking] 战略复盘：strategyMini 元素未就绪（info/card 为 null），跳过刷新");
+      return;
+    }
     this.strategyMiniLoading = true;
     // 区分竹林不可用与数据为空：卡片始终可见，给出明确文案（解决「还是没有出现」）
     const api = getBambooImmortalsApi(this.app);

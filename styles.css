@@ -2398,6 +2398,10 @@ button.bwr-btn-tts-stop:hover {
   cursor: default;
   opacity: 0.55;
 }
+.bws-strategy-mini-err {
+  color: var(--text-error);
+  border-color: var(--background-modifier-error);
+}
 .bws-strategy-mini-head {
   display: flex;
   align-items: center;

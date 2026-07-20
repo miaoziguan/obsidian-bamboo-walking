@@ -1,4 +1,4 @@
-import { addIcon, createSpan, setIcon } from "obsidian";
+import { addIcon, setIcon } from "obsidian";
 
 /** 线性图标集（内联 SVG，stroke=currentColor），统一替代表情图标。 */
 export const ICON_PATHS = {
@@ -32,7 +32,9 @@ export type IconName = keyof typeof ICON_PATHS;
 
 /** 内联 SVG 线性图标（stroke=currentColor，随文字色变化）。零表情图标。 */
 export function svgIcon(name: IconName, cls?: string): HTMLElement {
-  const span = createSpan({ cls: "bw-icon" + (cls ? " " + cls : "") });
+  // 用原生 createElement 而非 obsidian 顶层 createSpan（旧版本未导出该命名函数），保证全版本兼容。
+  const span = document.createElement("span");
+  span.className = "bw-icon" + (cls ? " " + cls : "");
   try {
     setIcon(span, `bw-${name}`);
   } catch {
