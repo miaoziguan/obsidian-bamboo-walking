@@ -15,7 +15,6 @@ import {
   getBambooImmortalsApi,
   getCultivationRealm,
   getBambooCoinBalance,
-  type GoalStats,
 } from "../services/BambooReviewBridge";
 import { svgIcon } from "./icons";
 import { matchArticle } from "../utils/search";
@@ -616,7 +615,7 @@ export class SidebarView extends ItemView {
         return;
       }
       const goals = Array.isArray(data.goals) ? data.goals : [];
-      const overview = (data.overview ?? {}) as GoalStats;
+      const overview = data.overview;
       // 优先消费竹林返回的权威整体健康分；旧版竹林未提供 health 时回退到本地二次平均
       const score =
         data.health && typeof data.health.avgScore === "number"

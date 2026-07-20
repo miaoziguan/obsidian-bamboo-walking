@@ -1,5 +1,5 @@
 /* ────────────── 战略复盘报告弹层（克制 · 主题感知 · 去仪表盘化） ────────────── */
-import { App, Modal, Notice, createDiv } from "obsidian";
+import { App, Modal, Notice } from "obsidian";
 import {
   getStrategyOverview,
   type StrategyOverview,
@@ -99,12 +99,12 @@ export class StrategyReportModal extends Modal {
     });
 
     // ── 综合（一行式） ──
-    root.appendChild(this.renderSummary(this.data));
+    this.renderSummary(root, this.data);
 
     // ── 数据概览（与竹林修仙传战略复盘口径完全一致） ──
     const sec = root.createDiv({ cls: "bw-strategy-section" });
     sec.createDiv({ cls: "bw-strategy-section-title", text: "数据概览" });
-    sec.appendChild(this.renderOverview(this.data.overview));
+    this.renderOverview(sec, this.data.overview);
   }
 
   private renderEmpty(root: HTMLElement): void {
@@ -124,8 +124,8 @@ export class StrategyReportModal extends Modal {
   }
 
   /** 综合：一行式（数字 + 紧凑 metadata），不再用 chip 阵列 */
-  private renderSummary(data: StrategyOverview): HTMLElement {
-    const wrap = createDiv({ cls: "bw-strategy-summary" });
+  private renderSummary(parent: HTMLElement, data: StrategyOverview): HTMLElement {
+    const wrap = parent.createDiv({ cls: "bw-strategy-summary" });
 
     const score =
       data.goals.length > 0
@@ -168,8 +168,8 @@ export class StrategyReportModal extends Modal {
   }
 
   /** 数据概览：与「竹林修仙传·战略复盘」口径完全一致（7 节） */
-  private renderOverview(o: GoalStats): HTMLElement {
-    const wrap = createDiv({ cls: "bw-strategy-overview" });
+  private renderOverview(parent: HTMLElement, o: GoalStats): HTMLElement {
+    const wrap = parent.createDiv({ cls: "bw-strategy-overview" });
     const safe = (s?: string): string => (s && s.trim() ? s : "(未命名)");
 
     // ① 核心指标
