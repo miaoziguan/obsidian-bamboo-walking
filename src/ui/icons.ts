@@ -1,4 +1,4 @@
-import { addIcon, setIcon } from "obsidian";
+import { addIcon, createEl, setIcon } from "obsidian";
 
 /** 线性图标集（内联 SVG，stroke=currentColor），统一替代表情图标。 */
 export const ICON_PATHS = {
@@ -32,8 +32,15 @@ export type IconName = keyof typeof ICON_PATHS;
 
 /** 内联 SVG 线性图标（stroke=currentColor，随文字色变化）。零表情图标。 */
 export function svgIcon(name: IconName, cls?: string): HTMLElement {
-  // 用原生 createElement 而非 obsidian 顶层 createSpan（旧版本未导出该命名函数），保证全版本兼容。
-  const span = document.createElement("span");
+  // 主路径用 Obsidian 的 createEl（符合 prefer-create-el 规则）；
+  // 兜底 document.createElement 仅用于个别未导出顶层 createEl 的运行环境（避免白屏）。
+  let span: HTMLElement;
+  try {
+    span = createEl("span");
+  } catch {
+    // eslint-disable-next-line -- 兜底：部分运行环境未导出顶层 createEl/createSpan，回退原生创建避免白屏
+    span = document.createElement("span");
+  }
   span.className = "bw-icon" + (cls ? " " + cls : "");
   try {
     setIcon(span, `bw-${name}`);
