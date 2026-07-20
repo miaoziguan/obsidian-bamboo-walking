@@ -526,42 +526,47 @@ export class SidebarView extends ItemView {
 
   /** 左栏竹林概览卡：头部(标题+重算) / 健康预警行 / 境界竹币行，点击打开完整抽屉 */
   private renderStrategyMini(parent: HTMLElement): void {
-    const card = parent.createDiv({ cls: "bws-strategy-mini" });
-    this.strategyMiniEl = card;
+    // 战略复盘为增强功能：整体兜底，任何异常都不得阻断作者卡与主侧栏渲染
+    try {
+      const card = parent.createDiv({ cls: "bws-strategy-mini" });
+      this.strategyMiniEl = card;
 
-    const head = card.createDiv({ cls: "bws-strategy-mini-head" });
-    const left = head.createDiv({ cls: "bws-strategy-mini-left" });
-    const label = left.createDiv({ cls: "bws-strategy-mini-label" });
-    label.appendChild(svgIcon("chart", "bws-strategy-mini-ico"));
-    label.append(" 战略复盘");
+      const head = card.createDiv({ cls: "bws-strategy-mini-head" });
+      const left = head.createDiv({ cls: "bws-strategy-mini-left" });
+      const label = left.createDiv({ cls: "bws-strategy-mini-label" });
+      label.appendChild(svgIcon("chart", "bws-strategy-mini-ico"));
+      label.append(" 战略复盘");
 
-    this.strategyMiniInfoEl = left.createDiv({
-      cls: "bws-strategy-mini-info",
-      text: "载入中…",
-    });
+      this.strategyMiniInfoEl = left.createDiv({
+        cls: "bws-strategy-mini-info",
+        text: "载入中…",
+      });
 
-    const refresh = head.createEl("button", {
-      cls: "bws-strategy-mini-refresh",
-      attr: { "aria-label": "重新核算战略复盘", title: "重新核算" },
-    });
-    refresh.appendChild(svgIcon("refresh"));
-    refresh.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (this.strategyMiniLoading) return;
+      const refresh = head.createEl("button", {
+        cls: "bws-strategy-mini-refresh",
+        attr: { "aria-label": "重新核算战略复盘", title: "重新核算" },
+      });
+      refresh.appendChild(svgIcon("refresh"));
+      refresh.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (this.strategyMiniLoading) return;
+        void this.refreshStrategyMini();
+      });
+
+      card.addEventListener("click", () => {
+        if (this.strategyMiniEl?.classList.contains("is-disabled")) return;
+        new StrategyReportModal(this.app).open();
+      });
+
       void this.refreshStrategyMini();
-    });
 
-    card.addEventListener("click", () => {
-      if (this.strategyMiniEl?.classList.contains("is-disabled")) return;
-      new StrategyReportModal(this.app).open();
-    });
-
-    void this.refreshStrategyMini();
-
-    // 修行境界 · 竹币 行（卡片内第二行，与战略复盘总览解耦、独立降级）
-    const cult = card.createDiv({ cls: "bws-strategy-mini-cult bws-hidden" });
-    this.strategyMiniCultEl = cult;
-    void this.refreshCultivation();
+      // 修行境界 · 竹币 行（卡片内第二行，与战略复盘总览解耦、独立降级）
+      const cult = card.createDiv({ cls: "bws-strategy-mini-cult bws-hidden" });
+      this.strategyMiniCultEl = cult;
+      void this.refreshCultivation();
+    } catch {
+      // 不抛出：主侧栏其余内容（作者卡 / 状态栏 / 列表）正常渲染
+    }
   }
 
   /** 拉取并刷新极简条上的数字（实时核算，零缓存） */
