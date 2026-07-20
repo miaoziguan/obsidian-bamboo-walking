@@ -582,10 +582,8 @@ export class SidebarView extends ItemView {
     } catch (e) {
       // 不抛出：主侧栏其余内容（作者卡 / 状态栏 / 列表）正常渲染，但记录并给出可见提示
       console.error("[bamboo-walking] 战略复盘卡片渲染失败：", e);
-      try {
-        const errCard = parent.createDiv({ cls: "bws-strategy-mini bws-strategy-mini-err" });
-        errCard.setText("战略复盘加载失败，详见控制台");
-      } catch {}
+      const errCard = parent.createDiv({ cls: "bws-strategy-mini bws-strategy-mini-err" });
+      errCard.setText("战略复盘加载失败，详见控制台");
     }
   }
 
