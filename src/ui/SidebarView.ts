@@ -10,6 +10,13 @@ import {
   CONTACT_EMAIL,
 } from "../constants";
 import { AboutModal } from "./AboutModal";
+import { StrategyReportModal } from "./StrategyReportModal";
+import {
+  getStrategyOverview,
+  getCultivationRealm,
+  getBambooCoinBalance,
+} from "../services/BambooReviewBridge";
+import { svgIcon } from "./icons";
 import { matchArticle } from "../utils/search";
 import { formatWordCount } from "../utils/text";
 
@@ -46,6 +53,11 @@ export class SidebarView extends ItemView {
   private getWordCountFn: ((slug: string) => number | undefined) | null = null;
   /** 作者卡片下的全站字数汇总行（只创建一次，后续仅更新文本） */
   private authorStatsEl: HTMLElement | null = null;
+  /** 战略复盘极简概览条（左栏常驻，A+B 组合之 A） */
+  private strategyMiniEl: HTMLElement | null = null;
+  private strategyMiniInfoEl: HTMLElement | null = null;
+  private strategyMiniCultEl: HTMLElement | null = null;
+  private strategyMiniLoading = false;
 
   getViewType(): string { return VIEW_TYPE_SIDEBAR; }
   getDisplayText(): string { return "竹杖芒鞋"; }
@@ -501,12 +513,125 @@ export class SidebarView extends ItemView {
         text: "投稿",
         attr: { title: "投稿 / 联系作者" },
       });
-    // 投稿也走同一弹层（内含投稿说明与邮箱）
-    submitLink.addEventListener("click", () => new AboutModal(this.app).open());
+      // 投稿也走同一弹层（内含投稿说明与邮箱）
+      submitLink.addEventListener("click", () => new AboutModal(this.app).open());
+    }
 
     // 全站字数汇总（渐进补全，首屏无统计时隐藏）
     this.authorStatsEl = card.createDiv({ cls: "bws-author-stats bws-hidden" });
+
+    // 战略复盘极简概览（A+B 组合：左栏常驻条，点开看完整抽屉）
+    this.renderStrategyMini(header);
   }
+
+  /** 左栏竹林概览卡：头部(标题+重算) / 健康预警行 / 境界竹币行，点击打开完整抽屉 */
+  private renderStrategyMini(parent: HTMLElement): void {
+    const card = parent.createDiv({ cls: "bws-strategy-mini" });
+    this.strategyMiniEl = card;
+
+    const head = card.createDiv({ cls: "bws-strategy-mini-head" });
+    const left = head.createDiv({ cls: "bws-strategy-mini-left" });
+    const label = left.createDiv({ cls: "bws-strategy-mini-label" });
+    label.appendChild(svgIcon("chart", "bws-strategy-mini-ico"));
+    label.append(" 战略复盘");
+
+    this.strategyMiniInfoEl = left.createDiv({
+      cls: "bws-strategy-mini-info",
+      text: "载入中…",
+    });
+
+    const refresh = head.createEl("button", {
+      cls: "bws-strategy-mini-refresh",
+      attr: { "aria-label": "重新核算战略复盘", title: "重新核算" },
+    });
+    refresh.appendChild(svgIcon("refresh"));
+    refresh.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (this.strategyMiniLoading) return;
+      void this.refreshStrategyMini();
+    });
+
+    card.addEventListener("click", () => {
+      if (this.strategyMiniEl?.classList.contains("is-disabled")) return;
+      new StrategyReportModal(this.app).open();
+    });
+
+    void this.refreshStrategyMini();
+
+    // 修行境界 · 竹币 行（卡片内第二行，与战略复盘总览解耦、独立降级）
+    const cult = card.createDiv({ cls: "bws-strategy-mini-cult bws-hidden" });
+    this.strategyMiniCultEl = cult;
+    void this.refreshCultivation();
+  }
+
+  /** 拉取并刷新极简条上的数字（实时核算，零缓存） */
+  private async refreshStrategyMini(): Promise<void> {
+    const info = this.strategyMiniInfoEl;
+    if (!info) return;
+    this.strategyMiniLoading = true;
+    info.textContent = "核算中…";
+    try {
+      const data = await getStrategyOverview(this.app);
+      if (!data) {
+        info.textContent = "未启用竹林";
+        this.strategyMiniEl?.classList.add("is-disabled");
+        return;
+      }
+      // 优先消费竹林返回的权威整体健康分；旧版竹林未提供 health 时回退到本地二次平均
+      const score =
+        data.health && typeof data.health.avgScore === "number"
+          ? data.health.avgScore
+          : data.goals.length > 0
+            ? Math.round(
+                data.goals.reduce((s, g) => s + g.score, 0) / data.goals.length,
+              )
+            : 0;
+      const alerts =
+        data.overview.urgentGoals.length +
+        data.overview.overdueGoals.length +
+        data.overview.stagnantGoals.length;
+      info.textContent = "";
+      info.append("健康 ");
+      info.createEl("strong", { cls: "bws-stat-num", text: String(score) });
+      info.append(" · 预警 ");
+      info.createEl("strong", { cls: "bws-stat-num", text: String(alerts) });
+      this.strategyMiniEl?.classList.remove("is-disabled");
+    } catch {
+      info.textContent = "读取失败";
+    } finally {
+      this.strategyMiniLoading = false;
+      // 境界 / 竹币独立于战略复盘总览，始终一并刷新
+      void this.refreshCultivation();
+    }
+  }
+
+  /** 拉取并刷新境界 / 竹币常驻行（与战略复盘总览解耦，独立降级） */
+  private async refreshCultivation(): Promise<void> {
+    const el = this.strategyMiniCultEl;
+    if (!el) return;
+    try {
+      const [realm, balance] = await Promise.all([
+        getCultivationRealm(this.app),
+        getBambooCoinBalance(this.app),
+      ]);
+      if (realm == null && balance == null) {
+        el.classList.add("bws-hidden");
+        return;
+      }
+      el.classList.remove("bws-hidden");
+      el.textContent = "";
+      if (realm) {
+        const item = el.createSpan({ cls: "bws-cult-item bws-cult-realm" });
+        item.createSpan({ cls: "bws-cult-val", text: `${realm.realm}·第${realm.layer}层` });
+      }
+      if (balance != null) {
+        const item = el.createSpan({ cls: "bws-cult-item bws-cult-coin" });
+        item.createSpan({ cls: "bws-cult-val", text: `竹币 ${balance}` });
+      }
+    } catch {
+      // 读取失败（如竹林插件异常）→ 隐藏境界/竹币行，不阻塞战略复盘
+      el.classList.add("bws-hidden");
+    }
   }
 
   private renderLoading(c: HTMLElement): void {

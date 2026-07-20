@@ -7,6 +7,7 @@ import { countWords, formatWordCount, estimateReadingTime } from "../utils/text"
 import { ShareModal } from "./ShareModal";
 import { TtsService, type TtsSegment, type TtsState } from "../services/TtsService";
 import { getAtomicNotesApi, buildExtractionText, findRelatedNotes } from "../services/AtomicNotesBridge";
+import { getBambooImmortalsApi, refineQuoteToGoal } from "../services/BambooReviewBridge";
 
 /** 语速档位 */
 const TTS_RATES = [0.75, 1.0, 1.25, 1.5];
@@ -720,6 +721,19 @@ export class ReaderView extends ItemView {
           }
         }),
     );
+    // 跨插件联动：仅当检测到「竹林修仙传」插件时，提供「炼化为修行目标」
+    if (getBambooImmortalsApi(this.app)) {
+      menu.addItem((item) =>
+        item
+          .setTitle("炼化为修行目标")
+          .setIcon("target")
+          .onClick(() => {
+            void refineQuoteToGoal(this.app, sel, this.article?.title).then((ok) => {
+              if (!ok) new Notice("未检测到「竹林修仙传」插件，无法炼化");
+            });
+          }),
+      );
+    }
     menu.showAtMouseEvent(e);
   }
 
