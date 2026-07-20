@@ -1,3 +1,5 @@
+import { addIcon, createSpan, setIcon } from "obsidian";
+
 /** 线性图标集（内联 SVG，stroke=currentColor），统一替代表情图标。 */
 export const ICON_PATHS = {
   chart:
@@ -16,12 +18,16 @@ export const ICON_PATHS = {
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
 } as const;
 
+// 注册为 Obsidian 自定义图标（统一加 bw- 前缀，避免与内置图标冲突）
+for (const [key, svg] of Object.entries(ICON_PATHS) as Array<[string, string]>) {
+  addIcon(`bw-${key}`, svg);
+}
+
 export type IconName = keyof typeof ICON_PATHS;
 
 /** 内联 SVG 线性图标（stroke=currentColor，随文字色变化）。零表情图标。 */
 export function svgIcon(name: IconName, cls?: string): HTMLElement {
-  const span = document.createElement("span");
-  span.className = "bw-icon" + (cls ? " " + cls : "");
-  span.innerHTML = ICON_PATHS[name];
+  const span = createSpan({ cls: "bw-icon" + (cls ? " " + cls : "") });
+  setIcon(span, `bw-${name}`);
   return span;
 }

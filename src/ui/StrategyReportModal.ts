@@ -1,5 +1,5 @@
 /* ────────────── 战略复盘报告弹层（克制 · 主题感知 · 去仪表盘化） ────────────── */
-import { App, Modal } from "obsidian";
+import { App, Modal, Notice, createDiv } from "obsidian";
 import {
   getStrategyOverview,
   type StrategyOverview,
@@ -44,18 +44,15 @@ export class StrategyReportModal extends Modal {
   }
 
   private async load(): Promise<void> {
-    const root = this.contentEl.querySelector(
-      ".bw-strategy-modal",
-    ) as HTMLElement | null;
+    const root = this.contentEl.querySelector(".bw-strategy-modal");
     if (!root) return;
     this.loading = true;
     this.renderLoading(root);
     try {
       this.data = await getStrategyOverview(this.app);
-    } catch (e) {
+    } catch {
       this.data = null;
-      // eslint-disable-next-line no-console
-      console.error("[bamboo-walking] 战略复盘拉取失败", e);
+      new Notice("战略复盘拉取失败，请确认「竹林修仙传」插件已启用");
     } finally {
       this.loading = false;
       this.render(root);
@@ -128,8 +125,7 @@ export class StrategyReportModal extends Modal {
 
   /** 综合：一行式（数字 + 紧凑 metadata），不再用 chip 阵列 */
   private renderSummary(data: StrategyOverview): HTMLElement {
-    const wrap = document.createElement("div");
-    wrap.className = "bw-strategy-summary";
+    const wrap = createDiv({ cls: "bw-strategy-summary" });
 
     const score =
       data.goals.length > 0
@@ -173,8 +169,7 @@ export class StrategyReportModal extends Modal {
 
   /** 数据概览：与「竹林修仙传·战略复盘」口径完全一致（7 节） */
   private renderOverview(o: GoalStats): HTMLElement {
-    const wrap = document.createElement("div");
-    wrap.className = "bw-strategy-overview";
+    const wrap = createDiv({ cls: "bw-strategy-overview" });
     const safe = (s?: string): string => (s && s.trim() ? s : "(未命名)");
 
     // ① 核心指标
