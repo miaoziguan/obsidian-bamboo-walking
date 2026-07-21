@@ -50,10 +50,8 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
         items: [
           {
             name: "作者手柄",
-            desc: "按 GitHub 手柄（插件仓库所有者）自动发现「我的插件」，你发布的新插件会自动出现。每行一个。",
-            render: (setting) => {
-              this.buildAuthorHandlesSetting(setting.controlEl);
-            },
+            desc: `按 GitHub 手柄（插件仓库所有者）自动发现「我的插件」。当前固定为：${this.plugin.settings.authorHandles.join("、")}，由开发者设置，普通用户无需修改。`,
+            render: () => {},
           },
         ],
       },
@@ -124,31 +122,17 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
 
     // ── 插件态势 ──
     new Setting(containerEl).setName("插件态势").setHeading();
-    this.buildAuthorHandlesSetting(containerEl);
+    this.buildAuthorHandlesInfo(containerEl);
   }
 
-  private buildAuthorHandlesSetting(parent: HTMLElement): void {
+  /** 作者手柄为开发者固定值，普通用户不可修改，仅作只读展示 */
+  private buildAuthorHandlesInfo(parent: HTMLElement): void {
+    const handles = this.plugin.settings.authorHandles.join("、");
     new Setting(parent)
       .setName("作者手柄（自动发现）")
       .setDesc(
-        "按 GitHub 手柄（插件仓库所有者）自动发现「我的插件」，你发布的新插件会自动出现。每行一个，例如 miaoziguan。",
-      )
-      .addTextArea((ta) => {
-        ta.setPlaceholder("miaoziguan");
-        ta.setValue(this.plugin.settings.authorHandles.join("\n"));
-        ta.inputEl.setAttr("rows", 3);
-        ta.inputEl.addClass("bw-settings-textarea");
-        ta.onChange(async (val) => {
-          this.plugin.settings.authorHandles = val
-            .split("\n")
-            .map((s) => s.trim())
-            .filter(Boolean);
-          await this.plugin.saveSettings();
-          this.plugin.pluginStatsService?.setConfig(
-            this.plugin.settings.authorHandles,
-          );
-        });
-      });
+        `按 GitHub 手柄（插件仓库所有者）自动发现「我的插件」。当前固定为：${handles}，由开发者设置，普通用户无需修改。`,
+      );
   }
 
   private buildAboutCard(parent: HTMLElement): void {

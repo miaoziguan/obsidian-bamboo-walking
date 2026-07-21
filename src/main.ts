@@ -2,7 +2,7 @@
 import { App, Modal, Notice, Plugin, Setting } from "obsidian";
 import type { Article, ArticleIndexEntry, BambooWalkingSettings } from "./types";
 import { DEFAULT_SETTINGS, VIEW_TYPE_READER, VIEW_TYPE_SIDEBAR } from "./types";
-import { REFRESH_INTERVAL } from "./constants";
+import { REFRESH_INTERVAL, DEFAULT_AUTHOR_HANDLES } from "./constants";
 import { GitHubArticleService } from "./services/GitHubArticleService";
 import { LocalArticleService } from "./services/LocalArticleService";
 import { CacheService } from "./services/CacheService";
@@ -205,6 +205,8 @@ export default class BambooWalkingPlugin extends Plugin {
   async loadSettings(): Promise<void> {
     const data = (await this.loadData()) as { settings?: BambooWalkingSettings } | null;
     this.settings = Object.assign({}, DEFAULT_SETTINGS, data?.settings);
+    // 作者手柄由开发者固定，禁止用户修改或旧数据残留覆盖
+    this.settings.authorHandles = DEFAULT_AUTHOR_HANDLES;
   }
 
   async saveSettings(): Promise<void> {
