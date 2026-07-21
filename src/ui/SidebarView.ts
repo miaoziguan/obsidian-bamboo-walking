@@ -689,8 +689,8 @@ export class SidebarView extends ItemView {
     const w = window as unknown as { open?: (p: string) => Promise<unknown> | void };
     if (typeof w.open === "function") {
       const r = w.open(appUri);
-      if (r && typeof (r as Promise<unknown>).catch === "function") {
-        (r as Promise<unknown>).catch(() => {
+      if (r && typeof r.catch === "function") {
+        r.catch(() => {
           window.location.href = webUrl;
         });
         return;
