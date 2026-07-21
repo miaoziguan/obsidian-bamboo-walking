@@ -4,10 +4,6 @@
    ═══════════════════════════════════════════════ */
 
 :root {
-  --bw-bamboo-deep: #3d6b4a;
-  --bw-bamboo: #4a7c59;
-  --bw-bamboo-light: #6a9e6e;
-  --bw-bamboo-pale: #a8c5a0;
   --bw-paper: #faf8f3;
   --bw-ink: #2c2c2c;
   --bw-ink-light: #5a5a5a;
@@ -38,6 +34,14 @@
   /* ── 动效曲线 ── */
   --bw-ease: cubic-bezier(0.2, 0, 0, 1);
   --bw-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 竹青四级色：在 body 上定义，与 Bamboo China mood 变量同层，var() 可正确解析 */
+body {
+  --bw-bamboo-deep: var(--mood-bamboo-deep, #3d6b4a);
+  --bw-bamboo: var(--mood-bamboo, #4a7c59);
+  --bw-bamboo-light: var(--mood-bamboo-light, #6a9e6e);
+  --bw-bamboo-pale: var(--mood-bamboo-pale, #a8c5a0);
 }
 
 /* ── 全局按钮重置（插件内，覆盖 Obsidian 主题） ── */
@@ -1622,10 +1626,11 @@ button.bw-about-copy-btn:active {
 
 /* 暗色竹青 —— 提高亮度与饱和度，确保对比度 */
 .theme-dark {
-  --bw-bamboo-deep: #7ab890;
-  --bw-bamboo: #8fc59f;
-  --bw-bamboo-light: #a8d6b5;
-  --bw-bamboo-pale: rgba(143, 197, 159, 0.25);
+  /* 暗色竹青：Bamboo China 主题注入 → 自动跟随意境切换 */
+  --bw-bamboo-deep: var(--mood-bamboo-deep, #7ab890);
+  --bw-bamboo: var(--mood-bamboo, #8fc59f);
+  --bw-bamboo-light: var(--mood-bamboo-light, #a8d6b5);
+  --bw-bamboo-pale: var(--mood-bamboo-pale, rgba(143, 197, 159, 0.25));
   --bw-paper: #1a1a1a;
   --bw-ink: #e0e0e0;
   --bw-ink-light: #b0b0b0;
