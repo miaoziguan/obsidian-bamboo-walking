@@ -55,13 +55,6 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
               this.buildAuthorHandlesSetting(setting.controlEl);
             },
           },
-          {
-            name: "额外跟踪插件",
-            desc: "除自动发现的「我的插件」外，额外跟踪的插件 id（盯竞品等）。每行一个，留空仅跟踪自己的。",
-            render: (setting) => {
-              this.buildTrackedPluginsSetting(setting.controlEl);
-            },
-          },
         ],
       },
       {
@@ -132,7 +125,6 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
     // ── 插件态势 ──
     new Setting(containerEl).setName("插件态势").setHeading();
     this.buildAuthorHandlesSetting(containerEl);
-    this.buildTrackedPluginsSetting(containerEl);
   }
 
   private buildAuthorHandlesSetting(parent: HTMLElement): void {
@@ -154,32 +146,6 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
           this.plugin.pluginStatsService?.setConfig(
             this.plugin.settings.authorHandles,
-            this.plugin.settings.trackedPlugins,
-          );
-        });
-      });
-  }
-
-  private buildTrackedPluginsSetting(parent: HTMLElement): void {
-    new Setting(parent)
-      .setName("额外跟踪插件")
-      .setDesc(
-        "除「作者手柄」自动发现的插件外，额外跟踪的插件 id（每行一个）。可用于盯竞品。留空则仅跟踪你自己的插件。",
-      )
-      .addTextArea((ta) => {
-        ta.setPlaceholder("atomic-notes-extractor");
-        ta.setValue(this.plugin.settings.trackedPlugins.join("\n"));
-        ta.inputEl.setAttr("rows", 3);
-        ta.inputEl.addClass("bw-settings-textarea");
-        ta.onChange(async (val) => {
-          this.plugin.settings.trackedPlugins = val
-            .split("\n")
-            .map((s) => s.trim())
-            .filter(Boolean);
-          await this.plugin.saveSettings();
-          this.plugin.pluginStatsService?.setConfig(
-            this.plugin.settings.authorHandles,
-            this.plugin.settings.trackedPlugins,
           );
         });
       });

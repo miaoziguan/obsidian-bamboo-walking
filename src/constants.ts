@@ -94,9 +94,6 @@ export const PLUGIN_STATS_CACHE_VERSION = 1;
 /** 默认跟踪的 GitHub 手柄（插件仓库所有者）。新增插件只要挂在此手柄下即自动发现 */
 export const DEFAULT_AUTHOR_HANDLES = ["miaoziguan"];
 
-/** 默认额外手动跟踪的插件 id（留空 = 仅自动发现的「我的插件」） */
-export const DEFAULT_TRACKED_PLUGINS: string[] = [];
-
 /** 自动刷新最小间隔（毫秒），默认 24 小时。本地有缓存且未过期则不重拉 */
 export const PLUGIN_STATS_REFRESH_MS = 24 * 60 * 60 * 1000;
 

@@ -139,10 +139,10 @@ export class PluginStatsModal extends Modal {
     const entries = result.entries;
     if (entries.length === 0) {
       const empty = root.createDiv({ cls: "bw-pluginstats-empty" });
-      empty.createEl("p", { text: "暂无跟踪的插件。" });
+      empty.createEl("p", { text: "暂无发现的插件。" });
       empty.createEl("p", {
         cls: "bw-pluginstats-empty-sub",
-        text: "可在插件设置中配置「作者手柄」（自动发现你的插件）或「额外跟踪插件」。",
+        text: "可在插件设置中配置「作者手柄」（自动发现你的插件）。",
       });
       return;
     }

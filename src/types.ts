@@ -36,8 +36,6 @@ export interface BambooWalkingSettings {
   savePath: string;
   /** 按 GitHub 手柄（插件仓库所有者）自动发现「我的插件」；每行/每项一个 */
   authorHandles: string[];
-  /** 额外手动跟踪的插件 id（盯竞品等），与自动发现的并集 */
-  trackedPlugins: string[];
 }
 
 /** 插件态势：单次下载量快照 */
@@ -89,6 +87,5 @@ export const VIEW_TYPE_READER = "bamboo-walking-reader";
 export const DEFAULT_SETTINGS: BambooWalkingSettings = {
   savePath: "竹杖芒鞋",
   authorHandles: ["miaoziguan"],
-  trackedPlugins: [],
 };
 

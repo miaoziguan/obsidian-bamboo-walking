@@ -74,7 +74,6 @@ export class PluginStatsService {
 
   constructor(
     private authorHandles: string[],
-    private trackedPlugins: string[],
     private loadData: () => Promise<Record<string, unknown> | null>,
     private saveData: (data: Record<string, unknown>) => Promise<void>,
   ) {}
@@ -95,9 +94,8 @@ export class PluginStatsService {
   }
 
   /** 设置页变更时同步配置 */
-  setConfig(authorHandles: string[], trackedPlugins: string[]): void {
+  setConfig(authorHandles: string[]): void {
     this.authorHandles = authorHandles;
-    this.trackedPlugins = trackedPlugins;
   }
 
   /** 当前缓存中的条目（可能为空） */
@@ -138,13 +136,8 @@ export class PluginStatsService {
       for (const p of communityRaw) {
         if (matchesHandle(p, this.authorHandles)) authorIds.add(p.id);
       }
-      // 2) 与手动跟踪取并集
-      const tracked = new Set<string>([
-        ...authorIds,
-        ...this.trackedPlugins.map((s) => s.trim()).filter(Boolean),
-      ]);
 
-      // 3) 全站排名：按 downloads 降序
+      // 2) 全站排名：按 downloads 降序
       const allIds = Object.keys(statsRaw);
       const sorted = [...allIds].sort(
         (a, b) =>
@@ -157,7 +150,7 @@ export class PluginStatsService {
       // 4) 构建条目 + 滚动历史快照
       const now2 = Date.now();
       const next: Record<string, PluginStatEntry> = {};
-      for (const id of tracked) {
+      for (const id of authorIds) {
         const stat = statsRaw[id];
         if (!stat) {
           next[id] = {

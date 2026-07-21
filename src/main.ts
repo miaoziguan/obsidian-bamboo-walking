@@ -107,7 +107,6 @@ export default class BambooWalkingPlugin extends Plugin {
     // 插件态势服务（侧栏卡 + 详情弹窗共享；纯客户端，无需 token）
     this.pluginStatsService = new PluginStatsService(
       this.settings.authorHandles,
-      this.settings.trackedPlugins,
       async () => (await this.loadData()) as Record<string, unknown> | null,
       (data) => this.saveData(data),
     );

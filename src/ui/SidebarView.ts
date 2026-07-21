@@ -689,7 +689,7 @@ export class SidebarView extends ItemView {
     const entries = result.entries;
     if (entries.length === 0) {
       body.empty();
-      body.setText("暂无跟踪（设置里添加）");
+      body.setText("暂无数据（点刷新）");
       return;
     }
     body.empty();
