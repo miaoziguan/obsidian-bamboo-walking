@@ -2485,6 +2485,23 @@ button.bwr-btn-tts-stop:hover {
   align-items: center;
   justify-content: space-between;
   gap: var(--bw-space-sm);
+  cursor: pointer;
+}
+.bws-pluginstats-caret {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--text-muted);
+  transition: transform 120ms ease;
+  flex: 0 0 auto;
+}
+.bws-pluginstats.is-collapsed .bws-pluginstats-caret {
+  transform: rotate(-90deg);
+}
+.bws-pluginstats.is-collapsed .bws-pluginstats-body {
+  display: none;
 }
 .bws-pluginstats-left {
   display: flex;

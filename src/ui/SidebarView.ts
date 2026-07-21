@@ -624,6 +624,17 @@ export class SidebarView extends ItemView {
       const label = left.createDiv({ cls: "bws-pluginstats-label" });
       svgIcon(label, "chart", "bws-pluginstats-ico");
       label.append(" 插件态势");
+      const caret = left.createSpan({ cls: "bws-pluginstats-caret", attr: { "aria-hidden": "true" } });
+
+      // 点击头部：折叠/展开为单行
+      head.addEventListener("click", (e) => {
+        e.stopPropagation();
+        card.classList.toggle("is-collapsed");
+        caret.setAttribute(
+          "aria-label",
+          card.classList.contains("is-collapsed") ? "展开插件态势" : "折叠插件态势",
+        );
+      });
 
       const refresh = head.createEl("button", {
         cls: "bws-pluginstats-refresh",
