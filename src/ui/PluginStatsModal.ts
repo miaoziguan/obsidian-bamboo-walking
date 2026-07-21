@@ -7,7 +7,7 @@
 import { App, Modal } from "obsidian";
 import type { PluginStatEntry } from "../types";
 import type { PluginStatsResult, PluginStatsService } from "../services/PluginStatsService";
-import { COMMUNITY_PLUGIN_PAGE } from "../constants";
+import { COMMUNITY_PLUGIN_PAGE, PLUGIN_CN_NAMES } from "../constants";
 import { svgIcon } from "./icons";
 
 /** 千分位格式化 */
@@ -157,7 +157,7 @@ export class PluginStatsModal extends Modal {
     const tbody = table.createEl("tbody");
     for (const e of entries) {
       const tr = tbody.createEl("tr");
-      tr.createEl("td", { cls: "bw-ps-name", text: e.name ?? e.id });
+      tr.createEl("td", { cls: "bw-ps-name", text: PLUGIN_CN_NAMES[e.id] ?? e.name ?? e.id });
       tr.createEl("td", {
         cls: "bw-ps-num",
         text: e.found ? fmt(e.downloads) : "未收录",

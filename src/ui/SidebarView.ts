@@ -8,6 +8,7 @@ import {
   PROFILE_LINKS,
   AVATAR_DATA_URI,
   CONTACT_EMAIL,
+  PLUGIN_CN_NAMES,
 } from "../constants";
 import { AboutModal } from "./AboutModal";
 import { StrategyReportModal } from "./StrategyReportModal";
@@ -736,7 +737,10 @@ export class SidebarView extends ItemView {
       const row = body.createDiv({
         cls: "bws-pluginstats-row" + (e.found ? " is-clickable" : ""),
       });
-      row.createDiv({ cls: "bws-pluginstats-name", text: e.name ?? e.id });
+      row.createDiv({
+        cls: "bws-pluginstats-name",
+        text: PLUGIN_CN_NAMES[e.id] ?? e.name ?? e.id,
+      });
       if (e.found) {
         row.addEventListener("click", (ev) => {
           ev.stopPropagation();

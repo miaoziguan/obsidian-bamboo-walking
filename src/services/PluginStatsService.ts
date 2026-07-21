@@ -112,12 +112,18 @@ export class PluginStatsService {
    */
   async refresh(force = false): Promise<PluginStatsResult> {
     const now = Date.now();
+    const hasEntries = Object.keys(this.cache.entries).length > 0;
     const fresh =
       this.cache.lastFetch > 0 &&
       now - this.cache.lastFetch < PLUGIN_STATS_REFRESH_MS &&
-      Object.keys(this.cache.entries).length > 0;
+      hasEntries;
+    // 缓存命中但缺中文名（旧版结构持久化的条目无 name 字段）时，
+    // 忽略新鲜度、重新拉取补全，避免一直回退到英文 id。
+    const namesComplete =
+      !hasEntries ||
+      Object.values(this.cache.entries).every((e) => !e.found || !!e.name);
 
-    if (!force && fresh) {
+    if (!force && fresh && namesComplete) {
       return {
         entries: Object.values(this.cache.entries),
         stale: false,

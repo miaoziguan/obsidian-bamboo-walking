@@ -88,6 +88,14 @@ export const COMMUNITY_PLUGINS_URL =
 /** 缓存键名（与 settings / CACHE_KEY 同存于插件 data 对象中） */
 export const PLUGIN_STATS_CACHE_KEY = "bamboo-walking-plugin-stats";
 
+/** 作者插件的中文显示名覆盖：社区官方 name 为英文，此处提供中文品牌名。
+ *  渲染优先级：中文名 > 社区 name > 插件 id。新增插件时在此补充即可。 */
+export const PLUGIN_CN_NAMES: Record<string, string> = {
+  "bamboo-walking": "竹杖芒鞋",
+  "atomic-notes-extractor": "竹叶飞刃",
+  "bamboo-immortals": "竹林修仙传",
+};
+
 /** 缓存数据结构版本，升级字段时 +1 */
 export const PLUGIN_STATS_CACHE_VERSION = 1;
 
