@@ -644,7 +644,7 @@ export class SidebarView extends ItemView {
       refresh.addEventListener("click", (e) => {
         e.stopPropagation();
         if (this.pluginStatsLoading || !this.pluginStatsService) return;
-        void this.refreshPluginStats();
+        void this.refreshPluginStats(true);
       });
 
       this.pluginStatsBodyEl = card.createDiv({
@@ -655,7 +655,7 @@ export class SidebarView extends ItemView {
       card.addEventListener("click", () => {
         if (!this.pluginStatsService) return;
         if (this.pluginStatsEl?.classList.contains("is-disabled")) {
-          if (!this.pluginStatsLoading) void this.refreshPluginStats();
+          if (!this.pluginStatsLoading) void this.refreshPluginStats(true);
           return;
         }
         new PluginStatsModal(this.app, this.pluginStatsService).open();
@@ -670,7 +670,7 @@ export class SidebarView extends ItemView {
   }
 
   /** 拉取并刷新极简卡（本地缓存秒开，过期/首次则后台拉取） */
-  private async refreshPluginStats(): Promise<void> {
+  private async refreshPluginStats(force = false): Promise<void> {
     const body = this.pluginStatsBodyEl;
     const card = this.pluginStatsEl;
     if (!body || !card || !this.pluginStatsService) return;
@@ -679,7 +679,7 @@ export class SidebarView extends ItemView {
     body.setText("载入中…");
     let result: PluginStatsResult;
     try {
-      result = await this.pluginStatsService.refresh();
+      result = await this.pluginStatsService.refresh(force);
     } catch {
       this.pluginStatsLoading = false;
       card.classList.add("is-disabled");
