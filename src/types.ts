@@ -34,6 +34,34 @@ export interface CategoryGroup {
 export interface BambooWalkingSettings {
   /** 保存笔记的目标文件夹 */
   savePath: string;
+  /** 按 GitHub 手柄（插件仓库所有者）自动发现「我的插件」；每行/每项一个 */
+  authorHandles: string[];
+  /** 额外手动跟踪的插件 id（盯竞品等），与自动发现的并集 */
+  trackedPlugins: string[];
+}
+
+/** 插件态势：单次下载量快照 */
+export interface PluginStatSnapshot {
+  ts: number;        // 抓取时间戳（ms）
+  downloads: number; // 当时总下载量
+}
+
+/** 插件态势：单个被跟踪插件的聚合数据 */
+export interface PluginStatEntry {
+  id: string;        // 插件 id
+  found: boolean;    // 是否在 stats 中收录（新发布尚未进入时为 false）
+  downloads: number; // 当前总下载量
+  updated: number;   // 最后更新时间戳（ms）
+  rank: number;      // 全站下载量排名（1-based；0 表示未知）
+  total: number;     // 社区插件总数
+  history: PluginStatSnapshot[];
+}
+
+/** 插件态势：本地缓存结构 */
+export interface PluginStatsCache {
+  version: number;
+  entries: Record<string, PluginStatEntry>;
+  lastFetch: number;
 }
 
 /** 缓存数据结构 */
@@ -60,5 +88,7 @@ export const VIEW_TYPE_READER = "bamboo-walking-reader";
 /** 读者侧默认配置 */
 export const DEFAULT_SETTINGS: BambooWalkingSettings = {
   savePath: "竹杖芒鞋",
+  authorHandles: ["miaoziguan"],
+  trackedPlugins: [],
 };
 

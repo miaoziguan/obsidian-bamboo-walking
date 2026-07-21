@@ -6,6 +6,8 @@ import { REFRESH_INTERVAL } from "./constants";
 import { GitHubArticleService } from "./services/GitHubArticleService";
 import { LocalArticleService } from "./services/LocalArticleService";
 import { CacheService } from "./services/CacheService";
+import { PluginStatsService } from "./services/PluginStatsService";
+import { PluginStatsModal } from "./ui/PluginStatsModal";
 import { SidebarView } from "./ui/SidebarView";
 import { ReaderView } from "./ui/ReaderView";
 import { BambooWalkingSettingTab } from "./ui/SettingTab";
@@ -67,6 +69,8 @@ interface ArticleService {
 export default class BambooWalkingPlugin extends Plugin {
   settings!: BambooWalkingSettings;
   cacheService!: CacheService;
+  /** 插件态势服务（侧栏卡与详情弹窗共享） */
+  pluginStatsService!: PluginStatsService;
 
   private service!: ArticleService;
   private refreshTimer: number | null = null;
@@ -100,6 +104,15 @@ export default class BambooWalkingPlugin extends Plugin {
     );
     await this.cacheService.load();
 
+    // 插件态势服务（侧栏卡 + 详情弹窗共享；纯客户端，无需 token）
+    this.pluginStatsService = new PluginStatsService(
+      this.settings.authorHandles,
+      this.settings.trackedPlugins,
+      async () => (await this.loadData()) as Record<string, unknown> | null,
+      (data) => this.saveData(data),
+    );
+    await this.pluginStatsService.init();
+
     // ── 注册视图 ──
     this.registerView(VIEW_TYPE_SIDEBAR, (leaf) => {
       const view = new SidebarView(leaf);
@@ -108,6 +121,7 @@ export default class BambooWalkingPlugin extends Plugin {
       view.setIsReadFn((slug) => this.cacheService.isRead(slug));
       view.setGetContentFn((slug) => this.cacheService.getCachedArticle(slug)?.content ?? null);
       view.setGetWordCountFn((slug) => this.cacheService.getWordCount(slug));
+      view.setPluginStatsService(this.pluginStatsService);
       view.setOnReady(() => {
         const idx = this.currentIndex.length > 0
           ? this.currentIndex
@@ -136,6 +150,9 @@ export default class BambooWalkingPlugin extends Plugin {
     this.addCommand({ id: "open-column", name: "打开专栏", callback: () => { void this.activateViews(); } });
     this.addCommand({ id: "refresh-articles", name: "刷新文章列表", callback: () => { void this.refreshArticles(); } });
     this.addCommand({ id: "save-as-note", name: "保存当前文章为笔记", callback: () => { void this.saveCurrentAsNote(); } });
+    this.addCommand({ id: "view-plugin-stats", name: "查看插件态势", callback: () => {
+      new PluginStatsModal(this.app, this.pluginStatsService).open();
+    } });
 
     this.addRibbonIcon("book-open", "竹杖芒鞋", () => { void this.activateViews(); });
     this.addSettingTab(new BambooWalkingSettingTab(this.app, this, this.manifest.version));

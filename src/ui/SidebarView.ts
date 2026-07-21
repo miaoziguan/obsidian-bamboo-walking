@@ -11,6 +11,8 @@ import {
 } from "../constants";
 import { AboutModal } from "./AboutModal";
 import { StrategyReportModal } from "./StrategyReportModal";
+import { PluginStatsModal } from "./PluginStatsModal";
+import type { PluginStatsResult, PluginStatsService } from "../services/PluginStatsService";
 import {
   getBambooImmortalsApi,
   getCultivationRealm,
@@ -58,6 +60,12 @@ export class SidebarView extends ItemView {
   private strategyMiniInfoEl: HTMLElement | null = null;
   private strategyMiniCultEl: HTMLElement | null = null;
   private strategyMiniLoading = false;
+  /** 插件态势服务（由 main 注入；为 null 时卡片降级为不可点） */
+  private pluginStatsService: PluginStatsService | null = null;
+  /** 插件态势极简卡根元素（只创建一次，后续仅更新文本） */
+  private pluginStatsEl: HTMLElement | null = null;
+  private pluginStatsBodyEl: HTMLElement | null = null;
+  private pluginStatsLoading = false;
 
   getViewType(): string { return VIEW_TYPE_SIDEBAR; }
   getDisplayText(): string { return "竹杖芒鞋"; }
@@ -69,6 +77,13 @@ export class SidebarView extends ItemView {
   setGetContentFn(fn: (slug: string) => string | null): void { this.getContent = fn; }
   setOnReady(cb: () => void): void { this.onReady = cb; }
   setGetWordCountFn(fn: (slug: string) => number | undefined): void { this.getWordCountFn = fn; }
+
+  /** 注入插件态势服务（main -> 视图，侧栏卡与弹窗共享同一实例） */
+  setPluginStatsService(svc: PluginStatsService): void {
+    this.pluginStatsService = svc;
+    // 若作者卡已渲染（服务晚于首次渲染注入），补一次刷新
+    if (this.pluginStatsEl) void this.refreshPluginStats();
+  }
 
   /** 持久状态栏：显示最近一次刷新结果。
    *  @param state 可选状态标记，用于 CSS 区分正常/陈旧（离线或刷新失败）配色 */
@@ -522,6 +537,9 @@ export class SidebarView extends ItemView {
 
     // 战略复盘极简概览（A+B 组合：左栏常驻条，点开看完整抽屉）
     this.renderStrategyMini(header);
+
+    // 插件态势极简卡（侧栏常驻，点开看排名/趋势/跳转社区页）
+    this.renderPluginStatsMini(header);
   }
 
   /** 左栏竹林概览卡：头部(标题+重算) / 健康预警行 / 境界竹币行，点击打开完整抽屉 */
@@ -584,6 +602,127 @@ export class SidebarView extends ItemView {
       const errCard = parent.createDiv({ cls: "bws-strategy-mini bws-strategy-mini-err" });
       errCard.setText("战略复盘加载失败，详见控制台");
     }
+  }
+
+  /** 左栏插件态势卡：头部(标题+刷新) + 列表(插件名/下载量/+N 增量)，点击打开详情弹窗 */
+  private renderPluginStatsMini(parent: HTMLElement): void {
+    // 幂等：重复渲染时复用 DOM，仅刷新数据，杜绝重复创建
+    const existing = parent.querySelector<HTMLElement>(".bws-pluginstats");
+    if (existing) {
+      this.pluginStatsEl = existing;
+      this.pluginStatsBodyEl = existing.querySelector(".bws-pluginstats-body");
+      if (this.pluginStatsService) void this.refreshPluginStats();
+      return;
+    }
+    // 增强功能：整体兜底，任何异常都不得阻断作者卡与主侧栏渲染
+    try {
+      const card = parent.createDiv({ cls: "bws-pluginstats" });
+      this.pluginStatsEl = card;
+
+      const head = card.createDiv({ cls: "bws-pluginstats-head" });
+      const left = head.createDiv({ cls: "bws-pluginstats-left" });
+      const label = left.createDiv({ cls: "bws-pluginstats-label" });
+      svgIcon(label, "chart", "bws-pluginstats-ico");
+      label.append(" 插件态势");
+
+      const refresh = head.createEl("button", {
+        cls: "bws-pluginstats-refresh",
+        attr: { "aria-label": "刷新插件态势", title: "刷新" },
+      });
+      svgIcon(refresh, "refresh");
+      refresh.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (this.pluginStatsLoading || !this.pluginStatsService) return;
+        void this.refreshPluginStats();
+      });
+
+      this.pluginStatsBodyEl = card.createDiv({
+        cls: "bws-pluginstats-body",
+        text: "载入中…",
+      });
+
+      card.addEventListener("click", () => {
+        if (!this.pluginStatsService) return;
+        if (this.pluginStatsEl?.classList.contains("is-disabled")) {
+          if (!this.pluginStatsLoading) void this.refreshPluginStats();
+          return;
+        }
+        new PluginStatsModal(this.app, this.pluginStatsService).open();
+      });
+
+      void this.refreshPluginStats();
+    } catch (e) {
+      console.error("[bamboo-walking] 插件态势卡片渲染失败：", e);
+      const errCard = parent.createDiv({ cls: "bws-pluginstats bws-pluginstats-err" });
+      errCard.setText("插件态势加载失败，详见控制台");
+    }
+  }
+
+  /** 拉取并刷新极简卡（本地缓存秒开，过期/首次则后台拉取） */
+  private async refreshPluginStats(): Promise<void> {
+    const body = this.pluginStatsBodyEl;
+    const card = this.pluginStatsEl;
+    if (!body || !card || !this.pluginStatsService) return;
+    this.pluginStatsLoading = true;
+    body.empty();
+    body.setText("载入中…");
+    let result: PluginStatsResult;
+    try {
+      result = await this.pluginStatsService.refresh();
+    } catch (e) {
+      this.pluginStatsLoading = false;
+      card.classList.add("is-disabled");
+      body.empty();
+      body.setText("加载失败，点此重试");
+      return;
+    }
+    this.pluginStatsLoading = false;
+    this.renderPluginStatsBody(result);
+  }
+
+  /** 把一次刷新结果渲染到极简卡列表 */
+  private renderPluginStatsBody(result: PluginStatsResult): void {
+    const body = this.pluginStatsBodyEl;
+    const card = this.pluginStatsEl;
+    if (!body || !card) return;
+    card.classList.remove("is-disabled");
+    const entries = result.entries;
+    if (entries.length === 0) {
+      body.empty();
+      body.setText("暂无跟踪（设置里添加）");
+      return;
+    }
+    body.empty();
+    for (const e of entries) {
+      const row = body.createDiv({ cls: "bws-pluginstats-row" });
+      row.createDiv({ cls: "bws-pluginstats-name", text: e.id });
+      const right = row.createDiv({ cls: "bws-pluginstats-right" });
+      right.createSpan({
+        cls: "bws-pluginstats-dl",
+        text: e.found ? this.fmtInt(e.downloads) : "—",
+      });
+      if (e.found && e.history.length >= 2) {
+        const delta =
+          e.history[e.history.length - 1].downloads -
+          e.history[e.history.length - 2].downloads;
+        if (delta > 0) {
+          right.createSpan({
+            cls: "bws-pluginstats-delta",
+            text: `+${this.fmtInt(delta)}`,
+          });
+        }
+      } else if (!e.found) {
+        right.createSpan({ cls: "bws-pluginstats-unfound", text: "未收录" });
+      }
+    }
+    if (result.stale) {
+      body.createDiv({ cls: "bws-pluginstats-stale", text: "（缓存·离线）" });
+    }
+  }
+
+  /** 千分位格式化 */
+  private fmtInt(n: number): string {
+    return n.toLocaleString("en-US");
   }
 
   /** 拉取并刷新极简条上的数字（实时核算，零缓存） */
