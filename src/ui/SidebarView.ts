@@ -680,7 +680,7 @@ export class SidebarView extends ItemView {
     let result: PluginStatsResult;
     try {
       result = await this.pluginStatsService.refresh();
-    } catch (e) {
+    } catch {
       this.pluginStatsLoading = false;
       card.classList.add("is-disabled");
       body.empty();

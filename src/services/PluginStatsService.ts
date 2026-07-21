@@ -226,7 +226,7 @@ export class PluginStatsService {
   /** 落盘（与 settings / 文章缓存同存于插件 data 对象） */
   private async persist(): Promise<void> {
     const run = this.saveQueue.then(async () => {
-      const all = ((await this.loadData()) ?? {}) as Record<string, unknown>;
+      const all = (await this.loadData()) ?? {};
       all[PLUGIN_STATS_CACHE_KEY] = this.cache;
       await this.saveData(all);
     });

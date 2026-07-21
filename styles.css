@@ -2693,8 +2693,8 @@ button.bwr-btn-tts-stop:hover {
 .bw-ps-num {
   color: var(--text-normal);
 }
-.bw-ps-link-td {
-  text-align: center !important;
+.bw-pluginstats-table .bw-ps-link-td {
+  text-align: center;
 }
 .bw-ps-link {
   color: var(--text-accent);
