@@ -647,18 +647,27 @@ export class SidebarView extends ItemView {
         void this.refreshPluginStats(true);
       });
 
+      const detail = head.createEl("button", {
+        cls: "bws-pluginstats-detail",
+        attr: { "aria-label": "查看插件态势详情", title: "详情" },
+      });
+      svgIcon(detail, "pulse");
+      detail.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!this.pluginStatsService) return;
+        new PluginStatsModal(this.app, this.pluginStatsService).open();
+      });
+
       this.pluginStatsBodyEl = card.createDiv({
         cls: "bws-pluginstats-body",
         text: "载入中…",
       });
 
+      // 整卡点击：仅在加载失败（灰卡）时重试；行级点击负责跳转市场
       card.addEventListener("click", () => {
-        if (!this.pluginStatsService) return;
         if (this.pluginStatsEl?.classList.contains("is-disabled")) {
           if (!this.pluginStatsLoading) void this.refreshPluginStats(true);
-          return;
         }
-        new PluginStatsModal(this.app, this.pluginStatsService).open();
       });
 
       void this.refreshPluginStats();
@@ -667,6 +676,25 @@ export class SidebarView extends ItemView {
       const errCard = parent.createDiv({ cls: "bws-pluginstats bws-pluginstats-err" });
       errCard.setText("插件态势加载失败，详见控制台");
     }
+  }
+
+  /** 应用内直达插件市场详情页，失败回退网页市场页 */
+  private openMarket(id: string): void {
+    const enc = encodeURIComponent(id);
+    const appUri = `obsidian://show-plugin?id=${enc}`;
+    const webUrl = `https://community.obsidian.md/plugins/${enc}`;
+    const w = window as unknown as { open?: (p: string) => Promise<unknown> | void };
+    if (typeof w.open === "function") {
+      const r = w.open(appUri);
+      if (r && typeof (r as Promise<unknown>).catch === "function") {
+        (r as Promise<unknown>).catch(() => {
+          window.location.href = webUrl;
+        });
+        return;
+      }
+      return;
+    }
+    window.location.href = webUrl;
   }
 
   /** 拉取并刷新极简卡（本地缓存秒开，过期/首次则后台拉取） */
@@ -705,8 +733,17 @@ export class SidebarView extends ItemView {
     }
     body.empty();
     for (const e of entries) {
-      const row = body.createDiv({ cls: "bws-pluginstats-row" });
-      row.createDiv({ cls: "bws-pluginstats-name", text: e.id });
+      const row = body.createDiv({
+        cls: "bws-pluginstats-row" + (e.found ? " is-clickable" : ""),
+      });
+      row.createDiv({ cls: "bws-pluginstats-name", text: e.name ?? e.id });
+      if (e.found) {
+        row.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          if (!this.pluginStatsService) return;
+          this.openMarket(e.id);
+        });
+      }
       const right = row.createDiv({ cls: "bws-pluginstats-right" });
       right.createSpan({
         cls: "bws-pluginstats-dl",

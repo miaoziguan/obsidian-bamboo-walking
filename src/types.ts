@@ -47,6 +47,7 @@ export interface PluginStatSnapshot {
 /** 插件态势：单个被跟踪插件的聚合数据 */
 export interface PluginStatEntry {
   id: string;        // 插件 id
+  name?: string;     // 官方名称（多为中文；缺失时回退 id）
   found: boolean;    // 是否在 stats 中收录（新发布尚未进入时为 false）
   downloads: number; // 当前总下载量
   updated: number;   // 最后更新时间戳（ms）

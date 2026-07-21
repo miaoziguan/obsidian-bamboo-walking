@@ -2539,6 +2539,29 @@ button.bwr-btn-tts-stop:hover {
   background: var(--background-modifier-hover);
   color: var(--text-accent);
 }
+.bws-pluginstats-detail {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  line-height: 1;
+  padding: 2px 5px;
+  color: var(--text-muted);
+  border-radius: var(--bw-radius-sm);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.bws-pluginstats-detail:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-accent);
+}
+.bws-pluginstats-row.is-clickable {
+  cursor: pointer;
+  border-radius: var(--bw-radius-sm);
+  transition: background 0.15s;
+}
+.bws-pluginstats-row.is-clickable:hover {
+  background: var(--background-modifier-hover);
+}
 .bws-pluginstats-body {
   display: flex;
   flex-direction: column;

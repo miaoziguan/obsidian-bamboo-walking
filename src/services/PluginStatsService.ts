@@ -133,8 +133,12 @@ export class PluginStatsService {
 
       // 1) 按手柄自动发现「我的插件」
       const authorIds = new Set<string>();
+      const authorNames = new Map<string, string>();
       for (const p of communityRaw) {
-        if (matchesHandle(p, this.authorHandles)) authorIds.add(p.id);
+        if (matchesHandle(p, this.authorHandles)) {
+          authorIds.add(p.id);
+          if (p.name) authorNames.set(p.id, p.name);
+        }
       }
 
       // 2) 全站排名：按 downloads 降序
@@ -155,6 +159,7 @@ export class PluginStatsService {
         if (!stat) {
           next[id] = {
             id,
+            name: authorNames.get(id) ?? undefined,
             found: false,
             downloads: 0,
             updated: 0,
@@ -179,6 +184,7 @@ export class PluginStatsService {
         }
         next[id] = {
           id,
+          name: authorNames.get(id) ?? undefined,
           found: true,
           downloads,
           updated: stat.updated ?? 0,

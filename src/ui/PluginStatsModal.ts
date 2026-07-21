@@ -157,7 +157,7 @@ export class PluginStatsModal extends Modal {
     const tbody = table.createEl("tbody");
     for (const e of entries) {
       const tr = tbody.createEl("tr");
-      tr.createEl("td", { cls: "bw-ps-name", text: e.id });
+      tr.createEl("td", { cls: "bw-ps-name", text: e.name ?? e.id });
       tr.createEl("td", {
         cls: "bw-ps-num",
         text: e.found ? fmt(e.downloads) : "未收录",
