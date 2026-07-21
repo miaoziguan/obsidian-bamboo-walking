@@ -2524,35 +2524,35 @@ button.bwr-btn-tts-stop:hover {
 .bws-pluginstats-label .bw-icon {
   font-size: 13px;
 }
-.bws-pluginstats-refresh {
+.bws-pluginstats-actions {
   display: inline-flex;
   align-items: center;
-  font-size: 12px;
-  line-height: 1;
-  padding: 2px 5px;
-  color: var(--text-muted);
-  border-radius: var(--bw-radius-sm);
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  gap: 2px;
+  flex: 0 0 auto;
 }
-.bws-pluginstats-refresh:hover {
-  background: var(--background-modifier-hover);
-  color: var(--text-accent);
-}
+.bws-pluginstats-refresh,
 .bws-pluginstats-detail {
   display: inline-flex;
   align-items: center;
-  font-size: 12px;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 13px;
   line-height: 1;
-  padding: 2px 5px;
   color: var(--text-muted);
+  background: transparent;
+  border: none;
   border-radius: var(--bw-radius-sm);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  opacity: 0.65;
+  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
+.bws-pluginstats-refresh:hover,
 .bws-pluginstats-detail:hover {
   background: var(--background-modifier-hover);
   color: var(--text-accent);
+  opacity: 1;
 }
 .bws-pluginstats-row.is-clickable {
   cursor: pointer;

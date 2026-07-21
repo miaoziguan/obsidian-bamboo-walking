@@ -637,7 +637,9 @@ export class SidebarView extends ItemView {
         );
       });
 
-      const refresh = head.createEl("button", {
+      const actions = head.createDiv({ cls: "bws-pluginstats-actions" });
+
+      const refresh = actions.createEl("button", {
         cls: "bws-pluginstats-refresh",
         attr: { "aria-label": "刷新插件态势", title: "刷新" },
       });
@@ -648,7 +650,7 @@ export class SidebarView extends ItemView {
         void this.refreshPluginStats(true);
       });
 
-      const detail = head.createEl("button", {
+      const detail = actions.createEl("button", {
         cls: "bws-pluginstats-detail",
         attr: { "aria-label": "查看插件态势详情", title: "详情" },
       });
