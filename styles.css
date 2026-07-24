@@ -1259,16 +1259,11 @@ button.bwr-fab-btn:hover {
 .bwr-prev-next-item {
   flex: 1;
   min-width: 0;
-  padding: 12px 16px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--bw-radius-md);
-  background: var(--background-secondary);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  padding: 8px 0;
 }
 
 .bwr-prev-next-item:hover {
-  border-color: var(--bw-bamboo-pale);
-  box-shadow: 0 2px 8px -4px rgba(74, 124, 89, 0.15);
+  /* 框已移除，仅标题文字有 hover 强调 */
 }
 
 .bwr-prev-next-prev { text-align: left; }
