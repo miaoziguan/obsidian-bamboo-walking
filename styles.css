@@ -770,7 +770,7 @@ button.bws-btn-refresh--inline {
 
 /* 无障碍：尊重减少动画偏好 */
 @media (prefers-reduced-motion: reduce) {
-  .bws-article { transition: none !important; }
+  .bws-article { transition: none; }
 }
 
 /* ── 空状态 ── */
