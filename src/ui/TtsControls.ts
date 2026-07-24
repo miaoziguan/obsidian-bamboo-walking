@@ -49,7 +49,7 @@ export class TtsControls {
   /** 切换底部 TTS 浮动条的显隐 */
   toggleBar(): void {
     const contentEl = this.deps.getContentEl();
-    let bar = contentEl.querySelector<HTMLElement>(".bwr-tts-bar");
+    const bar = contentEl.querySelector<HTMLElement>(".bwr-tts-bar");
     if (bar) {
       bar.remove();
       this.ttsBarEl = null;
