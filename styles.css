@@ -72,6 +72,24 @@ body {
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
+/* 品牌区底部渐隐分隔：暗示下方可滚动内容区 */
+.bws-header-fade {
+  margin: 0 -12px;
+  padding: 0 12px;
+}
+
+.bws-header-fade-line {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--background-modifier-border) 20%,
+    var(--background-modifier-border) 80%,
+    transparent 100%
+  );
+  opacity: 0.6;
+}
+
 /* 品牌区 + 状态栏：吸顶固定背景（与侧边栏底色一致），让"不随列表滚动"的效果更明显 */
 .bws-header,
 .bws-status {
@@ -101,6 +119,12 @@ body {
   padding-left: 16px;
   border-left: 2px solid var(--text-warning, #c98a2b);
   margin-left: 12px;
+}
+
+/* 暗色主题下 stale 态：使用主题变量确保可读 */
+.theme-dark .bws-status[data-state="stale"] {
+  color: var(--text-warning);
+  border-left-color: var(--text-warning);
 }
 
 /* 作者卡片（博客式简介） */
@@ -616,6 +640,17 @@ button.bws-btn-refresh--inline {
   border: none;
 }
 
+/* 封面加载失败时：纯色占位 + 文章首字 */
+.bws-art-cover-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bw-bamboo-pale);
+  color: var(--bw-bamboo);
+  font-size: 16px;
+  font-weight: 600;
+}
+
 /* 右侧文字容器 */
 .bws-art-body {
   flex: 1 1 auto;
@@ -723,6 +758,21 @@ button.bws-btn-refresh--inline {
 .bws-article.is-read.is-active { opacity: 1; }
 .bws-article.is-read .bws-art-title { font-weight: 400; }
 
+/* 深色主题下已读态：用文字颜色降级而非透明度，避免对比度不足 */
+.theme-dark .bws-article.is-read { opacity: 1; }
+.theme-dark .bws-article.is-read .bws-art-title,
+.theme-dark .bws-article.is-read .bws-art-summary { color: var(--text-faint); }
+.theme-dark .bws-article.is-read .bws-art-meta { color: var(--text-faint); opacity: 0.7; }
+.theme-dark .bws-article.is-read:hover .bws-art-title,
+.theme-dark .bws-article.is-read:hover .bws-art-summary { color: var(--text-muted); }
+.theme-dark .bws-article.is-read.is-active .bws-art-title,
+.theme-dark .bws-article.is-read.is-active .bws-art-summary { color: var(--text-normal); }
+
+/* 无障碍：尊重减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .bws-article { transition: none !important; }
+}
+
 /* ── 空状态 ── */
 .bws-empty {
   padding: 40px 20px;
@@ -761,9 +811,18 @@ button.bws-btn-refresh--inline {
 .bwr-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--bw-space-xs);
   padding: var(--bw-space-sm) var(--bw-space-2xl);
   border-bottom: 1px solid var(--background-modifier-border);
+}
+
+/* 工具栏功能区分隔符 */
+.bwr-toolbar-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px var(--bw-space-sm);
+  background: var(--background-modifier-border);
 }
 
 button.bwr-btn {
@@ -1185,6 +1244,58 @@ button.bwr-fab-btn:hover {
 }
 
 /* 相关阅读 */
+/* 上/下篇导航 */
+.bwr-prev-next {
+  display: flex;
+  gap: var(--bw-space-lg);
+  margin-top: var(--bw-space-2xl);
+  padding: 0 0 var(--bw-space-lg);
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+.bwr-prev-next-item {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--bw-radius-md);
+  background: var(--background-secondary);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.bwr-prev-next-item:hover {
+  border-color: var(--bw-bamboo-pale);
+  box-shadow: 0 2px 8px -4px rgba(74, 124, 89, 0.15);
+}
+
+.bwr-prev-next-prev { text-align: left; }
+.bwr-prev-next-next { text-align: right; }
+.bwr-prev-next-empty { visibility: hidden; pointer-events: none; }
+
+.bwr-prev-next-label {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+}
+
+.bwr-prev-next-title {
+  display: block;
+  font-size: 14px;
+  color: var(--bw-bamboo);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  border-bottom: none;
+}
+
+.bwr-prev-next-title:hover { color: var(--bw-bamboo-deep); }
+
 .bwr-related {
   margin-top: var(--bw-space-2xl);
   padding: 16px 0 0;
@@ -1400,6 +1511,42 @@ button.bwr-code-copy:hover { color: var(--bw-bamboo); }
   margin: 0;
   font-size: 14px;
   color: var(--text-faint);
+}
+
+/* 首次启动引导态：加载提示 */
+.bwr-empty-loading {
+  animation: bwr-pulse-text 2s ease-in-out infinite;
+}
+
+@keyframes bwr-pulse-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* 功能亮点列表 */
+.bwr-empty-features {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.bwr-empty-feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.bwr-empty-feature-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bw-bamboo);
+  opacity: 0.5;
+  flex-shrink: 0;
 }
 
 /* ═══════════ 设置面板 ═══════════ */
@@ -2065,13 +2212,37 @@ button.bws-btn-retry .bws-btn-icon {
 
 /* ═══════════ 朗读（TTS）控件 ═══════════ */
 
-.bwr-tts {
+/* 工具栏朗读触发按钮 */
+button.bwr-btn-tts-toggle {
+  color: var(--bw-bamboo);
+  font-size: 12px;
+  padding: 0 8px;
+}
+
+button.bwr-btn-tts-toggle:hover { color: var(--bw-bamboo-deep); }
+button.bwr-btn-tts-toggle:disabled { cursor: default; opacity: 0.6; }
+
+/* 底部 TTS 浮动条 */
+.bwr-tts-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: var(--bw-space-sm);
-  margin-left: var(--bw-space-sm);
-  padding-left: var(--bw-space-sm);
-  border-left: 1px solid var(--background-modifier-border);
+  padding: 8px 16px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--bw-radius-lg);
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.15), 0 0 0 1px color-mix(in srgb, var(--bw-bamboo) 8%, transparent);
+  z-index: 100;
+  animation: bwr-tts-bar-in 0.25s ease-out;
+}
+
+@keyframes bwr-tts-bar-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 button.bwr-btn-tts-play {
@@ -2080,9 +2251,7 @@ button.bwr-btn-tts-play {
   padding: 0 8px;
 }
 
-button.bwr-btn-tts-play:hover {
-  color: var(--bw-bamboo-deep);
-}
+button.bwr-btn-tts-play:hover { color: var(--bw-bamboo-deep); }
 
 button.bwr-btn-tts-stop {
   color: var(--text-muted);
@@ -2090,9 +2259,16 @@ button.bwr-btn-tts-stop {
   padding: 0 6px;
 }
 
-button.bwr-btn-tts-stop:hover {
-  color: var(--bw-bamboo);
+button.bwr-btn-tts-stop:hover { color: var(--bw-bamboo); }
+
+button.bwr-btn-tts-close {
+  color: var(--text-faint);
+  font-size: 12px;
+  padding: 0 4px;
+  margin-left: var(--bw-space-xs);
 }
+
+button.bwr-btn-tts-close:hover { color: var(--text-muted); }
 
 .bwr-tts-select {
   background: var(--background-secondary);
@@ -2127,6 +2303,7 @@ button.bwr-btn-tts-stop:hover {
 .bws-article:focus-visible {
   outline: 2px solid var(--bw-bamboo);
   outline-offset: -2px;
+  border-radius: var(--bw-radius-sm);
   background: var(--background-modifier-hover);
 }
 
@@ -2341,6 +2518,28 @@ button.bwr-btn-tts-stop:hover {
   color: var(--bw-white);
 }
 
+/* 分享弹层移动端适配 */
+@media (max-width: 480px) {
+  .bw-share-modal .modal {
+    max-width: 100%;
+    width: 100vw;
+    margin: 0;
+    border-radius: 0;
+    max-height: 90vh;
+  }
+  .bw-share-chips {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .bw-share-preview-img {
+    max-width: 200px;
+    max-height: 260px;
+  }
+  .bw-share-actions {
+    flex-direction: column;
+  }
+}
+
 /* ═══════════ 字数统计 ═══════════ */
 
 /* 侧边栏文章条目：日期行下方的字数小字 */
@@ -2400,8 +2599,10 @@ button.bwr-btn-tts-stop:hover {
   border-color: var(--background-modifier-border-hover);
 }
 .bws-strategy-mini.is-disabled {
-  cursor: default;
-  opacity: 0.55;
+  cursor: pointer;
+  opacity: 0.7;
+  background: color-mix(in srgb, var(--bw-bamboo-pale) 6%, transparent);
+  border-style: dashed;
 }
 .bws-strategy-mini-err {
   color: var(--text-error);
@@ -2485,8 +2686,10 @@ button.bwr-btn-tts-stop:hover {
   border-color: var(--background-modifier-border-hover);
 }
 .bws-pluginstats.is-disabled {
-  cursor: default;
-  opacity: 0.55;
+  cursor: pointer;
+  opacity: 0.7;
+  background: color-mix(in srgb, var(--bw-bamboo-pale) 6%, transparent);
+  border-style: dashed;
 }
 .bws-pluginstats-err {
   color: var(--text-error);

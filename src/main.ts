@@ -138,6 +138,7 @@ export default class BambooWalkingPlugin extends Plugin {
       view.setOnSave(async () => { await this.saveCurrentAsNote(); });
       view.setOnBack(() => this.focusSidebar());
       view.setGetArticles(() => this.cacheService.getIndex());
+      view.setSavePathHint(this.settings.savePath);
       view.setOnOpen((slug: string) => {
         const entry = this.cacheService.getIndex().find((e) => e.slug === slug);
         if (entry) void this.openArticle(entry);
@@ -162,8 +163,10 @@ export default class BambooWalkingPlugin extends Plugin {
       // 延迟 500ms 等 workspace 就绪
       this.firstLaunchTimer = window.setTimeout(() => {
         void this.activateViews();
+        // 首次启动时阅读器显示品牌引导页
+        const readerView = this.getReaderView();
+        if (readerView) readerView.renderWelcome(true);
         void this.refreshArticles(true); // 首次启动立即加载文章（静默，避免把全部文章误报为"新"）
-        new Notice("竹杖芒鞋：正在加载文章…");
       }, 500);
     }
 

@@ -2,24 +2,11 @@
 import { ItemView, setIcon } from "obsidian";
 import type { ArticleIndexEntry, CategoryGroup } from "../types";
 import { VIEW_TYPE_SIDEBAR } from "../types";
-import {
-  PROFILE_NAME,
-  PROFILE_BIO,
-  PROFILE_LINKS,
-  AVATAR_DATA_URI,
-  CONTACT_EMAIL,
-  PLUGIN_CN_NAMES,
-} from "../constants";
 import { AboutModal } from "./AboutModal";
-import { StrategyReportModal } from "./StrategyReportModal";
-import { PluginStatsModal } from "./PluginStatsModal";
-import type { PluginStatsResult, PluginStatsService } from "../services/PluginStatsService";
-import {
-  getBambooImmortalsApi,
-  getCultivationRealm,
-  getBambooCoinAvailableBalance,
-} from "../services/BambooReviewBridge";
-import { svgIcon } from "./icons";
+import type { PluginStatsService } from "../services/PluginStatsService";
+import { renderAuthorCard } from "./AuthorCard";
+import { StrategyMiniCard } from "./StrategyMiniCard";
+import { PluginStatsCard } from "./PluginStatsCard";
 import { matchArticle } from "../utils/search";
 import { formatWordCount } from "../utils/text";
 
@@ -56,17 +43,12 @@ export class SidebarView extends ItemView {
   private getWordCountFn: ((slug: string) => number | undefined) | null = null;
   /** 作者卡片下的全站字数汇总行（只创建一次，后续仅更新文本） */
   private authorStatsEl: HTMLElement | null = null;
-  /** 战略复盘极简概览条（左栏常驻，A+B 组合之 A） */
-  private strategyMiniEl: HTMLElement | null = null;
-  private strategyMiniInfoEl: HTMLElement | null = null;
-  private strategyMiniCultEl: HTMLElement | null = null;
-  private strategyMiniLoading = false;
+  /** 战略复盘极简概览卡组件 */
+  private strategyMiniCard: StrategyMiniCard = new StrategyMiniCard(this.app);
+  /** 插件态势极简卡组件 */
+  private pluginStatsCard: PluginStatsCard = new PluginStatsCard(this.app);
   /** 插件态势服务（由 main 注入；为 null 时卡片降级为不可点） */
   private pluginStatsService: PluginStatsService | null = null;
-  /** 插件态势极简卡根元素（只创建一次，后续仅更新文本） */
-  private pluginStatsEl: HTMLElement | null = null;
-  private pluginStatsBodyEl: HTMLElement | null = null;
-  private pluginStatsLoading = false;
 
   getViewType(): string { return VIEW_TYPE_SIDEBAR; }
   getDisplayText(): string { return "竹杖芒鞋"; }
@@ -82,8 +64,7 @@ export class SidebarView extends ItemView {
   /** 注入插件态势服务（main -> 视图，侧栏卡与弹窗共享同一实例） */
   setPluginStatsService(svc: PluginStatsService): void {
     this.pluginStatsService = svc;
-    // 若作者卡已渲染（服务晚于首次渲染注入），补一次刷新
-    if (this.pluginStatsEl) void this.refreshPluginStats();
+    this.pluginStatsCard.setService(svc);
   }
 
   /** 持久状态栏：显示最近一次刷新结果。
@@ -289,7 +270,16 @@ export class SidebarView extends ItemView {
 
     // 品牌区：只创建一次，后续不重建
     const header = contentEl.createDiv({ cls: "bws-header" });
-    this.renderAuthorCard(header);
+    const authorRefs = renderAuthorCard(header, {
+      openAbout: () => new AboutModal(this.app).open(),
+    });
+    this.authorStatsEl = authorRefs.authorStatsEl;
+    this.strategyMiniCard.render(header);
+    this.pluginStatsCard.render(header);
+
+    // 品牌区底部渐隐分隔：暗示下方是可滚动的内容区
+    const fade = header.createDiv({ cls: "bws-header-fade" });
+    fade.createDiv({ cls: "bws-header-fade-line" });
 
     // 持久状态栏容器（占位，后续仅更新文本）
     contentEl.createDiv({ cls: "bws-status" });
@@ -427,8 +417,6 @@ export class SidebarView extends ItemView {
         this.searchQuery = (e.target as HTMLInputElement).value.toLowerCase();
         if (this.searchQuery) {
           clearBtn.removeClass("bws-hidden");
-          // 输入即时反馈：先显示「搜索中…」，节流后再出结果
-          this.setSearchMeta("searching");
         } else {
           clearBtn.addClass("bws-hidden");
           this.setSearchMeta("hidden");
@@ -442,7 +430,7 @@ export class SidebarView extends ItemView {
           this.updateSearchMeta(false);
           // 2) 再异步补扫正文全文，命中数变了才补充列表 + 更新计数
           window.setTimeout(() => this.applyFullTextResults(), 0);
-        }, 200);
+        }, 120);
       });
 
       // 搜索结果计数条（仅有搜索词时显示）
@@ -474,397 +462,6 @@ export class SidebarView extends ItemView {
       case "error":    this.renderError(region); break;
       case "empty":    this.renderEmpty(region); break;
       case "loaded":   this.renderList(region, prevScroll); break;
-    }
-  }
-
-  /* ═══════ 作者卡片（左上角博客式简介）═══════ */
-
-  private renderAuthorCard(header: HTMLElement): void {
-    const card = header.createDiv({ cls: "bws-author-card" });
-
-    // 顶部一行：头像 + 名字/副标（刷新按钮已移至下方功能区）
-    const top = card.createDiv({ cls: "bws-author-top" });
-
-    // 用专属 wrapper 做圆形裁剪，避免被主题 img 样式覆盖（无需 !important）
-    const avatarWrap = top.createDiv({ cls: "bws-author-avatar-wrap" });
-    const avatar = avatarWrap.createEl("img", {
-      cls: "bws-author-avatar",
-      attr: { alt: PROFILE_NAME, loading: "lazy" },
-    });
-    avatar.src = AVATAR_DATA_URI;
-
-    const idBox = top.createDiv({ cls: "bws-author-idbox" });
-    const nameRow = idBox.createDiv({ cls: "bws-author-name-row" });
-    nameRow.createDiv({ cls: "bws-author-name", text: PROFILE_NAME });
-    const ghUrl = PROFILE_LINKS[0]?.url;
-    if (ghUrl) {
-      const gh = nameRow.createEl("a", {
-        href: ghUrl,
-        cls: "bws-author-gh",
-        attr: { target: "_blank", rel: "noopener noreferrer", "aria-label": "GitHub", title: "GitHub" },
-      });
-      const ghIco = gh.createSpan({ cls: "bw-brand-link-ico-wrap" });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setIcon 是 Obsidian 官方 API
-      setIcon(ghIco, "github");
-    }
-    const handle = PROFILE_LINKS[0]?.url.split("/").pop() ?? "";
-    idBox.createDiv({ cls: "bws-author-handle", text: handle ? "@" + handle : "" });
-
-    // 文字信息区：简介
-    const info = card.createDiv({ cls: "bws-author-info" });
-    info.createDiv({ cls: "bws-author-bio", text: PROFILE_BIO });
-
-    // 作者连接入口：关于 · 投稿（把读者沉淀到作者其他触点）
-    const linksRow = card.createDiv({ cls: "bws-author-links" });
-    const aboutLink = linksRow.createEl("button", {
-      cls: "bws-author-link",
-      text: "关于",
-      attr: { title: "关于作者与其他平台" },
-    });
-    aboutLink.addEventListener("click", () => new AboutModal(this.app).open());
-    if (CONTACT_EMAIL) {
-      linksRow.createSpan({ cls: "bws-author-link-sep", text: "·" });
-      const submitLink = linksRow.createEl("button", {
-        cls: "bws-author-link",
-        text: "投稿",
-        attr: { title: "投稿 / 联系作者" },
-      });
-      // 投稿也走同一弹层（内含投稿说明与邮箱）
-      submitLink.addEventListener("click", () => new AboutModal(this.app).open());
-    }
-
-    // 全站字数汇总（渐进补全，首屏无统计时隐藏）
-    this.authorStatsEl = card.createDiv({ cls: "bws-author-stats bws-hidden" });
-
-    // 战略复盘极简概览（A+B 组合：左栏常驻条，点开看完整抽屉）
-    this.renderStrategyMini(header);
-
-    // 插件态势极简卡（侧栏常驻，点开看排名/趋势/跳转社区页）
-    this.renderPluginStatsMini(header);
-  }
-
-  /** 左栏竹林概览卡：头部(标题+重算) / 健康预警行 / 境界竹币行，点击打开完整抽屉 */
-  private renderStrategyMini(parent: HTMLElement): void {
-    // 幂等：若卡片已存在（如反复渲染 / onOpen 重入），复用 DOM 仅刷新数据，杜绝重复创建
-    const existing = parent.querySelector<HTMLElement>(".bws-strategy-mini");
-    if (existing) {
-      this.strategyMiniEl = existing;
-      this.strategyMiniInfoEl = existing.querySelector(".bws-strategy-mini-info");
-      this.strategyMiniCultEl = existing.querySelector(".bws-strategy-mini-cult");
-      void this.refreshStrategyMini();
-      void this.refreshCultivation();
-      return;
-    }
-    // 战略复盘为增强功能：整体兜底，任何异常都不得阻断作者卡与主侧栏渲染
-    try {
-      const card = parent.createDiv({ cls: "bws-strategy-mini" });
-      this.strategyMiniEl = card;
-
-      const head = card.createDiv({ cls: "bws-strategy-mini-head" });
-      const left = head.createDiv({ cls: "bws-strategy-mini-left" });
-      const label = left.createDiv({ cls: "bws-strategy-mini-label" });
-      svgIcon(label, "chart", "bws-strategy-mini-ico");
-      label.append(" 战略复盘");
-
-      this.strategyMiniInfoEl = left.createDiv({
-        cls: "bws-strategy-mini-info",
-        text: "载入中…",
-      });
-
-      const refresh = head.createEl("button", {
-        cls: "bws-strategy-mini-refresh",
-        attr: { "aria-label": "重新核算战略复盘", title: "重新核算" },
-      });
-      svgIcon(refresh, "refresh");
-      refresh.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (this.strategyMiniLoading) return;
-        void this.refreshStrategyMini();
-      });
-
-      card.addEventListener("click", () => {
-        if (this.strategyMiniEl?.classList.contains("is-disabled")) {
-          // 灰卡（未启用/无数据/失败）：点击触发重新核算，而非什么都不做
-          if (!this.strategyMiniLoading) void this.refreshStrategyMini();
-          return;
-        }
-        new StrategyReportModal(this.app).open();
-      });
-
-      void this.refreshStrategyMini();
-
-      // 修行境界 · 竹币 行（卡片内第二行，与战略复盘总览解耦、独立降级）
-      const cult = card.createDiv({ cls: "bws-strategy-mini-cult bws-hidden" });
-      this.strategyMiniCultEl = cult;
-      void this.refreshCultivation();
-    } catch (e) {
-      // 不抛出：主侧栏其余内容（作者卡 / 状态栏 / 列表）正常渲染，但记录并给出可见提示
-      console.error("[bamboo-walking] 战略复盘卡片渲染失败：", e);
-      const errCard = parent.createDiv({ cls: "bws-strategy-mini bws-strategy-mini-err" });
-      errCard.setText("战略复盘加载失败，详见控制台");
-    }
-  }
-
-  /** 左栏插件态势卡：头部(标题+刷新) + 列表(插件名/下载量/+N 增量)，点击打开详情弹窗 */
-  private renderPluginStatsMini(parent: HTMLElement): void {
-    // 幂等：重复渲染时复用 DOM，仅刷新数据，杜绝重复创建
-    const existing = parent.querySelector<HTMLElement>(".bws-pluginstats");
-    if (existing) {
-      this.pluginStatsEl = existing;
-      this.pluginStatsBodyEl = existing.querySelector(".bws-pluginstats-body");
-      if (this.pluginStatsService) void this.refreshPluginStats();
-      return;
-    }
-    // 增强功能：整体兜底，任何异常都不得阻断作者卡与主侧栏渲染
-    try {
-      const card = parent.createDiv({ cls: "bws-pluginstats" });
-      this.pluginStatsEl = card;
-
-      const head = card.createDiv({ cls: "bws-pluginstats-head" });
-      const left = head.createDiv({ cls: "bws-pluginstats-left" });
-      const label = left.createDiv({ cls: "bws-pluginstats-label" });
-      svgIcon(label, "chart", "bws-pluginstats-ico");
-      label.append(" 插件态势");
-      const caret = left.createSpan({ cls: "bws-pluginstats-caret", attr: { "aria-hidden": "true" } });
-
-      // 点击头部：折叠/展开为单行
-      head.addEventListener("click", (e) => {
-        e.stopPropagation();
-        card.classList.toggle("is-collapsed");
-        caret.setAttribute(
-          "aria-label",
-          card.classList.contains("is-collapsed") ? "展开插件态势" : "折叠插件态势",
-        );
-      });
-
-      const actions = head.createDiv({ cls: "bws-pluginstats-actions" });
-
-      const refresh = actions.createEl("button", {
-        cls: "bws-pluginstats-refresh",
-        attr: { "aria-label": "刷新插件态势", title: "刷新" },
-      });
-      svgIcon(refresh, "refresh");
-      refresh.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (this.pluginStatsLoading || !this.pluginStatsService) return;
-        void this.refreshPluginStats(true);
-      });
-
-      const detail = actions.createEl("button", {
-        cls: "bws-pluginstats-detail",
-        attr: { "aria-label": "查看插件态势详情", title: "详情" },
-      });
-      svgIcon(detail, "pulse");
-      detail.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (!this.pluginStatsService) return;
-        new PluginStatsModal(this.app, this.pluginStatsService).open();
-      });
-
-      this.pluginStatsBodyEl = card.createDiv({
-        cls: "bws-pluginstats-body",
-        text: "载入中…",
-      });
-
-      // 整卡点击：仅在加载失败（灰卡）时重试；行级点击负责跳转市场
-      card.addEventListener("click", () => {
-        if (this.pluginStatsEl?.classList.contains("is-disabled")) {
-          if (!this.pluginStatsLoading) void this.refreshPluginStats(true);
-        }
-      });
-
-      void this.refreshPluginStats();
-    } catch (e) {
-      console.error("[bamboo-walking] 插件态势卡片渲染失败：", e);
-      const errCard = parent.createDiv({ cls: "bws-pluginstats bws-pluginstats-err" });
-      errCard.setText("插件态势加载失败，详见控制台");
-    }
-  }
-
-  /** 应用内直达插件市场详情页，失败回退网页市场页 */
-  private openMarket(id: string): void {
-    const enc = encodeURIComponent(id);
-    const appUri = `obsidian://show-plugin?id=${enc}`;
-    const webUrl = `https://community.obsidian.md/plugins/${enc}`;
-    const w = window as unknown as { open?: (p: string) => Promise<unknown> | void };
-    if (typeof w.open === "function") {
-      const r = w.open(appUri);
-      if (r && typeof r.catch === "function") {
-        r.catch(() => {
-          window.location.href = webUrl;
-        });
-        return;
-      }
-      return;
-    }
-    window.location.href = webUrl;
-  }
-
-  /** 拉取并刷新极简卡（本地缓存秒开，过期/首次则后台拉取） */
-  private async refreshPluginStats(force = false): Promise<void> {
-    const body = this.pluginStatsBodyEl;
-    const card = this.pluginStatsEl;
-    if (!body || !card || !this.pluginStatsService) return;
-    this.pluginStatsLoading = true;
-    body.empty();
-    body.setText("载入中…");
-    let result: PluginStatsResult;
-    try {
-      result = await this.pluginStatsService.refresh(force);
-    } catch {
-      this.pluginStatsLoading = false;
-      card.classList.add("is-disabled");
-      body.empty();
-      body.setText("加载失败，点此重试");
-      return;
-    }
-    this.pluginStatsLoading = false;
-    this.renderPluginStatsBody(result);
-  }
-
-  /** 把一次刷新结果渲染到极简卡列表 */
-  private renderPluginStatsBody(result: PluginStatsResult): void {
-    const body = this.pluginStatsBodyEl;
-    const card = this.pluginStatsEl;
-    if (!body || !card) return;
-    card.classList.remove("is-disabled");
-    const entries = result.entries;
-    if (entries.length === 0) {
-      body.empty();
-      body.setText("暂无数据（点刷新）");
-      return;
-    }
-    body.empty();
-    for (const e of entries) {
-      const row = body.createDiv({
-        cls: "bws-pluginstats-row" + (e.found ? " is-clickable" : ""),
-      });
-      row.createDiv({
-        cls: "bws-pluginstats-name",
-        text: PLUGIN_CN_NAMES[e.id] ?? e.name ?? e.id,
-      });
-      if (e.found) {
-        row.addEventListener("click", (ev) => {
-          ev.stopPropagation();
-          if (!this.pluginStatsService) return;
-          this.openMarket(e.id);
-        });
-      }
-      const right = row.createDiv({ cls: "bws-pluginstats-right" });
-      right.createSpan({
-        cls: "bws-pluginstats-dl",
-        text: e.found ? this.fmtInt(e.downloads) : "—",
-      });
-      if (e.found && e.history.length >= 2) {
-        const delta =
-          e.history[e.history.length - 1].downloads -
-          e.history[e.history.length - 2].downloads;
-        if (delta > 0) {
-          right.createSpan({
-            cls: "bws-pluginstats-delta",
-            text: `+${this.fmtInt(delta)}`,
-          });
-        }
-      } else if (!e.found) {
-        right.createSpan({ cls: "bws-pluginstats-unfound", text: "未收录" });
-      }
-    }
-    if (result.stale) {
-      body.createDiv({ cls: "bws-pluginstats-stale", text: "（缓存·离线）" });
-    }
-  }
-
-  /** 千分位格式化 */
-  private fmtInt(n: number): string {
-    return n.toLocaleString("en-US");
-  }
-
-  /** 拉取并刷新极简条上的数字（实时核算，零缓存） */
-  private async refreshStrategyMini(): Promise<void> {
-    const info = this.strategyMiniInfoEl;
-    const card = this.strategyMiniEl;
-    if (!info || !card) {
-      console.error("[bamboo-walking] 战略复盘：strategyMini 元素未就绪（info/card 为 null），跳过刷新");
-      return;
-    }
-    this.strategyMiniLoading = true;
-    // 区分竹林不可用与数据为空：卡片始终可见，给出明确文案（解决「还是没有出现」）
-    const api = getBambooImmortalsApi(this.app);
-    if (!api || typeof api.getStrategyOverview !== "function") {
-      // 竹林未装 / 未启用 / 版本过旧（未实现该接口）：明确提示，卡片可见可点重试
-      info.textContent = "启用竹林修仙传以查看";
-      card.classList.add("is-disabled");
-      this.strategyMiniLoading = false;
-      void this.refreshCultivation();
-      return;
-    }
-    info.textContent = "核算中…";
-    try {
-      const data = await api.getStrategyOverview();
-      if (!data) {
-        // 竹林已启用且有 API，但暂无数据：可见、可点重试
-        info.textContent = "暂无数据，点此重试";
-        card.classList.add("is-disabled");
-        return;
-      }
-      const goals = Array.isArray(data.goals) ? data.goals : [];
-      const overview = data.overview;
-      // 优先消费竹林返回的权威整体健康分；旧版竹林未提供 health 时回退到本地二次平均
-      const score =
-        data.health && typeof data.health.avgScore === "number"
-          ? data.health.avgScore
-          : goals.length > 0
-            ? Math.round(
-                goals.reduce((s, g) => s + (g.score ?? 0), 0) / goals.length,
-              )
-            : 0;
-      const alerts =
-        (overview.urgentGoals?.length ?? 0) +
-        (overview.overdueGoals?.length ?? 0) +
-        (overview.stagnantGoals?.length ?? 0);
-      info.textContent = "";
-      info.append("健康 ");
-      info.createEl("strong", { cls: "bws-stat-num", text: String(score) });
-      info.append(" · 预警 ");
-      info.createEl("strong", { cls: "bws-stat-num", text: String(alerts) });
-      card.classList.remove("is-disabled");
-    } catch {
-      // 读取失败：给出明确文案，保留入口可重试
-      info.textContent = "暂不可用，点此重试";
-      card.classList.add("is-disabled");
-    } finally {
-      this.strategyMiniLoading = false;
-      // 境界 / 竹币独立于战略复盘总览，始终一并刷新
-      void this.refreshCultivation();
-    }
-  }
-
-  /** 拉取并刷新境界 / 竹币常驻行（与战略复盘总览解耦，独立降级） */
-  private async refreshCultivation(): Promise<void> {
-    const el = this.strategyMiniCultEl;
-    if (!el) return;
-    try {
-      const [realm, balance] = await Promise.all([
-        getCultivationRealm(this.app),
-        getBambooCoinAvailableBalance(this.app),
-      ]);
-      if (realm == null && balance == null) {
-        el.classList.add("bws-hidden");
-        return;
-      }
-      el.classList.remove("bws-hidden");
-      el.textContent = "";
-      if (realm) {
-        const item = el.createSpan({ cls: "bws-cult-item bws-cult-realm" });
-        item.createSpan({ cls: "bws-cult-val", text: `${realm.realm}·第${realm.layer}层` });
-      }
-      if (balance != null) {
-        const item = el.createSpan({ cls: "bws-cult-item bws-cult-coin" });
-        item.createSpan({ cls: "bws-cult-val", text: `竹币 ${balance}` });
-      }
-    } catch {
-      // 读取失败（如竹林插件异常）→ 隐藏境界/竹币行，不阻塞战略复盘
-      el.classList.add("bws-hidden");
     }
   }
 
@@ -1103,7 +700,12 @@ export class SidebarView extends ItemView {
           wHead.createSpan({ cls: "bws-arrow", text: "▾" });
           wHead.createSpan({ cls: "bws-week-label", text: wk.label });
           // 周子层默认展开，点击周头可折叠
-          wHead.addEventListener("click", () => wkEl.classList.toggle("bws-collapsed"));
+          wHead.setAttr("role", "button");
+          wHead.setAttr("aria-expanded", "true");
+          wHead.addEventListener("click", () => {
+            wkEl.classList.toggle("bws-collapsed");
+            wHead.setAttr("aria-expanded", String(!wkEl.classList.contains("bws-collapsed")));
+          });
 
           const wkItems = wkEl.createDiv({ cls: "bws-timeline-week-items" });
           for (const a of wk.articles.sort((a, b) => b.date.localeCompare(a.date))) {
@@ -1251,11 +853,18 @@ export class SidebarView extends ItemView {
       if (article.cover) {
         item.addClass("bws-has-cover");
         const coverEl = item.createDiv({ cls: "bws-art-cover" });
-        coverEl.createEl("img", {
+        const coverImg = coverEl.createEl("img", {
           cls: "bws-art-cover-img",
           attr: { src: article.cover, alt: article.title, loading: "lazy" },
         });
-        coverEl.addEventListener("error", () => coverEl.remove());
+        coverImg.addEventListener("load", () => coverEl.addClass("bws-art-cover-loaded"));
+        coverImg.addEventListener("error", () => {
+          // 加载失败时显示纯色占位 + 文章首字，而非删除容器
+          coverEl.empty();
+          coverEl.addClass("bws-art-cover-fallback");
+          const initial = (article.title ?? "?")[0];
+          coverEl.createSpan({ cls: "bws-art-cover-initial", text: initial });
+        });
       }
 
       const bodyEl = item.createDiv({ cls: "bws-art-body" });
