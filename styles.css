@@ -87,7 +87,7 @@ body {
     var(--background-modifier-border) 80%,
     transparent 100%
   );
-  opacity: 0.6;
+  opacity: 1;
 }
 
 /* 品牌区 + 状态栏：吸顶固定背景（与侧边栏底色一致），让"不随列表滚动"的效果更明显 */
@@ -768,9 +768,32 @@ button.bws-btn-refresh--inline {
 .theme-dark .bws-article.is-read.is-active .bws-art-title,
 .theme-dark .bws-article.is-read.is-active .bws-art-summary { color: var(--text-normal); }
 
-/* 无障碍：尊重减少动画偏好 */
+/* 无障碍：尊重减少动画偏好 —— 关闭所有动画和过渡 */
 @media (prefers-reduced-motion: reduce) {
-  .bws-article { transition: none; }
+  .bws-article,
+  .bws-article:hover,
+  .bws-article.is-read,
+  .bws-author-avatar-wrap,
+  .bws-author-avatar-wrap::before,
+  .bws-author-avatar-wrap::after,
+  .bws-author-card,
+  .bws-sk-line,
+  .bws-sk-line-long,
+  .bws-sk-line-short,
+  .bwr-tts-bar,
+  .bwr-tts-active,
+  .bwr-lightbox-img,
+  .bwr-code-line:hover,
+  .bwr-fab-btn,
+  .bwr-toc-progress,
+  .bw-about-copy-btn {
+    transition: none;
+  }
+  .bws-card-in,
+  .bws-shimmer,
+  .bwr-pulse-text {
+    animation: none;
+  }
 }
 
 /* ── 空状态 ── */
@@ -798,12 +821,11 @@ button.bws-btn-refresh--inline {
 }
 
 /* 工具栏 */
-/* 顶部固定区：工具栏 + 文章标题 */
+/* 顶部固定区：sticky 在 layout grid 流内，宽度随内容列自动适配 */
 .bwr-topbar {
-  position: absolute;
+  grid-area: topbar;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: var(--bw-toc-w);
   z-index: 2;
   background: var(--background-primary);
 }
@@ -1092,12 +1114,12 @@ button.bwr-fab-btn:hover {
   border-radius: 2px;
 }
 
-/* 专注模式：隐藏 TOC，正文居中铺满，弱化顶栏装饰 */
+/* 专注模式：隐藏 TOC，grid 自动让 topbar/content 占满 */
 .bwr-focus-mode .bwr-toc {
   display: none;
 }
-.bwr-focus-mode .bwr-topbar {
-  right: 0;
+.bwr-focus-mode .bwr-layout {
+  grid-template-columns: 1fr 0fr;
 }
 .bwr-focus-mode .bwr-header {
   max-width: 42em;
@@ -2085,24 +2107,32 @@ button.bws-btn-retry:hover { opacity: 0.7; }
 /* ═══════════ 正文 + TOC 布局 ═══════════ */
 
 .bwr-layout {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "topbar toc"
+    "content toc";
   flex: 1;
-  align-items: flex-start;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* grid 滚动区域：content + toc 各自独立滚动 */
+.bwr-content {
+  grid-area: content;
   overflow-y: auto;
-  padding-top: var(--bwr-topbar-h, 0px);
+}
+.bwr-toc {
+  grid-area: toc;
 }
 
 /* TOC 侧栏 */
 .bwr-toc {
   width: var(--bw-toc-w);
-  flex-shrink: 0;
   padding: 28px 12px 20px 16px;
   border-left: 1px solid var(--background-modifier-border);
   font-size: 12px;
-  order: 1;
-  position: sticky;
-  top: 42px;
-  max-height: calc(100vh - 60px);
   overflow-y: auto;
 }
 
@@ -2179,7 +2209,6 @@ button.bws-btn-retry:hover { opacity: 0.7; }
 
 /* 内容列（header + body 共享宽度，左对齐） */
 .bwr-content {
-  flex: 1;
   min-width: 0;
   background: var(--background-primary);
   position: relative;
@@ -2309,8 +2338,20 @@ button.bwr-btn-tts-close:hover { color: var(--text-muted); }
 
 /* ═══════════ 暗色模式补充 ═══════════ */
 
+.theme-dark .bwr-tts-select {
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.theme-dark button.bwr-btn-tts-close { color: var(--text-muted); }
+.theme-dark button.bwr-btn-tts-close:hover { color: var(--text-normal); }
+
+.theme-dark .bwr-tts-bar {
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.4), 0 0 0 1px color-mix(in srgb, var(--bw-bamboo-pale) 12%, transparent);
+}
+
 .theme-dark .bws-sk-line {
-  background: var(--background-modifier-active-hover);
+  background: rgba(143, 197, 159, 0.15);
 }
 
 .theme-dark .bws-btn-retry {
@@ -2356,8 +2397,8 @@ button.bwr-btn-tts-close:hover { color: var(--text-muted); }
   .bwr-toc {
     display: none;
   }
-  .bwr-topbar {
-    right: 0;
+  .bwr-layout {
+    grid-template-columns: 1fr 0fr;
   }
   .bwr-header {
     padding-left: 20px;

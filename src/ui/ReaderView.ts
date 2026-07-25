@@ -146,15 +146,15 @@ export class ReaderView extends ItemView {
       return;
     }
 
-    // 顶部固定区：absolute 在 contentEl，宽度对齐 content 列
-    const topBar = contentEl.createDiv({ cls: "bwr-topbar" });
+    // 正文 + TOC 容器（flex 横排，topbar 吸顶在内部）
+    const layout = contentEl.createDiv({ cls: "bwr-layout" });
+    this.layoutEl = layout;
+
+    // 顶部固定区：sticky 在 layout 内，宽度随内容列自动适配
+    const topBar = layout.createDiv({ cls: "bwr-topbar" });
     this.renderToolbar(topBar);
     this.renderHeader(topBar);
 
-    // 正文 + TOC 容器，顶部留出 topbar 高度
-    const layout = contentEl.createDiv({ cls: "bwr-layout" });
-    this.layoutEl = layout;
-    layout.setCssProps({ "--bwr-topbar-h": `${topBar.offsetHeight}px` });
     const contentCol = layout.createDiv({ cls: "bwr-content" });
 
     // ── Markdown 预处理（排版规范化）：统一中英间距、标点等 ──
@@ -407,6 +407,15 @@ export class ReaderView extends ItemView {
     });
     focusBtn.addEventListener("click", () => this.toggleFocusMode());
 
+    // 朗读触发按钮：TTS 是阅读模式而非一次性操作，与字号/专注并列
+    const ttsToggle = bar.createEl("button", {
+      cls: "bwr-btn bwr-btn-tts-toggle",
+      text: "朗读",
+      attr: { title: "朗读全文（可暂停/继续）", "aria-label": "朗读全文" },
+    });
+    ttsToggle.addEventListener("click", () => this.ttsControls.toggleBar());
+    this.ttsControls.setPlayBtn(ttsToggle);
+
     // 分隔符
     bar.createDiv({ cls: "bwr-toolbar-sep" });
 
@@ -463,15 +472,6 @@ export class ReaderView extends ItemView {
         }
       })();
     });
-
-    // ── 朗读触发按钮（点击展开底部浮动 TTS 面板） ──
-    const ttsToggle = bar.createEl("button", {
-      cls: "bwr-btn bwr-btn-tts-toggle",
-      text: "朗读",
-      attr: { title: "朗读全文（可暂停/继续）", "aria-label": "朗读全文" },
-    });
-    ttsToggle.addEventListener("click", () => this.ttsControls.toggleBar());
-    this.ttsControls.setPlayBtn(ttsToggle);
   }
 
   /** 打开分享卡片浮层。selected 为已确定的选中文字（右键菜单传入）；省略时自动读取正文选区 */
@@ -562,6 +562,8 @@ export class ReaderView extends ItemView {
     const header = container.createDiv({ cls: "bwr-header" });
 
     header.createEl("h1", { cls: "bwr-title", text: this.article.title });
+    // 双击标题回到顶部（长文阅读常用操作）
+    header.addEventListener("dblclick", () => this.scrollTo("top"));
 
     const meta = header.createDiv({ cls: "bwr-meta" });
     meta.createSpan({ cls: "bwr-author", text: this.article.author || AUTHOR_NAME });

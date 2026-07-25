@@ -46,17 +46,6 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
       },
       {
         type: "group",
-        heading: "插件态势",
-        items: [
-          {
-            name: "作者手柄",
-            desc: `按 GitHub 手柄（插件仓库所有者）自动发现「我的插件」。当前固定为：${this.plugin.settings.authorHandles.join("、")}，由开发者设置，普通用户无需修改。`,
-            render: () => {},
-          },
-        ],
-      },
-      {
-        type: "group",
         heading: `竹杖芒鞋 v${this.pluginVersion}`,
         items: [
           {
@@ -65,6 +54,10 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
             render: (setting) => {
               this.buildAboutCard(setting.controlEl);
             },
+          },
+          {
+            name: "插件态势",
+            desc: `按 GitHub 手柄自动发现「我的插件」。当前固定为：${this.plugin.settings.authorHandles.join("、")}`,
           },
         ],
       },
@@ -120,18 +113,11 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
     new Setting(containerEl).setName(`竹杖芒鞋 v${this.pluginVersion}`).setHeading();
     this.buildAboutCard(containerEl);
 
-    // ── 插件态势 ──
-    new Setting(containerEl).setName("插件态势").setHeading();
-    this.buildAuthorHandlesInfo(containerEl);
-  }
-
-  /** 作者手柄为开发者固定值，普通用户不可修改，仅作只读展示 */
-  private buildAuthorHandlesInfo(parent: HTMLElement): void {
-    const handles = this.plugin.settings.authorHandles.join("、");
-    new Setting(parent)
-      .setName("作者手柄（自动发现）")
+    // ── 插件态势（只读信息，合并在关于分组下） ──
+    new Setting(containerEl)
+      .setName("插件态势")
       .setDesc(
-        `按 GitHub 手柄（插件仓库所有者）自动发现「我的插件」。当前固定为：${handles}，由开发者设置，普通用户无需修改。`,
+        `按 GitHub 手柄自动发现「我的插件」。当前固定为：${this.plugin.settings.authorHandles.join("、")}`,
       );
   }
 

@@ -148,11 +148,28 @@ export class ShareModal extends Modal {
       cls: "bw-share-btn bw-share-btn--primary",
       text: "下载",
     });
-    dlBtn.addEventListener("click", () => this.download());
+    dlBtn.addEventListener("click", () => {
+      this.download();
+      if (this.downloadBtn) {
+        this.downloadBtn.textContent = "已下载 ✓";
+        window.setTimeout(() => {
+          if (this.downloadBtn) this.downloadBtn.textContent = "下载";
+        }, 1500);
+      }
+    });
     this.downloadBtn = dlBtn;
 
     const cpBtn = actions.createEl("button", { cls: "bw-share-btn", text: "复制" });
-    cpBtn.addEventListener("click", () => { void this.copy(); });
+    cpBtn.addEventListener("click", () => {
+      void this.copy().then(() => {
+        if (this.copyBtn) {
+          this.copyBtn.textContent = "已复制 ✓";
+          window.setTimeout(() => {
+            if (this.copyBtn) this.copyBtn.textContent = "复制";
+          }, 1500);
+        }
+      });
+    });
     this.copyBtn = cpBtn;
 
     this.syncChips();
