@@ -828,8 +828,6 @@ button.bws-btn-refresh--inline {
   top: 0;
   z-index: 2;
   background: var(--background-primary);
-  overflow-y: auto;
-  scrollbar-gutter: stable;
 }
 
 .bwr-toolbar {
@@ -2116,26 +2114,30 @@ button.bws-btn-retry:hover { opacity: 0.7; }
     "topbar toc"
     "content toc";
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
 }
 
-/* grid 滚动区域：content + toc 各自独立滚动 */
+/* grid 区域定义（滚动由外层 bwr-layout 统一处理） */
 .bwr-content {
   grid-area: content;
-  overflow-y: auto;
 }
 .bwr-toc {
   grid-area: toc;
 }
 
-/* TOC 侧栏 */
+/* TOC 侧栏（sticky 保持可见，独立滚动） */
 .bwr-toc {
   width: var(--bw-toc-w);
   padding: 28px 12px 20px 16px;
   border-left: 1px solid var(--background-modifier-border);
   font-size: 12px;
   overflow-y: auto;
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: 100vh;
 }
 
 /* TOC 进度条 */
@@ -2214,7 +2216,6 @@ button.bws-btn-retry:hover { opacity: 0.7; }
   min-width: 0;
   background: var(--background-primary);
   position: relative;
-  scrollbar-gutter: stable;
 }
 
 
