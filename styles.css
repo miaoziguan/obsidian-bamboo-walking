@@ -2212,6 +2212,7 @@ button.bws-btn-retry:hover { opacity: 0.7; }
   min-width: 0;
   background: var(--background-primary);
   position: relative;
+  scrollbar-gutter: stable;
 }
 
 
