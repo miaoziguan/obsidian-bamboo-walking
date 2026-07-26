@@ -1114,25 +1114,31 @@ button.bwr-fab-btn:hover {
   border-radius: 2px;
 }
 
-/* 专注模式：隐藏 TOC，grid 自动让 topbar/content 占满 */
+/* 专注模式：grid 区域居中到相同宽度，子元素自然对齐 */
 .bwr-focus-mode .bwr-toc {
   display: none;
 }
 .bwr-focus-mode .bwr-layout {
   grid-template-columns: 1fr 0fr;
 }
-.bwr-focus-mode .bwr-header {
-  max-width: 42em;
-}
-.bwr-focus-mode .bwr-content {
-  max-width: 100%;
-}
-.bwr-focus-mode .bwr-body {
-  max-width: 42em;
-}
 .bwr-focus-mode .bwr-topbar {
+  max-width: 42em;
+  margin-left: auto;
+  margin-right: auto;
   opacity: 0.25;
   transition: opacity 0.2s ease;
+}
+.bwr-focus-mode .bwr-content {
+  max-width: 42em;
+  margin-left: auto;
+  margin-right: auto;
+}
+/* 子元素不再自行居中，填满父容器即可 */
+.bwr-focus-mode .bwr-header {
+  max-width: none;
+}
+.bwr-focus-mode .bwr-body {
+  max-width: none;
 }
 .bwr-focus-mode .bwr-topbar:hover {
   opacity: 1;
