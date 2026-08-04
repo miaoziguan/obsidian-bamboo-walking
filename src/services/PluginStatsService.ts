@@ -256,11 +256,11 @@ export class PluginStatsService {
               const num = dm[2] ?? dm[1];
               downloads = parseInt(num ?? "", 10) || 0;
             }
-            // 调试：确认 UA 修复后 Obsidian 能否拿到 '367'
-            const i367 = page ? page.indexOf("367") : -1;
-            const ctx3 = i367 >= 0 ? JSON.stringify(page.slice(i367 - 20, i367 + 20)) : "NO '367' FOUND";
+            // 调试：确认 Obsidian 拿到的页面是否含 RSC streaming 数据
+            const hasRsc = page ? page.includes("self.__next_f") || page.includes("_next/static/chunks/") : false;
+            const hasStar = page ? page.includes("star") : false;
             console.log(`[bamboo-walking] 🔍 主题 ${id} 爬取结果：downloads=${downloads}, pageLen=${page?.length ?? 0}, regexMatched=${!!dm}`);
-            console.log(`[bamboo-walking] 📄 '367' 上下文: ${ctx3}`);
+            console.log(`[bamboo-walking] 📊 RSC数据=${hasRsc}, 含star=${hasStar}`);
             return { id, downloads, version: manifest?.version };
           } catch (err) {
             console.warn(`[bamboo-walking] 主题 ${id} 爬取失败：`, err);
