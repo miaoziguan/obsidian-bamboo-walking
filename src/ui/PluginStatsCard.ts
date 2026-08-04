@@ -6,6 +6,18 @@ import type { PluginStatEntry } from "../types";
 import type { PluginStatsResult, PluginStatsService } from "../services/PluginStatsService";
 import { svgIcon } from "./icons";
 
+// Obsidian 内部 API：app.setting 在官方类型定义中未暴露，但运行时存在，
+// 用于打开社区插件设置页并自动填入搜索词。此处补充类型声明以通过 typecheck。
+declare module "obsidian" {
+  interface App {
+    setting: {
+      open(): void;
+      openTabById(id: string): unknown;
+      containerEl: HTMLElement;
+    };
+  }
+}
+
 /** 左栏插件态势卡：头部(标题+刷新) + 列表(插件名/下载量/+N 增量)，点击打开详情弹窗 */
 export class PluginStatsCard {
   private bodyEl: HTMLElement | null = null;
@@ -210,10 +222,9 @@ export class PluginStatsCard {
 
   /** 打开市场（插件→社区插件设置页；主题→社区主题网页） */
   private openMarket(e: PluginStatEntry): void {
-    const enc = encodeURIComponent(e.id);
     if (e.kind === "theme") {
       // 主题：打开社区主题网页详情页（用户指定的链接）
-      window.open(`https://community.obsidian.md/themes/${enc}`, "_blank");
+      window.open("https://community.obsidian.md/themes/bamboo-china", "_blank");
       return;
     }
     // 插件：打开社区插件设置页并自动搜索填入插件 ID
