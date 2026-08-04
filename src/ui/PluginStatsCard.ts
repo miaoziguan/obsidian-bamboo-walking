@@ -212,7 +212,7 @@ export class PluginStatsCard {
   private openMarket(e: PluginStatEntry): void {
     const enc = encodeURIComponent(e.id);
     if (e.kind === "theme") {
-      // 主题：打开社区主题网页详情页（用户可浏览/下载）
+      // 主题：打开社区主题网页详情页（用户指定的链接）
       window.open(`https://community.obsidian.md/themes/${enc}`, "_blank");
       return;
     }
