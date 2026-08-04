@@ -150,7 +150,7 @@ export default class BambooWalkingPlugin extends Plugin {
     this.addCommand({ id: "open-column", name: "打开专栏", callback: () => { void this.activateViews(); } });
     this.addCommand({ id: "refresh-articles", name: "刷新文章列表", callback: () => { void this.refreshArticles(); } });
     this.addCommand({ id: "save-as-note", name: "保存当前文章为笔记", callback: () => { void this.saveCurrentAsNote(); } });
-    this.addCommand({ id: "view-plugin-stats", name: "查看插件态势", callback: () => {
+    this.addCommand({ id: "view-plugin-stats", name: "查看黑曜石作品", callback: () => {
       new PluginStatsModal(this.app, this.pluginStatsService).open();
     } });
 

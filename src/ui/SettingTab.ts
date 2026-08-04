@@ -56,7 +56,7 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
             },
           },
           {
-            name: "插件态势",
+            name: "黑曜石作品",
             desc: `按 GitHub 手柄自动发现「我的插件」。当前固定为：${this.plugin.settings.authorHandles.join("、")}`,
           },
         ],
@@ -115,7 +115,7 @@ export class BambooWalkingSettingTab extends PluginSettingTab {
 
     // ── 插件态势（只读信息，合并在关于分组下） ──
     new Setting(containerEl)
-      .setName("插件态势")
+      .setName("黑曜石作品")
       .setDesc(
         `按 GitHub 手柄自动发现「我的插件」。当前固定为：${this.plugin.settings.authorHandles.join("、")}`,
       );

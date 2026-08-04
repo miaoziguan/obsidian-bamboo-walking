@@ -56,7 +56,7 @@ export class PluginStatsCard {
       const left = head.createDiv({ cls: "bws-pluginstats-left" });
       const label = left.createDiv({ cls: "bws-pluginstats-label" });
       svgIcon(label, "chart", "bws-pluginstats-ico");
-      label.append(" 插件态势");
+      label.append(" 黑曜石作品");
       const caret = left.createSpan({ cls: "bws-pluginstats-caret", attr: { "aria-hidden": "true" } });
 
       // 点击头部：折叠/展开为单行
@@ -65,7 +65,7 @@ export class PluginStatsCard {
         card.classList.toggle("is-collapsed");
         caret.setAttribute(
           "aria-label",
-          card.classList.contains("is-collapsed") ? "展开插件态势" : "折叠插件态势",
+          card.classList.contains("is-collapsed") ? "展开黑曜石作品" : "折叠黑曜石作品",
         );
       });
 
@@ -73,7 +73,7 @@ export class PluginStatsCard {
 
       const refresh = actions.createEl("button", {
         cls: "bws-pluginstats-refresh",
-        attr: { "aria-label": "刷新插件态势", title: "刷新" },
+        attr: { "aria-label": "刷新黑曜石作品", title: "刷新" },
       });
       svgIcon(refresh, "refresh");
       refresh.addEventListener("click", (e) => {
@@ -84,7 +84,7 @@ export class PluginStatsCard {
 
       const detail = actions.createEl("button", {
         cls: "bws-pluginstats-detail",
-        attr: { "aria-label": "查看插件态势详情", title: "详情" },
+        attr: { "aria-label": "查看黑曜石作品详情", title: "详情" },
       });
       svgIcon(detail, "pulse");
       detail.addEventListener("click", (e) => {
@@ -107,9 +107,9 @@ export class PluginStatsCard {
 
       void this.refresh();
     } catch (e) {
-      console.error("[bamboo-walking] 插件态势卡片渲染失败：", e);
+      console.error("[bamboo-walking] 黑曜石作品卡片渲染失败：", e);
       const errCard = parent.createDiv({ cls: "bws-pluginstats bws-pluginstats-err" });
-      errCard.setText("插件态势加载失败，详见控制台");
+      errCard.setText("黑曜石作品加载失败，详见控制台");
     }
   }
 

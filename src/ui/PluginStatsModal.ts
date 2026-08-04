@@ -92,7 +92,7 @@ export class PluginStatsModal extends Modal {
     const head = root.createDiv({ cls: "bw-pluginstats-head" });
     const t = head.createDiv({ cls: "bw-pluginstats-title" });
     svgIcon(t, "chart");
-    t.append(" 插件态势");
+    t.append(" 黑曜石作品");
     root.createDiv({ cls: "bw-pluginstats-loading", text: "正在拉取社区数据…" });
   }
 
@@ -101,7 +101,7 @@ export class PluginStatsModal extends Modal {
     const head = root.createDiv({ cls: "bw-pluginstats-head" });
     const t = head.createDiv({ cls: "bw-pluginstats-title" });
     svgIcon(t, "chart");
-    t.append(" 插件态势");
+    t.append(" 黑曜石作品");
     const empty = root.createDiv({ cls: "bw-pluginstats-empty" });
     empty.createEl("p", { text: `拉取失败：${msg}` });
     empty.createEl("p", {
@@ -118,7 +118,7 @@ export class PluginStatsModal extends Modal {
     const titleBox = head.createDiv({ cls: "bw-pluginstats-titlebox" });
     const t = titleBox.createDiv({ cls: "bw-pluginstats-title" });
     svgIcon(t, "chart");
-    t.append(" 插件态势");
+    t.append(" 黑曜石作品");
     const updated = new Date(result.lastFetch);
     const hh = String(updated.getHours()).padStart(2, "0");
     const mm = String(updated.getMinutes()).padStart(2, "0");
