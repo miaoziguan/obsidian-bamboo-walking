@@ -269,7 +269,7 @@ export class PluginStatsService {
         const last = history[history.length - 1];
         const changed = last && last.downloads !== downloads;
         const oldEnough = last && now2 - last.ts > DAY_MS;
-        if (downloads > 0 && (!last || changed || oldEnough)) {
+        if (!last || changed || oldEnough) {
           history = [...history, { ts: now2, downloads }];
           if (history.length > PLUGIN_STATS_HISTORY_MAX) {
             history = history.slice(-PLUGIN_STATS_HISTORY_MAX);
@@ -286,7 +286,7 @@ export class PluginStatsService {
           total: themeRaw.length,
           version: info?.version ?? prev?.version,
           modes: authorThemeModes.get(id) ?? prev?.modes,
-          history: prev?.history ?? [],
+          history,
         };
       }
 
