@@ -320,6 +320,57 @@ export class ReaderView extends ItemView {
       const saved = this.loadLocalString(`bw-progress-${this.article.slug}`);
       if (saved) { layout.scrollTop = parseInt(saved, 10); }
     }
+
+    // ── 移动端边缘左滑返回列表（仅从左侧边缘起手、横向位移明显时触发） ──
+    this.setupEdgeSwipeBack(layout);
+  }
+
+  /** 移动端：从左边缘右滑返回文章列表；与系统横向手势共存，仅在位移足够且纵向抖动小才触发 */
+  private setupEdgeSwipeBack(layout: HTMLElement): void {
+    const EDGE = 24;           // 边缘触发区宽度
+    const MIN_DX = 80;         // 至少横向滑动距离
+    const MAX_DY = 60;         // 纵向抖动上限
+    let startX = 0, startY = 0, tracking = false, decided = false, swipeBack = false;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) { tracking = false; return; }
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      tracking = startX <= EDGE;
+      decided = false;
+      swipeBack = false;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!tracking || decided) return;
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      if (Math.abs(dy) > MAX_DY && Math.abs(dx) < Math.abs(dy)) {
+        decided = true; tracking = false; return;
+      }
+      if (dx > MIN_DX) {
+        decided = true; swipeBack = true;
+      } else if (dx < -MIN_DX / 2 || Math.abs(dy) > MAX_DY) {
+        decided = true; tracking = false;
+      }
+    };
+    const onTouchEnd = () => {
+      if (swipeBack && this.onBack) this.onBack();
+      tracking = false; decided = false; swipeBack = false;
+    };
+
+    layout.addEventListener("touchstart", onTouchStart, { passive: true });
+    layout.addEventListener("touchmove", onTouchMove, { passive: true });
+    layout.addEventListener("touchend", onTouchEnd, { passive: true });
+    // 视图卸载时清理（component.unload 会触发，但显式移除更稳妥）
+    this.component.registerEvent({
+      // 用 Obsidian Component 的事件注销机制兜底
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 仅需对象形状满足 registerEvent
+      unload: () => {
+        layout.removeEventListener("touchstart", onTouchStart);
+        layout.removeEventListener("touchmove", onTouchMove);
+        layout.removeEventListener("touchend", onTouchEnd);
+      },
+    } as any);
   }
 
   /* ── Markdown 预处理：中英混排 + 排版规范化 ── */

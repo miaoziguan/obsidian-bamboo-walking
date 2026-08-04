@@ -31,6 +31,20 @@
   --bw-read-w: 38rem;  /* 阅读列宽度：用 rem 而非 em，避免 body（markdown-preview-view）和 header 继承不同字号导致宽度错位 */
   --bw-toc-w: 180px;   /* TOC 侧栏宽度：topbar 的 right 以此为基准 */
 
+  /* ── 断点 token（统一零散媒体查询，避免多套数值漂移） ── */
+  --bw-bp-tablet: 768px;   /* 平板及以下：隐藏 TOC、单栏阅读 */
+  --bw-bp-mobile: 600px;   /* 手机及以下：工具栏紧凑、间距收窄 */
+  --bw-bp-narrow: 480px;   /* 超窄屏：分享弹层全宽、摘要截断 */
+
+  /* ── 安全区（全面屏手势条 / 刘海，移动端生效，桌面为 0） ── */
+  --bw-safe-top: env(safe-area-inset-top, 0px);
+  --bw-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --bw-safe-left: env(safe-area-inset-left, 0px);
+  --bw-safe-right: env(safe-area-inset-right, 0px);
+
+  /* ── 触摸最小点按区（移动端按钮至少 36px 高，避免误触） ── */
+  --bw-tap-min: 36px;
+
   /* ── 动效曲线 ── */
   --bw-ease: cubic-bezier(0.2, 0, 0, 1);
   --bw-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -63,6 +77,9 @@ body {
   height: 100%;
   background: var(--background-secondary);
   font-size: 13px;
+  padding-left: var(--bw-safe-left);
+  padding-right: var(--bw-safe-right);
+  box-sizing: border-box;
 }
 
 /* ── 顶部标题栏 / 作者卡片 ── */
@@ -839,6 +856,35 @@ button.bws-btn-refresh--inline {
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
+/* 触摸反馈：移动端去掉灰色高亮，按下时给竹青底色反馈 */
+.bwr-reader button,
+.bws-sidebar button {
+  -webkit-tap-highlight-color: transparent;
+}
+.bwr-reader button:active,
+.bws-sidebar button:active {
+  transition: background 0.1s var(--bw-ease), color 0.1s var(--bw-ease), transform 0.1s var(--bw-ease);
+}
+@media (hover: none) and (pointer: coarse) {
+  /* 仅在真实触摸设备上启用 active 背景反馈，桌面 hover 不受影响 */
+  button.bwr-btn:active,
+  button.bwr-btn-zoom:active,
+  button.bwr-btn-share:active,
+  button.bwr-btn-extract:active,
+  button.bwr-btn-tts-toggle:active,
+  button.bws-author-link:active,
+  .bws-article:active {
+    background: color-mix(in srgb, var(--bw-bamboo-pale) 22%, transparent);
+    color: var(--bw-bamboo-deep);
+    border-radius: var(--bw-radius-sm);
+  }
+  button.bwr-btn-save:active {
+    background: color-mix(in srgb, var(--bw-bamboo) 18%, transparent);
+    color: var(--bw-white);
+  }
+  .bwr-fab-btn:active { transform: scale(0.92); }
+}
+
 /* 工具栏功能区分隔符 */
 .bwr-toolbar-sep {
   width: 1px;
@@ -855,6 +901,9 @@ button.bwr-btn {
   font: inherit;
   font-size: 12px;
   color: var(--text-muted);
+  min-height: var(--bw-tap-min);
+  display: inline-flex;
+  align-items: center;
 }
 
 button.bwr-btn:hover { color: var(--bw-bamboo); }
@@ -920,8 +969,9 @@ button.bwr-btn:hover .bwr-icon { color: var(--bw-bamboo); }
 /* 浮动跳转按钮 */
 .bwr-fab {
   position: sticky;
-  bottom: 24px;
+  bottom: calc(24px + var(--bw-safe-bottom));
   margin-left: auto;
+  margin-right: var(--bw-safe-right);
   width: fit-content;
   display: flex;
   flex-direction: column;
@@ -1509,7 +1559,7 @@ button.bwr-code-copy:hover { color: var(--bw-bamboo); }
   align-items: center;
   justify-content: center;
   height: 100%;
-  padding: var(--bw-space-2xl);
+  padding: calc(var(--bw-space-2xl) + var(--bw-safe-top)) calc(var(--bw-space-2xl) + var(--bw-safe-right)) calc(var(--bw-space-2xl) + var(--bw-safe-bottom)) calc(var(--bw-space-2xl) + var(--bw-safe-left));
   text-align: center;
 }
 
@@ -1845,15 +1895,28 @@ button.bw-about-copy-btn:active {
 
 /* ═══════════ 响应式 ═══════════ */
 
+/* ── 手机及以下（≤600px）：工具栏紧凑 + 安全区 + 收窄间距 ── */
 @media (max-width: 600px) {
   .bwr-header {
-    padding: var(--bw-space-xl) var(--bw-space-xl) var(--bw-space-lg);
+    padding: calc(var(--bw-space-lg) + var(--bw-safe-top)) calc(var(--bw-space-lg) + var(--bw-safe-right)) var(--bw-space-lg) calc(var(--bw-space-lg) + var(--bw-safe-left));
   }
   .bwr-body {
-    padding: 0 var(--bw-space-xl) var(--bw-space-2xl);
+    padding: 0 calc(var(--bw-space-lg) + var(--bw-safe-right)) calc(var(--bw-space-2xl) + var(--bw-safe-bottom)) calc(var(--bw-space-lg) + var(--bw-safe-left));
   }
   .bwr-title {
     font-size: 22px;
+  }
+  /* 工具栏在窄屏更紧凑、缩短左右留白 */
+  .bwr-toolbar {
+    padding: var(--bw-space-xs) calc(var(--bw-space-lg) + var(--bw-safe-right)) var(--bw-space-xs) calc(var(--bw-space-lg) + var(--bw-safe-left));
+    gap: 2px;
+  }
+  .bwr-toolbar-sep {
+    margin: 2px 4px;
+  }
+  /* 字号缩放按钮组在窄屏更收敛 */
+  .bwr-zoom {
+    gap: 0;
   }
 }
 
@@ -2123,6 +2186,9 @@ button.bws-btn-retry:hover { opacity: 0.7; }
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
+  /* 移动端：阻止滚动链到外层（避免 iOS 弹性滚动带动 Obsidian 自身滚动），并启用惯性滚动 */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* grid 区域定义（滚动由外层 bwr-layout 统一处理） */
@@ -2259,18 +2325,21 @@ button.bwr-btn-tts-toggle:disabled { cursor: default; opacity: 0.6; }
 /* 底部 TTS 浮动条 */
 .bwr-tts-bar {
   position: fixed;
-  bottom: 20px;
+  bottom: calc(20px + var(--bw-safe-bottom));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: var(--bw-space-sm);
   padding: 8px 16px;
+  padding-left: calc(16px + var(--bw-safe-left));
+  padding-right: calc(16px + var(--bw-safe-right));
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--bw-radius-lg);
   box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.15), 0 0 0 1px color-mix(in srgb, var(--bw-bamboo) 8%, transparent);
   z-index: 100;
+  max-width: calc(100vw - var(--bw-safe-left) - var(--bw-safe-right) - 24px);
   animation: bwr-tts-bar-in 0.25s ease-out;
 }
 
@@ -2403,6 +2472,7 @@ button.bwr-btn-tts-close:hover { color: var(--text-muted); }
 
 /* ═══════════ 响应式补充 ═══════════ */
 
+/* ── 平板及以下（≤768px）：单栏阅读，TOC 让位正文 ── */
 @media (max-width: 768px) {
   .bwr-toc {
     display: none;
@@ -2411,17 +2481,33 @@ button.bwr-btn-tts-close:hover { color: var(--text-muted); }
     grid-template-columns: 1fr 0fr;
   }
   .bwr-header {
-    padding-left: 20px;
-    padding-right: 20px;
+    padding-left: calc(20px + var(--bw-safe-left));
+    padding-right: calc(20px + var(--bw-safe-right));
   }
   .bwr-body {
-    padding: 0 20px 40px;
+    padding: 0 calc(20px + var(--bw-safe-right)) calc(40px + var(--bw-safe-bottom)) calc(20px + var(--bw-safe-left));
   }
 }
 
 @media (max-width: 600px) {
   .bws-art-summary {
     max-width: 120px;
+  }
+  /* 封面图在窄屏略缩小，给文字更多空间 */
+  .bws-art-cover {
+    flex-basis: 36px;
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* ── 超窄屏（≤480px）：分享弹层全宽、摘要进一步截断 ── */
+@media (max-width: 480px) {
+  .bws-art-summary {
+    max-width: 96px;
+  }
+  .bwr-title {
+    font-size: 20px;
   }
 }
 
