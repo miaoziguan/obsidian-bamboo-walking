@@ -246,16 +246,20 @@ export class PluginStatsService {
               ).catch(() => null),
             ]);
             let downloads = 0;
-            const dm = page?.match(/(\d+)(?:[^0-9]*?)downloads/i);
-            if (dm) downloads = parseInt(dm[1], 10) || 0;
-            // 调试：检查页面中是否包含 "down" 片段，以及 "367" 附近内容
-            const di = page ? page.toLowerCase().indexOf("down") : -1;
-            const ctx2 = di >= 0 ? JSON.stringify(page.slice(di - 10, di + 80)) : "NO 'down' FOUND";
-            console.log(`[bamboo-walking] 🔍 主题 ${id} 爬取结果：downloads=${downloads}, pageLen=${page?.length ?? 0}, regexMatched=${!!dm}`);
-            console.log(`[bamboo-walking] 📄 'down' 上下文: ${ctx2}`);
-            // 也尝试找 "367" 附近
+            // 匹配多种格式：
+            //  - "367 downloads" / "367&nbsp;downloads"
+            //  - RSC escaped: "367","\xa0downloads" 或 "367\\\",\\\"\\xa0downloads"
+            const dm =
+              page?.match(/(\d+)(?:[^0-9<]*?)downloads/i) ||
+              page?.match(/(\\")?(\d+)(?:\\",\\")?[^0-9]*?downloads/i);
+            if (dm) {
+              const num = dm[2] ?? dm[1];
+              downloads = parseInt(num ?? "", 10) || 0;
+            }
+            // 调试：确认 UA 修复后 Obsidian 能否拿到 '367'
             const i367 = page ? page.indexOf("367") : -1;
             const ctx3 = i367 >= 0 ? JSON.stringify(page.slice(i367 - 20, i367 + 20)) : "NO '367' FOUND";
+            console.log(`[bamboo-walking] 🔍 主题 ${id} 爬取结果：downloads=${downloads}, pageLen=${page?.length ?? 0}, regexMatched=${!!dm}`);
             console.log(`[bamboo-walking] 📄 '367' 上下文: ${ctx3}`);
             return { id, downloads, version: manifest?.version };
           } catch (err) {
@@ -347,7 +351,14 @@ export class PluginStatsService {
         PLUGIN_STATS_FETCH_TIMEOUT,
       ),
     );
-    const req = requestUrl({ url }).then((resp) => {
+    const req = requestUrl({
+      url,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+    }).then((resp) => {
       if (resp.status !== 200) throw new Error(`HTTP ${resp.status}`);
       return typeof resp.text === "string" ? resp.text : "";
     });
