@@ -3009,6 +3009,21 @@ body.is-mobile .bwr-body {
   color: var(--text-faint);
   font-size: 11px;
 }
+/* 主题行：用竹色左边框区分 */
+.bws-pluginstats-row.is-theme {
+  border-left: 2px solid var(--bw-bamboo);
+  padding-left: 6px;
+  margin-left: -8px;
+}
+.bws-pluginstats-kind {
+  font-size: 11px;
+  filter: saturate(0.9);
+}
+.bws-pluginstats-modes {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 500;
+}
 .bws-pluginstats-stale {
   font-size: 10px;
   color: var(--text-faint);
@@ -3119,6 +3134,10 @@ body.is-mobile .bwr-body {
 }
 .bw-ps-name {
   font-weight: 600;
+}
+.bw-ps-kind {
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 .bw-ps-num {
   color: var(--text-normal);

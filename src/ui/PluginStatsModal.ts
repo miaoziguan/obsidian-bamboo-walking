@@ -7,7 +7,12 @@
 import { App, Modal } from "obsidian";
 import type { PluginStatEntry } from "../types";
 import type { PluginStatsResult, PluginStatsService } from "../services/PluginStatsService";
-import { COMMUNITY_PLUGIN_PAGE, PLUGIN_CN_NAMES } from "../constants";
+import {
+  COMMUNITY_PLUGIN_PAGE,
+  COMMUNITY_THEME_PAGE,
+  PLUGIN_CN_NAMES,
+  THEME_CN_NAMES,
+} from "../constants";
 import { svgIcon } from "./icons";
 
 /** 千分位格式化 */
@@ -139,10 +144,10 @@ export class PluginStatsModal extends Modal {
     const entries = result.entries;
     if (entries.length === 0) {
       const empty = root.createDiv({ cls: "bw-pluginstats-empty" });
-      empty.createEl("p", { text: "暂无发现的插件。" });
+      empty.createEl("p", { text: "暂无发现的插件或主题。" });
       empty.createEl("p", {
         cls: "bw-pluginstats-empty-sub",
-        text: "可在插件设置中配置「作者手柄」（自动发现你的插件）。",
+        text: "可在插件设置中配置「作者手柄」（自动发现你的插件与主题）。",
       });
       return;
     }
@@ -151,37 +156,66 @@ export class PluginStatsModal extends Modal {
     const table = root.createEl("table", { cls: "bw-pluginstats-table" });
     const thead = table.createEl("thead");
     const htr = thead.createEl("tr");
-    ["插件", "下载量", "距上次", "7日", "30日", "全站排名", "社区"].forEach(
+    ["类型", "名称", "下载量/版本", "距上次", "7日", "30日", "全站排名", "社区"].forEach(
       (h) => htr.createEl("th", { text: h }),
     );
     const tbody = table.createEl("tbody");
     for (const e of entries) {
+      const isTheme = e.kind === "theme";
       const tr = tbody.createEl("tr");
-      tr.createEl("td", { cls: "bw-ps-name", text: PLUGIN_CN_NAMES[e.id] ?? e.name ?? e.id });
+      // 类型标记
       tr.createEl("td", {
-        cls: "bw-ps-num",
-        text: e.found ? fmt(e.downloads) : "未收录",
+        cls: "bw-ps-kind",
+        text: isTheme ? "🎨 主题" : "🔌 插件",
       });
+      // 名称（主题用 THEME_CN_NAMES，插件用 PLUGIN_CN_NAMES）
       tr.createEl("td", {
-        cls: "bw-ps-num",
-        text: e.found ? signed(deltaSincePrev(e)) : "—",
+        cls: "bw-ps-name",
+        text: isTheme
+          ? THEME_CN_NAMES[e.id] ?? e.name ?? e.id
+          : PLUGIN_CN_NAMES[e.id] ?? e.name ?? e.id,
       });
-      tr.createEl("td", {
-        cls: "bw-ps-num",
-        text: e.found ? signed(deltaSinceDays(e, 7)) : "—",
-      });
-      tr.createEl("td", {
-        cls: "bw-ps-num",
-        text: e.found ? signed(deltaSinceDays(e, 30)) : "—",
-      });
-      tr.createEl("td", {
-        cls: "bw-ps-num",
-        text: e.found && e.rank > 0 ? `#${fmt(e.rank)} / ${fmt(e.total)}` : "—",
-      });
+      if (isTheme) {
+        // 主题：官方无下载量统计，展示版本 + 模式
+        const modeTxt = e.modes && e.modes.length > 0
+          ? `（${e.modes.map((m) => (m === "dark" ? "暗" : "亮")).join("/")}）`
+          : "";
+        tr.createEl("td", {
+          cls: "bw-ps-num",
+          text: e.version ? `v${e.version}${modeTxt}` : `已收录${modeTxt}`,
+        });
+        ["—", "—", "—", "—"].forEach((v) =>
+          tr.createEl("td", { cls: "bw-ps-num", text: v }),
+        );
+      } else {
+        // 插件：下载量 + 增量 + 排名
+        tr.createEl("td", {
+          cls: "bw-ps-num",
+          text: e.found ? fmt(e.downloads) : "未收录",
+        });
+        tr.createEl("td", {
+          cls: "bw-ps-num",
+          text: e.found ? signed(deltaSincePrev(e)) : "—",
+        });
+        tr.createEl("td", {
+          cls: "bw-ps-num",
+          text: e.found ? signed(deltaSinceDays(e, 7)) : "—",
+        });
+        tr.createEl("td", {
+          cls: "bw-ps-num",
+          text: e.found ? signed(deltaSinceDays(e, 30)) : "—",
+        });
+        tr.createEl("td", {
+          cls: "bw-ps-num",
+          text: e.found && e.rank > 0 ? `#${fmt(e.rank)} / ${fmt(e.total)}` : "—",
+        });
+      }
       const linkTd = tr.createEl("td", { cls: "bw-ps-link-td" });
       const link = linkTd.createEl("a", {
         text: "查看 ↗",
-        href: `${COMMUNITY_PLUGIN_PAGE}${e.id}`,
+        href: isTheme
+          ? `${COMMUNITY_THEME_PAGE}${e.id}`
+          : `${COMMUNITY_PLUGIN_PAGE}${e.id}`,
         cls: "bw-ps-link",
       });
       link.setAttribute("target", "_blank");

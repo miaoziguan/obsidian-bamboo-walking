@@ -14,6 +14,7 @@ import type {
 } from "../types";
 import {
   COMMUNITY_PLUGINS_URL,
+  COMMUNITY_THEMES_URL,
   PLUGIN_STATS_CACHE_KEY,
   PLUGIN_STATS_CACHE_VERSION,
   PLUGIN_STATS_FETCH_TIMEOUT,
@@ -35,6 +36,14 @@ interface CommunityPlugin {
   repo?: string;
 }
 
+/** community-css-themes.json 单条：{ name, author, repo: "owner/name", screenshot, modes, legacy? } */
+interface CommunityTheme {
+  name?: string;
+  author?: string;
+  repo?: string;
+  modes?: string[];
+}
+
 /** 对外返回结果 */
 export interface PluginStatsResult {
   entries: PluginStatEntry[];
@@ -51,9 +60,9 @@ function repoOwner(repo: string | undefined): string {
   return repo.split("/")[0]?.toLowerCase() ?? "";
 }
 
-/** 判断某插件是否属于给定手柄集合（匹配 repo owner，回退到 author） */
+/** 判断某插件/主题是否属于给定手柄集合（匹配 repo owner，回退到 author） */
 function matchesHandle(
-  p: CommunityPlugin,
+  p: { repo?: string; author?: string },
   handles: string[],
 ): boolean {
   const norm = handles.map((h) => h.trim().toLowerCase()).filter(Boolean);
@@ -132,9 +141,10 @@ export class PluginStatsService {
     }
 
     try {
-      const [statsRaw, communityRaw] = await Promise.all([
+      const [statsRaw, communityRaw, themeRaw] = await Promise.all([
         this.fetchJson<StatsJson>(PLUGIN_STATS_URL),
         this.fetchJson<CommunityPlugin[]>(COMMUNITY_PLUGINS_URL),
+        this.fetchJson<CommunityTheme[]>(COMMUNITY_THEMES_URL),
       ]);
 
       // 1) 按手柄自动发现「我的插件」
@@ -144,6 +154,20 @@ export class PluginStatsService {
         if (matchesHandle(p, this.authorHandles)) {
           authorIds.add(p.id);
           if (p.name) authorNames.set(p.id, p.name);
+        }
+      }
+
+      // 1b) 按手柄自动发现「我的主题」
+      const authorThemeIds = new Set<string>();
+      const authorThemeNames = new Map<string, string>();
+      const authorThemeModes = new Map<string, string[]>();
+      for (const t of themeRaw) {
+        if (!t.repo) continue;
+        const themeId = t.repo.split("/")[1] ?? "";
+        if (matchesHandle(t, this.authorHandles)) {
+          authorThemeIds.add(themeId);
+          if (t.name) authorThemeNames.set(themeId, t.name);
+          if (t.modes) authorThemeModes.set(themeId, t.modes);
         }
       }
 
@@ -157,14 +181,17 @@ export class PluginStatsService {
       sorted.forEach((id, i) => rankIndex.set(id, i + 1));
       const total = allIds.length;
 
-      // 4) 构建条目 + 滚动历史快照
+      // 3) 构建条目 + 滚动历史快照
       const now2 = Date.now();
       const next: Record<string, PluginStatEntry> = {};
+
+      // 3a) 插件条目（含下载量/排名/历史）
       for (const id of authorIds) {
         const stat = statsRaw[id];
         if (!stat) {
           next[id] = {
             id,
+            kind: "plugin",
             name: authorNames.get(id) ?? undefined,
             found: false,
             downloads: 0,
@@ -190,6 +217,7 @@ export class PluginStatsService {
         }
         next[id] = {
           id,
+          kind: "plugin",
           name: authorNames.get(id) ?? undefined,
           found: true,
           downloads,
@@ -197,6 +225,44 @@ export class PluginStatsService {
           rank: rankIndex.get(id) ?? 0,
           total,
           history,
+        };
+      }
+
+      // 3b) 主题条目（官方无下载量统计，仅标注收录状态 + 版本 + 模式）
+      // 版本号需从各主题仓库的 manifest.json 单独获取（官方列表不提供）
+      const themeManifests = await Promise.allSettled(
+        [...authorThemeIds].map(async (id) => {
+          const repo = themeRaw.find(
+            (t) => t.repo && t.repo.split("/")[1] === id,
+          )?.repo;
+          if (!repo) return { id, version: undefined as string | undefined };
+          const m = await this.fetchJson<{ version?: string }>(
+            `https://raw.githubusercontent.com/${repo}/master/manifest.json`,
+          ).catch(() => null);
+          return { id, version: m?.version };
+        }),
+      );
+      const themeVersions = new Map<string, string | undefined>();
+      themeManifests.forEach((r) => {
+        if (r.status === "fulfilled") {
+          themeVersions.set(r.value.id, r.value.version);
+        }
+      });
+
+      for (const id of authorThemeIds) {
+        const prev = this.cache.entries[id];
+        next[id] = {
+          id,
+          kind: "theme",
+          name: authorThemeNames.get(id) ?? undefined,
+          found: true,
+          downloads: 0,
+          updated: 0,
+          rank: 0,
+          total: themeRaw.length,
+          version: themeVersions.get(id) ?? prev?.version,
+          modes: authorThemeModes.get(id) ?? prev?.modes,
+          history: prev?.history ?? [],
         };
       }
 

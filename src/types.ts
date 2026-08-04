@@ -44,15 +44,21 @@ export interface PluginStatSnapshot {
   downloads: number; // 当时总下载量
 }
 
-/** 插件态势：单个被跟踪插件的聚合数据 */
+/** 插件态势条目类型 */
+export type StatKind = "plugin" | "theme";
+
+/** 插件态势：单个被跟踪插件/主题的聚合数据 */
 export interface PluginStatEntry {
-  id: string;        // 插件 id
+  id: string;        // 插件/主题 id（repo 名）
+  kind: StatKind;    // plugin=插件，theme=主题
   name?: string;     // 官方名称（多为中文；缺失时回退 id）
-  found: boolean;    // 是否在 stats 中收录（新发布尚未进入时为 false）
-  downloads: number; // 当前总下载量
+  found: boolean;    // 是否在官方列表中收录
+  downloads: number; // 当前总下载量（主题恒为 0，官方未提供主题统计）
   updated: number;   // 最后更新时间戳（ms）
-  rank: number;      // 全站下载量排名（1-based；0 表示未知）
-  total: number;     // 社区插件总数
+  rank: number;      // 全站下载量排名（1-based；0 表示未知；主题恒为 0）
+  total: number;     // 社区插件/主题总数
+  version?: string;  // 版本号（主题从 manifest.json 读取）
+  modes?: string[];  // 支持模式（主题：dark / light）
   history: PluginStatSnapshot[];
 }
 

@@ -1,7 +1,8 @@
 /* ────────────── 插件态势极简卡组件 ────────────── */
 import type { App } from "obsidian";
-import { PLUGIN_CN_NAMES } from "../constants";
+import { PLUGIN_CN_NAMES, THEME_CN_NAMES } from "../constants";
 import { PluginStatsModal } from "./PluginStatsModal";
+import type { PluginStatEntry } from "../types";
 import type { PluginStatsResult, PluginStatsService } from "../services/PluginStatsService";
 import { svgIcon } from "./icons";
 
@@ -136,37 +137,64 @@ export class PluginStatsCard {
     }
     body.empty();
     for (const e of entries) {
+      const isTheme = e.kind === "theme";
       const row = body.createDiv({
-        cls: "bws-pluginstats-row" + (e.found ? " is-clickable" : ""),
+        cls:
+          "bws-pluginstats-row" +
+          (e.found ? " is-clickable" : "") +
+          (isTheme ? " is-theme" : ""),
       });
-      row.createDiv({
+      const nameEl = row.createDiv({
         cls: "bws-pluginstats-name",
-        text: PLUGIN_CN_NAMES[e.id] ?? e.name ?? e.id,
       });
+      // 类型标记：🔌 插件 / 🎨 主题
+      nameEl.createSpan({
+        cls: "bws-pluginstats-kind",
+        text: isTheme ? "🎨" : "🔌",
+      });
+      nameEl.append(
+        " " + (isTheme ? THEME_CN_NAMES[e.id] ?? e.name ?? e.id
+                       : PLUGIN_CN_NAMES[e.id] ?? e.name ?? e.id),
+      );
       if (e.found) {
         row.addEventListener("click", (ev) => {
           ev.stopPropagation();
           if (!this.service) return;
-          this.openMarket(e.id);
+          this.openMarket(e);
         });
       }
       const right = row.createDiv({ cls: "bws-pluginstats-right" });
-      right.createSpan({
-        cls: "bws-pluginstats-dl",
-        text: e.found ? this.fmtInt(e.downloads) : "—",
-      });
-      if (e.found && e.history.length >= 2) {
-        const delta =
-          e.history[e.history.length - 1].downloads -
-          e.history[e.history.length - 2].downloads;
-        if (delta > 0) {
+      if (isTheme) {
+        // 主题：官方无下载量，展示版本 + 模式
+        right.createSpan({
+          cls: "bws-pluginstats-dl",
+          text: e.version ? `v${e.version}` : "已收录",
+        });
+        if (e.modes && e.modes.length > 0) {
           right.createSpan({
-            cls: "bws-pluginstats-delta",
-            text: `+${this.fmtInt(delta)}`,
+            cls: "bws-pluginstats-modes",
+            text: e.modes.map((m) => (m === "dark" ? "暗" : "亮")).join("/"),
           });
         }
-      } else if (!e.found) {
-        right.createSpan({ cls: "bws-pluginstats-unfound", text: "未收录" });
+      } else {
+        // 插件：下载量 + 增量
+        right.createSpan({
+          cls: "bws-pluginstats-dl",
+          text: e.found ? this.fmtInt(e.downloads) : "—",
+        });
+        if (e.found && e.history.length >= 2) {
+          const delta =
+            e.history[e.history.length - 1].downloads -
+            e.history[e.history.length - 2].downloads;
+          if (delta > 0) {
+            right.createSpan({
+              cls: "bws-pluginstats-delta",
+              text: `+${this.fmtInt(delta)}`,
+            });
+          }
+        } else if (!e.found) {
+          right.createSpan({ cls: "bws-pluginstats-unfound", text: "未收录" });
+        }
       }
     }
     if (result.stale) {
@@ -174,11 +202,17 @@ export class PluginStatsCard {
     }
   }
 
-  /** 应用内直达插件市场详情页，失败回退网页市场页 */
-  private openMarket(id: string): void {
-    const enc = encodeURIComponent(id);
-    const appUri = `obsidian://show-plugin?id=${enc}`;
-    const webUrl = `https://community.obsidian.md/plugins/${enc}`;
+  /** 应用内直达插件/主题市场详情页，失败回退网页市场页 */
+  private openMarket(e: PluginStatEntry): void {
+    const enc = encodeURIComponent(e.id);
+    const appUri =
+      e.kind === "theme"
+        ? `obsidian://show-theme?id=${enc}`
+        : `obsidian://show-plugin?id=${enc}`;
+    const webUrl =
+      e.kind === "theme"
+        ? `https://community.obsidian.md/themes/${enc}`
+        : `https://community.obsidian.md/plugins/${enc}`;
     const w = window as unknown as { open?: (p: string) => Promise<unknown> | void };
     if (typeof w.open === "function") {
       const r = w.open(appUri);
