@@ -156,7 +156,7 @@ export class PluginStatsModal extends Modal {
     const table = root.createEl("table", { cls: "bw-pluginstats-table" });
     const thead = table.createEl("thead");
     const htr = thead.createEl("tr");
-    ["类型", "名称", "下载量/版本", "距上次", "7日", "30日", "全站排名", "社区"].forEach(
+    ["类型", "名称", "下载量", "距上次", "7日", "30日", "全站排名", "社区"].forEach(
       (h) => htr.createEl("th", { text: h }),
     );
     const tbody = table.createEl("tbody");
@@ -176,17 +176,30 @@ export class PluginStatsModal extends Modal {
           : PLUGIN_CN_NAMES[e.id] ?? e.name ?? e.id,
       });
       if (isTheme) {
-        // 主题：官方无下载量统计，展示版本 + 模式
+        // 主题：下载量（爬社区页提取）+ 增量（与插件同口径）
         const modeTxt = e.modes && e.modes.length > 0
           ? `（${e.modes.map((m) => (m === "dark" ? "暗" : "亮")).join("/")}）`
           : "";
         tr.createEl("td", {
           cls: "bw-ps-num",
-          text: e.version ? `v${e.version}${modeTxt}` : `已收录${modeTxt}`,
+          text: e.found && e.downloads > 0 ? `${fmt(e.downloads)}${modeTxt}` : `已收录${modeTxt}`,
         });
-        ["—", "—", "—", "—"].forEach((v) =>
-          tr.createEl("td", { cls: "bw-ps-num", text: v }),
-        );
+        tr.createEl("td", {
+          cls: "bw-ps-num",
+          text: e.found ? signed(deltaSincePrev(e)) : "—",
+        });
+        tr.createEl("td", {
+          cls: "bw-ps-num",
+          text: e.found ? signed(deltaSinceDays(e, 7)) : "—",
+        });
+        tr.createEl("td", {
+          cls: "bw-ps-num",
+          text: e.found ? signed(deltaSinceDays(e, 30)) : "—",
+        });
+        tr.createEl("td", {
+          cls: "bw-ps-num",
+          text: "—", // 主题官方无全站排名
+        });
       } else {
         // 插件：下载量 + 增量 + 排名
         tr.createEl("td", {

@@ -165,11 +165,22 @@ export class PluginStatsCard {
       }
       const right = row.createDiv({ cls: "bws-pluginstats-right" });
       if (isTheme) {
-        // 主题：官方无下载量，展示版本 + 模式
+        // 主题：下载量 + 增量（与插件同口径）
         right.createSpan({
           cls: "bws-pluginstats-dl",
-          text: e.version ? `v${e.version}` : "已收录",
+          text: e.found && e.downloads > 0 ? this.fmtInt(e.downloads) : "已收录",
         });
+        if (e.found && e.history.length >= 2) {
+          const delta =
+            e.history[e.history.length - 1].downloads -
+            e.history[e.history.length - 2].downloads;
+          if (delta > 0) {
+            right.createSpan({
+              cls: "bws-pluginstats-delta",
+              text: `+${this.fmtInt(delta)}`,
+            });
+          }
+        }
         if (e.modes && e.modes.length > 0) {
           right.createSpan({
             cls: "bws-pluginstats-modes",

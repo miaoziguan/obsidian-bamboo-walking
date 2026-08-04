@@ -161,6 +161,7 @@ export class PluginStatsService {
       const authorThemeIds = new Set<string>();
       const authorThemeNames = new Map<string, string>();
       const authorThemeModes = new Map<string, string[]>();
+      const authorThemeRepos = new Map<string, string>(); // id -> owner/name（用于爬社区页）
       for (const t of themeRaw) {
         if (!t.repo) continue;
         const themeId = t.repo.split("/")[1] ?? "";
@@ -168,6 +169,7 @@ export class PluginStatsService {
           authorThemeIds.add(themeId);
           if (t.name) authorThemeNames.set(themeId, t.name);
           if (t.modes) authorThemeModes.set(themeId, t.modes);
+          authorThemeRepos.set(themeId, t.repo);
         }
       }
 
@@ -228,39 +230,61 @@ export class PluginStatsService {
         };
       }
 
-      // 3b) 主题条目（官方无下载量统计，仅标注收录状态 + 版本 + 模式）
-      // 版本号需从各主题仓库的 manifest.json 单独获取（官方列表不提供）
-      const themeManifests = await Promise.allSettled(
+      // 3b) 主题条目
+      // 官方 community-css-themes.json 不含下载量，但社区主题页内联渲染了
+      // "N downloads, M star."（来自 RSC payload），故爬页提取。
+      // 版本号从各主题仓库 manifest.json 单独获取（官方列表不提供）。
+      const themePages = await Promise.allSettled(
         [...authorThemeIds].map(async (id) => {
-          const repo = themeRaw.find(
-            (t) => t.repo && t.repo.split("/")[1] === id,
-          )?.repo;
-          if (!repo) return { id, version: undefined as string | undefined };
-          const m = await this.fetchJson<{ version?: string }>(
-            `https://raw.githubusercontent.com/${repo}/master/manifest.json`,
-          ).catch(() => null);
-          return { id, version: m?.version };
+          const repo = authorThemeRepos.get(id);
+          if (!repo) return { id, downloads: 0, version: undefined as string | undefined };
+          const [page, manifest] = await Promise.all([
+            this.fetchText(`https://community.obsidian.md/themes/${id}`),
+            this.fetchJson<{ version?: string }>(
+              `https://raw.githubusercontent.com/${repo}/master/manifest.json`,
+            ).catch(() => null),
+          ]);
+          let downloads = 0;
+          const dm = page?.match(/(\d+)\s*downloads/i);
+          if (dm) downloads = parseInt(dm[1], 10) || 0;
+          return { id, downloads, version: manifest?.version };
         }),
       );
-      const themeVersions = new Map<string, string | undefined>();
-      themeManifests.forEach((r) => {
+      const themeInfo = new Map<string, { downloads: number; version?: string }>();
+      themePages.forEach((r) => {
         if (r.status === "fulfilled") {
-          themeVersions.set(r.value.id, r.value.version);
+          themeInfo.set(r.value.id, {
+            downloads: r.value.downloads,
+            version: r.value.version,
+          });
         }
       });
 
       for (const id of authorThemeIds) {
         const prev = this.cache.entries[id];
+        const info = themeInfo.get(id);
+        const downloads = info?.downloads ?? 0;
+        // 主题滚动历史（与插件同口径，按下载量快照）
+        let history = prev?.history ?? [];
+        const last = history[history.length - 1];
+        const changed = last && last.downloads !== downloads;
+        const oldEnough = last && now2 - last.ts > DAY_MS;
+        if (downloads > 0 && (!last || changed || oldEnough)) {
+          history = [...history, { ts: now2, downloads }];
+          if (history.length > PLUGIN_STATS_HISTORY_MAX) {
+            history = history.slice(-PLUGIN_STATS_HISTORY_MAX);
+          }
+        }
         next[id] = {
           id,
           kind: "theme",
           name: authorThemeNames.get(id) ?? undefined,
           found: true,
-          downloads: 0,
+          downloads,
           updated: 0,
           rank: 0,
           total: themeRaw.length,
-          version: themeVersions.get(id) ?? prev?.version,
+          version: info?.version ?? prev?.version,
           modes: authorThemeModes.get(id) ?? prev?.modes,
           history: prev?.history ?? [],
         };
@@ -297,6 +321,21 @@ export class PluginStatsService {
     const req = requestUrl({ url }).then((resp) => {
       if (resp.status !== 200) throw new Error(`HTTP ${resp.status}`);
       return resp.json as T;
+    });
+    return Promise.race([req, timeout]);
+  }
+
+  /** 带超时的文本拉取（用于爬社区主题页提取下载量） */
+  private async fetchText(url: string): Promise<string> {
+    const timeout = new Promise<never>((_, reject) =>
+      window.setTimeout(
+        () => reject(new Error("请求超时")),
+        PLUGIN_STATS_FETCH_TIMEOUT,
+      ),
+    );
+    const req = requestUrl({ url }).then((resp) => {
+      if (resp.status !== 200) throw new Error(`HTTP ${resp.status}`);
+      return typeof resp.text === "string" ? resp.text : "";
     });
     return Promise.race([req, timeout]);
   }
