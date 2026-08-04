@@ -211,14 +211,14 @@ export class PluginStatsCard {
   /** 应用内直达插件/主题市场详情页，失败回退网页市场页 */
   private openMarket(e: PluginStatEntry): void {
     const enc = encodeURIComponent(e.id);
-    const appUri =
-      e.kind === "theme"
-        ? `obsidian://show-theme?id=${enc}`
-        : `obsidian://show-plugin?id=${enc}`;
-    const webUrl =
-      e.kind === "theme"
-        ? `https://community.obsidian.md/themes/${enc}`
-        : `https://community.obsidian.md/plugins/${enc}`;
+    // Obsidian 仅支持 obsidian://show-plugin，不支持 show-theme
+    // 主题直接打开网页社区市场，让用户浏览/下载
+    if (e.kind === "theme") {
+      window.open(`https://community.obsidian.md/themes/${enc}`, "_blank");
+      return;
+    }
+    const appUri = `obsidian://show-plugin?id=${enc}`;
+    const webUrl = `https://community.obsidian.md/plugins/${enc}`;
     const w = window as unknown as { open?: (p: string) => Promise<unknown> | void };
     if (typeof w.open === "function") {
       const r = w.open(appUri);
