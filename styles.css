@@ -3009,12 +3009,7 @@ body.is-mobile .bwr-body {
   color: var(--text-faint);
   font-size: 11px;
 }
-/* 主题行：用竹色左边框区分 */
-.bws-pluginstats-row.is-theme {
-  border-left: 2px solid var(--bw-bamboo);
-  padding-left: 6px;
-  margin-left: -8px;
-}
+/* 主题行：无特殊边框，与插件统一风格 */
 .bws-pluginstats-kind {
   font-size: 11px;
   filter: saturate(0.9);
