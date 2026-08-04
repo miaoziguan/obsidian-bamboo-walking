@@ -246,7 +246,7 @@ export class PluginStatsService {
               ).catch(() => null),
             ]);
             let downloads = 0;
-            const dm = page?.match(/(\d+)\s*downloads/i);
+            const dm = page?.match(/(\d+)(?:[^0-9]*?)downloads/i);
             if (dm) downloads = parseInt(dm[1], 10) || 0;
             console.log(`[bamboo-walking] 主题 ${id} 爬取结果：downloads=${downloads}, pageLen=${page?.length ?? 0}`);
             return { id, downloads, version: manifest?.version };
