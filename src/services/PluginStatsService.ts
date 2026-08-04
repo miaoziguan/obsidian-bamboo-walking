@@ -248,11 +248,10 @@ export class PluginStatsService {
             let downloads = 0;
             const dm = page?.match(/(\d+)(?:[^0-9]*?)downloads/i);
             if (dm) downloads = parseInt(dm[1], 10) || 0;
-            // 调试：dump downloads 附近的真实字符（含不可见字符的转义）
-            const di = page ? page.toLowerCase().indexOf("downloads") : -1;
-            const ctx = di >= 0 ? JSON.stringify(page.slice(di - 60, di + 12)) : "NOT FOUND";
+            // 调试：dump 整页前 300 字符，看 Obsidian 实际拿到了什么
+            const head = page ? JSON.stringify(page.slice(0, 300)) : "NULL";
             console.log(`[bamboo-walking] 🔍 主题 ${id} 爬取结果：downloads=${downloads}, pageLen=${page?.length ?? 0}, regexMatched=${!!dm}`);
-            console.log(`[bamboo-walking] 📋 downloads 上下文: ${ctx}`);
+            console.log(`[bamboo-walking] 📄 页面开头: ${head}`);
             return { id, downloads, version: manifest?.version };
           } catch (err) {
             console.warn(`[bamboo-walking] 主题 ${id} 爬取失败：`, err);
