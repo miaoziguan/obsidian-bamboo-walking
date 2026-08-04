@@ -248,10 +248,15 @@ export class PluginStatsService {
             let downloads = 0;
             const dm = page?.match(/(\d+)(?:[^0-9]*?)downloads/i);
             if (dm) downloads = parseInt(dm[1], 10) || 0;
-            // 调试：dump 整页前 300 字符，看 Obsidian 实际拿到了什么
-            const head = page ? JSON.stringify(page.slice(0, 300)) : "NULL";
+            // 调试：检查页面中是否包含 "down" 片段，以及 "367" 附近内容
+            const di = page ? page.toLowerCase().indexOf("down") : -1;
+            const ctx2 = di >= 0 ? JSON.stringify(page.slice(di - 10, di + 80)) : "NO 'down' FOUND";
             console.log(`[bamboo-walking] 🔍 主题 ${id} 爬取结果：downloads=${downloads}, pageLen=${page?.length ?? 0}, regexMatched=${!!dm}`);
-            console.log(`[bamboo-walking] 📄 页面开头: ${head}`);
+            console.log(`[bamboo-walking] 📄 'down' 上下文: ${ctx2}`);
+            // 也尝试找 "367" 附近
+            const i367 = page ? page.indexOf("367") : -1;
+            const ctx3 = i367 >= 0 ? JSON.stringify(page.slice(i367 - 20, i367 + 20)) : "NO '367' FOUND";
+            console.log(`[bamboo-walking] 📄 '367' 上下文: ${ctx3}`);
             return { id, downloads, version: manifest?.version };
           } catch (err) {
             console.warn(`[bamboo-walking] 主题 ${id} 爬取失败：`, err);
