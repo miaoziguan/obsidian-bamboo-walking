@@ -238,16 +238,22 @@ export class PluginStatsService {
         [...authorThemeIds].map(async (id) => {
           const repo = authorThemeRepos.get(id);
           if (!repo) return { id, downloads: 0, version: undefined as string | undefined };
-          const [page, manifest] = await Promise.all([
-            this.fetchText(`https://community.obsidian.md/themes/${id}`),
-            this.fetchJson<{ version?: string }>(
-              `https://raw.githubusercontent.com/${repo}/master/manifest.json`,
-            ).catch(() => null),
-          ]);
-          let downloads = 0;
-          const dm = page?.match(/(\d+)\s*downloads/i);
-          if (dm) downloads = parseInt(dm[1], 10) || 0;
-          return { id, downloads, version: manifest?.version };
+          try {
+            const [page, manifest] = await Promise.all([
+              this.fetchText(`https://community.obsidian.md/themes/${id}`),
+              this.fetchJson<{ version?: string }>(
+                `https://raw.githubusercontent.com/${repo}/master/manifest.json`,
+              ).catch(() => null),
+            ]);
+            let downloads = 0;
+            const dm = page?.match(/(\d+)\s*downloads/i);
+            if (dm) downloads = parseInt(dm[1], 10) || 0;
+            console.log(`[bamboo-walking] 主题 ${id} 爬取结果：downloads=${downloads}, pageLen=${page?.length ?? 0}`);
+            return { id, downloads, version: manifest?.version };
+          } catch (err) {
+            console.warn(`[bamboo-walking] 主题 ${id} 爬取失败：`, err);
+            return { id, downloads: 0, version: undefined as string | undefined };
+          }
         }),
       );
       const themeInfo = new Map<string, { downloads: number; version?: string }>();
