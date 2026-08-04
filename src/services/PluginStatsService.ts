@@ -161,7 +161,6 @@ export class PluginStatsService {
       const authorThemeIds = new Set<string>();
       const authorThemeNames = new Map<string, string>();
       const authorThemeModes = new Map<string, string[]>();
-      const authorThemeRepos = new Map<string, string>(); // id -> owner/name（用于爬社区页）
       for (const t of themeRaw) {
         if (!t.repo) continue;
         const themeId = t.repo.split("/")[1] ?? "";
@@ -169,7 +168,6 @@ export class PluginStatsService {
           authorThemeIds.add(themeId);
           if (t.name) authorThemeNames.set(themeId, t.name);
           if (t.modes) authorThemeModes.set(themeId, t.modes);
-          authorThemeRepos.set(themeId, t.repo);
         }
       }
 
@@ -231,80 +229,24 @@ export class PluginStatsService {
       }
 
       // 3b) 主题条目
-      // 官方 community-css-themes.json 不含下载量，但社区主题页内联渲染了
-      // "N downloads, M star."（来自 RSC payload），故爬页提取。
-      // 版本号从各主题仓库 manifest.json 单独获取（官方列表不提供）。
-      const themePages = await Promise.allSettled(
-        [...authorThemeIds].map(async (id) => {
-          const repo = authorThemeRepos.get(id);
-          if (!repo) return { id, downloads: 0, version: undefined as string | undefined };
-          try {
-            const [page, manifest] = await Promise.all([
-              this.fetchText(`https://community.obsidian.md/themes/${id}`),
-              this.fetchJson<{ version?: string }>(
-                `https://raw.githubusercontent.com/${repo}/master/manifest.json`,
-              ).catch(() => null),
-            ]);
-            let downloads = 0;
-            // 匹配多种格式：
-            //  - "367 downloads" / "367&nbsp;downloads"
-            //  - RSC escaped: "367","\xa0downloads" 或 "367\\\",\\\"\\xa0downloads"
-            const dm =
-              page?.match(/(\d+)(?:[^0-9<]*?)downloads/i) ||
-              page?.match(/(\\")?(\d+)(?:\\",\\")?[^0-9]*?downloads/i);
-            if (dm) {
-              const num = dm[2] ?? dm[1];
-              downloads = parseInt(num ?? "", 10) || 0;
-            }
-            // 调试：dump "star" 附近内容，确认下载量数据的真实格式
-            const si = page ? page.toLowerCase().indexOf("star") : -1;
-            const starCtx = si >= 0 ? JSON.stringify(page.slice(si - 50, si + 10)) : "NO 'star' FOUND";
-            console.log(`[bamboo-walking] 🔍 主题 ${id} 爬取结果：downloads=${downloads}, pageLen=${page?.length ?? 0}, regexMatched=${!!dm}`);
-            console.log(`[bamboo-walking] 📊 star上下文: ${starCtx}`);
-            return { id, downloads, version: manifest?.version };
-          } catch (err) {
-            console.warn(`[bamboo-walking] 主题 ${id} 爬取失败：`, err);
-            return { id, downloads: 0, version: undefined as string | undefined };
-          }
-        }),
-      );
-      const themeInfo = new Map<string, { downloads: number; version?: string }>();
-      themePages.forEach((r) => {
-        if (r.status === "fulfilled") {
-          themeInfo.set(r.value.id, {
-            downloads: r.value.downloads,
-            version: r.value.version,
-          });
-        }
-      });
-
+      // 官方 community-css-themes.json 不含下载量（stats 仅限插件），
+      // 且社区主题页的下载量数据由客户端 JS hydration 渲染，Obsidian
+      // 内 requestUrl 抓不到、GitHub 也无主题下载量 API。
+      // 因此主题不展示下载量/排名，仅标记「已收录」+ 版本 + 支持模式。
       for (const id of authorThemeIds) {
         const prev = this.cache.entries[id];
-        const info = themeInfo.get(id);
-        const downloads = info?.downloads ?? 0;
-        // 主题滚动历史（与插件同口径，按下载量快照）
-        let history = prev?.history ?? [];
-        const last = history[history.length - 1];
-        const changed = last && last.downloads !== downloads;
-        const oldEnough = last && now2 - last.ts > DAY_MS;
-        if (!last || changed || oldEnough) {
-          history = [...history, { ts: now2, downloads }];
-          if (history.length > PLUGIN_STATS_HISTORY_MAX) {
-            history = history.slice(-PLUGIN_STATS_HISTORY_MAX);
-          }
-        }
         next[id] = {
           id,
           kind: "theme",
           name: authorThemeNames.get(id) ?? undefined,
           found: true,
-          downloads,
+          downloads: 0,
           updated: 0,
           rank: 0,
           total: themeRaw.length,
-          version: info?.version ?? prev?.version,
+          version: undefined,
           modes: authorThemeModes.get(id) ?? prev?.modes,
-          history,
+          history: [],
         };
       }
 
@@ -339,28 +281,6 @@ export class PluginStatsService {
     const req = requestUrl({ url }).then((resp) => {
       if (resp.status !== 200) throw new Error(`HTTP ${resp.status}`);
       return resp.json as T;
-    });
-    return Promise.race([req, timeout]);
-  }
-
-  /** 带超时的文本拉取（用于爬社区主题页提取下载量） */
-  private async fetchText(url: string): Promise<string> {
-    const timeout = new Promise<never>((_, reject) =>
-      window.setTimeout(
-        () => reject(new Error("请求超时")),
-        PLUGIN_STATS_FETCH_TIMEOUT,
-      ),
-    );
-    const req = requestUrl({
-      url,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-    }).then((resp) => {
-      if (resp.status !== 200) throw new Error(`HTTP ${resp.status}`);
-      return typeof resp.text === "string" ? resp.text : "";
     });
     return Promise.race([req, timeout]);
   }
