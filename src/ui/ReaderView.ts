@@ -358,19 +358,11 @@ export class ReaderView extends ItemView {
       tracking = false; decided = false; swipeBack = false;
     };
 
+    // 监听挂在 layout 上，render() 开头 contentEl.empty() 会销毁旧 layout，
+    // 旧 touch 监听随 DOM 一起回收，无需手动 removeEventListener
     layout.addEventListener("touchstart", onTouchStart, { passive: true });
     layout.addEventListener("touchmove", onTouchMove, { passive: true });
     layout.addEventListener("touchend", onTouchEnd, { passive: true });
-    // 视图卸载时清理（component.unload 会触发，但显式移除更稳妥）
-    this.component.registerEvent({
-      // 用 Obsidian Component 的事件注销机制兜底
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 仅需对象形状满足 registerEvent
-      unload: () => {
-        layout.removeEventListener("touchstart", onTouchStart);
-        layout.removeEventListener("touchmove", onTouchMove);
-        layout.removeEventListener("touchend", onTouchEnd);
-      },
-    } as any);
   }
 
   /* ── Markdown 预处理：中英混排 + 排版规范化 ── */

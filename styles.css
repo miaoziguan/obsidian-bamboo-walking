@@ -856,7 +856,9 @@ button.bws-btn-refresh--inline {
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
-/* 触摸反馈：移动端去掉灰色高亮，按下时给竹青底色反馈 */
+/* 触摸反馈：移动端去掉灰色高亮，按下时给竹青底色反馈
+   主开关用 Obsidian 官方的 body.is-mobile 类（移动端自动添加，比媒体查询更可靠），
+   媒体查询作宽度兜底，双保险 */
 .bwr-reader button,
 .bws-sidebar button {
   -webkit-tap-highlight-color: transparent;
@@ -865,8 +867,15 @@ button.bws-btn-refresh--inline {
 .bws-sidebar button:active {
   transition: background 0.1s var(--bw-ease), color 0.1s var(--bw-ease), transform 0.1s var(--bw-ease);
 }
+/* 触摸 active 背景反馈：统一在 is-mobile 或粗指针设备上生效 */
+body.is-mobile button.bwr-btn:active,
+body.is-mobile button.bwr-btn-zoom:active,
+body.is-mobile button.bwr-btn-share:active,
+body.is-mobile button.bwr-btn-extract:active,
+body.is-mobile button.bwr-btn-tts-toggle:active,
+body.is-mobile button.bws-author-link:active,
+body.is-mobile .bws-article:active,
 @media (hover: none) and (pointer: coarse) {
-  /* 仅在真实触摸设备上启用 active 背景反馈，桌面 hover 不受影响 */
   button.bwr-btn:active,
   button.bwr-btn-zoom:active,
   button.bwr-btn-share:active,
@@ -878,10 +887,17 @@ button.bws-btn-refresh--inline {
     color: var(--bw-bamboo-deep);
     border-radius: var(--bw-radius-sm);
   }
+}
+button.bwr-btn-save:active,
+body.is-mobile button.bwr-btn-save:active,
+@media (hover: none) and (pointer: coarse) {
   button.bwr-btn-save:active {
     background: color-mix(in srgb, var(--bw-bamboo) 18%, transparent);
     color: var(--bw-white);
   }
+}
+body.is-mobile .bwr-fab-btn:active,
+@media (hover: none) and (pointer: coarse) {
   .bwr-fab-btn:active { transform: scale(0.92); }
 }
 
@@ -1895,31 +1911,6 @@ button.bw-about-copy-btn:active {
 
 /* ═══════════ 响应式 ═══════════ */
 
-/* ── 手机及以下（≤600px）：工具栏紧凑 + 安全区 + 收窄间距 ── */
-@media (max-width: 600px) {
-  .bwr-header {
-    padding: calc(var(--bw-space-lg) + var(--bw-safe-top)) calc(var(--bw-space-lg) + var(--bw-safe-right)) var(--bw-space-lg) calc(var(--bw-space-lg) + var(--bw-safe-left));
-  }
-  .bwr-body {
-    padding: 0 calc(var(--bw-space-lg) + var(--bw-safe-right)) calc(var(--bw-space-2xl) + var(--bw-safe-bottom)) calc(var(--bw-space-lg) + var(--bw-safe-left));
-  }
-  .bwr-title {
-    font-size: 22px;
-  }
-  /* 工具栏在窄屏更紧凑、缩短左右留白 */
-  .bwr-toolbar {
-    padding: var(--bw-space-xs) calc(var(--bw-space-lg) + var(--bw-safe-right)) var(--bw-space-xs) calc(var(--bw-space-lg) + var(--bw-safe-left));
-    gap: 2px;
-  }
-  .bwr-toolbar-sep {
-    margin: 2px 4px;
-  }
-  /* 字号缩放按钮组在窄屏更收敛 */
-  .bwr-zoom {
-    gap: 0;
-  }
-}
-
 /* ═══════════ 骨架屏加载 ═══════════ */
 
 .bws-skeleton {
@@ -2489,7 +2480,33 @@ button.bwr-btn-tts-close:hover { color: var(--text-muted); }
   }
 }
 
+/* ── Obsidian 移动端（body.is-mobile，官方类，无视宽度恒单栏；iPad 横屏也适用） ── */
+body.is-mobile .bwr-toc {
+  display: none;
+}
+body.is-mobile .bwr-layout {
+  grid-template-columns: 1fr 0fr;
+}
+body.is-mobile .bwr-header {
+  padding-left: calc(20px + var(--bw-safe-left));
+  padding-right: calc(20px + var(--bw-safe-right));
+}
+body.is-mobile .bwr-body {
+  padding: 0 calc(20px + var(--bw-safe-right)) calc(40px + var(--bw-safe-bottom)) calc(20px + var(--bw-safe-left));
+}
+
+/* ── 移动端工具栏紧凑（官方 is-mobile 主开关 + 窄屏兜底） ── */
 @media (max-width: 600px) {
+  .bwr-toolbar {
+    padding: var(--bw-space-xs) calc(var(--bw-space-lg) + var(--bw-safe-right)) var(--bw-space-xs) calc(var(--bw-space-lg) + var(--bw-safe-left));
+    gap: 2px;
+  }
+  .bwr-toolbar-sep {
+    margin: 2px 4px;
+  }
+  .bwr-zoom {
+    gap: 0;
+  }
   .bws-art-summary {
     max-width: 120px;
   }
@@ -2499,9 +2516,45 @@ button.bwr-btn-tts-close:hover { color: var(--text-muted); }
     width: 36px;
     height: 36px;
   }
+  .bwr-title {
+    font-size: 22px;
+  }
+  .bwr-header {
+    padding: calc(var(--bw-space-lg) + var(--bw-safe-top)) calc(var(--bw-space-lg) + var(--bw-safe-right)) var(--bw-space-lg) calc(var(--bw-space-lg) + var(--bw-safe-left));
+  }
+  .bwr-body {
+    padding: 0 calc(var(--bw-space-lg) + var(--bw-safe-right)) calc(var(--bw-space-2xl) + var(--bw-safe-bottom)) calc(var(--bw-space-lg) + var(--bw-safe-left));
+  }
+}
+body.is-mobile .bwr-toolbar {
+  padding: var(--bw-space-xs) calc(var(--bw-space-lg) + var(--bw-safe-right)) var(--bw-space-xs) calc(var(--bw-space-lg) + var(--bw-safe-left));
+  gap: 2px;
+}
+body.is-mobile .bwr-toolbar-sep {
+  margin: 2px 4px;
+}
+body.is-mobile .bwr-zoom {
+  gap: 0;
+}
+body.is-mobile .bws-art-summary {
+  max-width: 120px;
+}
+body.is-mobile .bws-art-cover {
+  flex-basis: 36px;
+  width: 36px;
+  height: 36px;
+}
+body.is-mobile .bwr-title {
+  font-size: 22px;
+}
+body.is-mobile .bwr-header {
+  padding: calc(var(--bw-space-lg) + var(--bw-safe-top)) calc(var(--bw-space-lg) + var(--bw-safe-right)) var(--bw-space-lg) calc(var(--bw-space-lg) + var(--bw-safe-left));
+}
+body.is-mobile .bwr-body {
+  padding: 0 calc(var(--bw-space-lg) + var(--bw-safe-right)) calc(var(--bw-space-2xl) + var(--bw-safe-bottom)) calc(var(--bw-space-lg) + var(--bw-safe-left));
 }
 
-/* ── 超窄屏（≤480px）：分享弹层全宽、摘要进一步截断 ── */
+/* ── 超窄屏（≤480px）：摘要进一步截断、标题再缩小 ── */
 @media (max-width: 480px) {
   .bws-art-summary {
     max-width: 96px;
