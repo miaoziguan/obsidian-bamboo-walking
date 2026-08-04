@@ -208,29 +208,37 @@ export class PluginStatsCard {
     }
   }
 
-  /** 应用内直达插件/主题市场详情页，失败回退网页市场页 */
+  /** 打开市场（插件→社区插件设置页；主题→社区主题浏览器） */
   private openMarket(e: PluginStatEntry): void {
-    const enc = encodeURIComponent(e.id);
-    // Obsidian 仅支持 obsidian://show-plugin，不支持 show-theme
-    // 主题直接打开网页社区市场，让用户浏览/下载
-    if (e.kind === "theme") {
-      window.open(`https://community.obsidian.md/themes/${enc}`, "_blank");
-      return;
+    const isTheme = e.kind === "theme";
+    // 先打开设置窗口 + 切到对应 tab
+    this.app.setting.open();
+    this.app.setting.openTabById(isTheme ? "appearance" : "community-plugins");
+
+    if (isTheme) {
+      // 主题：在外观页内找到「Manage」按钮（社区主题浏览器入口）并点击
+      setTimeout(() => {
+        const container = this.app.setting.containerEl;
+        const manageBtn = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(
+          (b) => b.textContent?.trim() === "管理" || b.textContent?.trim() === "Manage",
+        );
+        if (manageBtn) {
+          manageBtn.click();
+        }
+      }, 300);
+    } else {
+      // 插件：聚焦搜索框并自动填入插件 ID
+      setTimeout(() => {
+        const input = this.app.setting.containerEl.querySelector<HTMLInputElement>(
+          'input[type="text"][placeholder*="搜索"], input[type="text"][placeholder*="Search"]',
+        );
+        if (input) {
+          input.value = e.id;
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+          input.focus();
+        }
+      }, 300);
     }
-    const appUri = `obsidian://show-plugin?id=${enc}`;
-    const webUrl = `https://community.obsidian.md/plugins/${enc}`;
-    const w = window as unknown as { open?: (p: string) => Promise<unknown> | void };
-    if (typeof w.open === "function") {
-      const r = w.open(appUri);
-      if (r && typeof r.catch === "function") {
-        r.catch(() => {
-          window.location.href = webUrl;
-        });
-        return;
-      }
-      return;
-    }
-    window.location.href = webUrl;
   }
 
   /** 千分位格式化 */
