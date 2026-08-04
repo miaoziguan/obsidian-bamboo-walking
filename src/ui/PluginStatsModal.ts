@@ -166,7 +166,7 @@ export class PluginStatsModal extends Modal {
       // 类型标记
       tr.createEl("td", {
         cls: "bw-ps-kind",
-        text: isTheme ? "🎨 主题" : "🔌 插件",
+        text: isTheme ? "主题" : "插件",
       });
       // 名称（主题用 THEME_CN_NAMES，插件用 PLUGIN_CN_NAMES）
       tr.createEl("td", {
