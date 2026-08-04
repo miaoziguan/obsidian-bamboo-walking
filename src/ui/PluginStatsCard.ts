@@ -147,14 +147,9 @@ export class PluginStatsCard {
       const nameEl = row.createDiv({
         cls: "bws-pluginstats-name",
       });
-      // 类型标记：🔌 插件 / 🎨 主题
-      nameEl.createSpan({
-        cls: "bws-pluginstats-kind",
-        text: isTheme ? "🎨" : "🔌",
-      });
       nameEl.append(
-        " " + (isTheme ? THEME_CN_NAMES[e.id] ?? e.name ?? e.id
-                       : PLUGIN_CN_NAMES[e.id] ?? e.name ?? e.id),
+        isTheme ? THEME_CN_NAMES[e.id] ?? e.name ?? e.id
+                : PLUGIN_CN_NAMES[e.id] ?? e.name ?? e.id,
       );
       if (e.found) {
         row.addEventListener("click", (ev) => {
