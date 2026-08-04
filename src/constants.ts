@@ -133,7 +133,7 @@ export const COMMUNITY_THEME_PAGE = "https://community.obsidian.md/themes/";
 /** 作者主题的中文显示名覆盖：社区官方 name 为英文，此处提供中文品牌名。
  *  渲染优先级：中文名 > 社区 name > 主题 id。新增主题时在此补充即可。 */
 export const THEME_CN_NAMES: Record<string, string> = {
-  "obsidian-bamboo-china": "竹乡·华夏",
+  "obsidian-bamboo-china": "竹林中国",
 };
 
 /** 作者头像内嵌 data URI（SVG 圆形裁剪，圆外透明，无需外部文件） */
