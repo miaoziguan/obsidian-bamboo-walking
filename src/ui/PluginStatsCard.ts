@@ -208,37 +208,27 @@ export class PluginStatsCard {
     }
   }
 
-  /** 打开市场（插件→社区插件设置页；主题→社区主题浏览器） */
+  /** 打开市场（插件→社区插件设置页；主题→社区主题网页） */
   private openMarket(e: PluginStatEntry): void {
-    const isTheme = e.kind === "theme";
-    // 先打开设置窗口 + 切到对应 tab
-    this.app.setting.open();
-    this.app.setting.openTabById(isTheme ? "appearance" : "community-plugins");
-
-    if (isTheme) {
-      // 主题：在外观页内找到「Manage」按钮（社区主题浏览器入口）并点击
-      setTimeout(() => {
-        const container = this.app.setting.containerEl;
-        const manageBtn = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(
-          (b) => b.textContent?.trim() === "管理" || b.textContent?.trim() === "Manage",
-        );
-        if (manageBtn) {
-          manageBtn.click();
-        }
-      }, 300);
-    } else {
-      // 插件：聚焦搜索框并自动填入插件 ID
-      setTimeout(() => {
-        const input = this.app.setting.containerEl.querySelector<HTMLInputElement>(
-          'input[type="text"][placeholder*="搜索"], input[type="text"][placeholder*="Search"]',
-        );
-        if (input) {
-          input.value = e.id;
-          input.dispatchEvent(new Event("input", { bubbles: true }));
-          input.focus();
-        }
-      }, 300);
+    const enc = encodeURIComponent(e.id);
+    if (e.kind === "theme") {
+      // 主题：打开社区主题网页详情页（用户可浏览/下载）
+      window.open(`https://community.obsidian.md/themes/${enc}`, "_blank");
+      return;
     }
+    // 插件：打开社区插件设置页并自动搜索填入插件 ID
+    this.app.setting.open();
+    this.app.setting.openTabById("community-plugins");
+    setTimeout(() => {
+      const input = this.app.setting.containerEl.querySelector<HTMLInputElement>(
+        'input[type="text"][placeholder*="搜索"], input[type="text"][placeholder*="Search"]',
+      );
+      if (input) {
+        input.value = e.id;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.focus();
+      }
+    }, 300);
   }
 
   /** 千分位格式化 */
