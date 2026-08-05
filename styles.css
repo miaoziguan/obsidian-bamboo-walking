@@ -2611,6 +2611,23 @@ body.is-mobile .bws-strategy-mini-info,
 body.is-mobile .bws-strategy-mini-cult {
   font-size: 11px;
 }
+/* 折叠态框高度向黑曜石作品卡看齐：头部行固定紧凑高度 */
+body.is-mobile .bws-strategy-mini.is-collapsed {
+  padding-top: 6px;
+  padding-bottom: 6px;
+  gap: 0;
+}
+body.is-mobile .bws-strategy-mini.is-collapsed .bws-strategy-mini-head {
+  min-height: 22px;
+}
+body.is-mobile .bws-strategy-mini.is-collapsed .bws-strategy-mini-refresh {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
+  justify-content: center;
+}
 
 /* ── 移动端侧栏：进一步收缩其余元素，给列表腾空间 ── */
 /* 1) 状态栏非核心信息：移动端隐藏 */
