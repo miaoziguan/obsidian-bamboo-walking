@@ -2663,6 +2663,30 @@ body.is-mobile .bws-search {
   padding-bottom: 4px;
   font-size: 12px;
 }
+/* 移动端搜索图标按钮：常态收成单图标，点击展开输入条 */
+body.is-mobile .bws-search-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body.is-mobile .bws-search-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-radius: var(--bw-radius);
+  transition: background 0.15s, color 0.15s;
+}
+body.is-mobile .bws-search-toggle:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
 body.is-mobile .bws-search-meta {
   padding: 0 14px 2px;
   font-size: 10px;

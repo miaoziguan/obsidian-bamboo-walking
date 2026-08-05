@@ -391,17 +391,48 @@ export class SidebarView extends ItemView {
     if (this.state !== "loading" || this.articles.length > 0) {
       const searchWrap = bodyEl.createDiv({ cls: "bws-search-wrap" });
 
+      // 移动端：搜索常态收成图标按钮，点击展开输入条，节省列表空间
+      const isMobile = document.body.classList.contains("is-mobile");
+
       const searchInput = searchWrap.createEl("input", {
         type: "text", placeholder: "搜索文章…", cls: "bws-search",
       });
       searchInput.value = this.searchQuery;
+
+      const searchToggle = searchWrap.createEl("button", {
+        cls: "bws-search-toggle",
+        attr: { "aria-label": "搜索文章", title: "搜索文章" },
+      });
+      setIcon(searchToggle.createSpan({ cls: "bws-btn-icon" }), "search");
+      searchToggle.addEventListener("click", () => {
+        searchToggle.addClass("bws-hidden");
+        searchInput.removeClass("bws-hidden");
+        searchInput.focus();
+      });
 
       const clearBtn = searchWrap.createEl("button", {
         cls: "bws-search-clear",
         attr: { "aria-label": "清除搜索", title: "清除" },
       });
       clearBtn.setText("×");
+
+      // 移动端初始态：无搜索词时收成图标；有词时直接展开
+      if (isMobile && !this.searchQuery) {
+        searchToggle.removeClass("bws-hidden");
+        searchInput.addClass("bws-hidden");
+      } else {
+        searchToggle.addClass("bws-hidden");
+        searchInput.removeClass("bws-hidden");
+      }
       if (!this.searchQuery) clearBtn.addClass("bws-hidden");
+
+      // 移动端：输入条失焦且无搜索词时收起回图标
+      searchInput.addEventListener("blur", () => {
+        if (isMobile && !this.searchQuery) {
+          searchInput.addClass("bws-hidden");
+          searchToggle.removeClass("bws-hidden");
+        }
+      });
 
       clearBtn.addEventListener("click", () => {
         searchInput.value = "";
@@ -410,7 +441,13 @@ export class SidebarView extends ItemView {
         this.setSearchMeta("hidden");
         this.searchFullText = false;
         this.renderListRegion();
-        searchInput.focus();
+        if (isMobile) {
+          // 移动端清空后收起输入条，恢复图标
+          searchInput.addClass("bws-hidden");
+          searchToggle.removeClass("bws-hidden");
+        } else {
+          searchInput.focus();
+        }
       });
 
       searchInput.addEventListener("input", (e) => {
