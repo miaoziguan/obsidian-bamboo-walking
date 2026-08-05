@@ -2659,6 +2659,9 @@ body.is-mobile .bws-filter-tab {
   font-size: 10.5px;
   line-height: 1.3;
   border-width: 1px;
+  /* 关键：覆盖 Obsidian 移动端对 button 的触控最小高度（min-height）干扰 */
+  min-height: 0;
+  height: auto;
 }
 /* 3) 分组 tab：压缩内边距 */
 body.is-mobile .bws-group-tabs {
