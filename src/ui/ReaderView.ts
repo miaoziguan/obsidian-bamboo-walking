@@ -27,6 +27,8 @@ export class ReaderView extends ItemView {
   private headingElements: { id: string; el: HTMLElement }[] = [];
   private tocProgressBar: HTMLElement | null = null;
   private tocProgressPct: HTMLElement | null = null;
+  private tocMask: HTMLElement | null = null;
+  private tocCloseBtn: HTMLElement | null = null;
   private scrollHandler: (() => void) | null = null;
   private fontSize = 16; // 基准字号 px
   private bodyEl: HTMLElement | null = null;
@@ -422,6 +424,16 @@ export class ReaderView extends ItemView {
       });
     }
 
+    // 移动端：目录唤起按钮（桌面端 TOC 常驻，无需此按钮）
+    if (document.body.classList.contains("is-mobile")) {
+      const tocBtn = bar.createEl("button", {
+        cls: "bwr-btn bwr-btn-toc",
+        text: "☰ 目录",
+        attr: { "aria-label": "打开目录", title: "目录" },
+      });
+      tocBtn.addEventListener("click", () => this.toggleMobileToc(true));
+    }
+
     // 分隔符
     bar.createDiv({ cls: "bwr-toolbar-sep" });
 
@@ -634,7 +646,23 @@ export class ReaderView extends ItemView {
   /* ── TOC 侧栏 ── */
   private renderToc(layout: HTMLElement, toc: TocEntry[]): void {
     const nav = layout.createDiv({ cls: "bwr-toc" });
-    if (toc.length < 2) return;
+
+    // 移动端：目录抽屉的遮罩层（点击关闭）
+    this.tocMask = layout.createDiv({ cls: "bwr-toc-mask" });
+    this.tocMask.addEventListener("click", () => this.toggleMobileToc(false));
+    if (toc.length < 2) {
+      // 短文无有效目录：隐藏移动端目录按钮，避免弹出空抽屉
+      this.contentEl.querySelector<HTMLElement>(".bwr-btn-toc")?.addClass("bwr-hidden");
+      return;
+    }
+
+    // 移动端：抽屉关闭按钮
+    this.tocCloseBtn = nav.createEl("button", {
+      cls: "bwr-toc-close",
+      text: "×",
+      attr: { "aria-label": "关闭目录", title: "关闭" },
+    });
+    this.tocCloseBtn.addEventListener("click", () => this.toggleMobileToc(false));
 
     // 进度条
     const progressWrap = nav.createDiv({ cls: "bwr-toc-progress" });
@@ -659,6 +687,10 @@ export class ReaderView extends ItemView {
       const scrollTarget = () => {
         const el = this.contentEl.querySelector(`#${CSS.escape(entry.id)}`);
         el?.scrollIntoView({ behavior: "smooth", block: "start" });
+        // 移动端：选中目录后关闭抽屉
+        if (document.body.classList.contains("is-mobile")) {
+          this.toggleMobileToc(false);
+        }
       };
       item.addEventListener("click", scrollTarget);
       item.addEventListener("keydown", (e: KeyboardEvent) => {
@@ -974,5 +1006,13 @@ export class ReaderView extends ItemView {
       this.contentEl.ownerDocument.removeEventListener("keydown", this.focusExitHandler);
       this.focusExitHandler = null;
     }
+  }
+
+  /** 移动端目录抽屉：open=true 展开，false 收起 */
+  private toggleMobileToc(open: boolean): void {
+    const toc = this.contentEl.querySelector<HTMLElement>(".bwr-toc");
+    if (!toc) return;
+    toc.toggleClass("is-open", open);
+    this.tocMask?.toggleClass("is-open", open);
   }
 }
