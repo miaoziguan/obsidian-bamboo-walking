@@ -326,8 +326,10 @@ export class SidebarView extends ItemView {
       const newCount = this.articles.filter((a) => this.newSlugs.has(a.slug)).length;
 
       const filterBar = bodyEl.createDiv({ cls: "bws-filter-tabs" });
+      // 分段容器：包裹「全部/未读」两个 tab，形成统一的分段控件
+      const seg = filterBar.createDiv({ cls: "bws-filter-seg" });
 
-      const allTab = filterBar.createEl("button", {
+      const allTab = seg.createEl("button", {
         cls: `bws-filter-tab${this.filter === "all" ? " is-active" : ""}`,
         text: newCount > 0 ? `全部 ${this.articles.length} · ${newCount} 新` : `全部 ${this.articles.length}`,
       });
@@ -339,7 +341,7 @@ export class SidebarView extends ItemView {
         unreadTab.removeClass("is-active");
       });
 
-      const unreadTab = filterBar.createEl("button", {
+      const unreadTab = seg.createEl("button", {
         cls: `bws-filter-tab${this.filter === "unread" ? " is-active" : ""}`,
         text: `未读 ${unreadCount}`,
       });

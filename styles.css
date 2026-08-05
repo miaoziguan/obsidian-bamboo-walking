@@ -457,11 +457,19 @@ button.bws-btn-refresh--inline {
   margin-top: var(--bw-space-md);
 }
 
+/* 分段容器：整体边框 + 圆角，包裹两个 tab 形成统一的分段控件 */
+.bws-filter-seg {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--background-modifier-border-hover);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
 .bws-filter-tab {
   flex: 0 0 auto;
   padding: 2px 14px;
-  /* 用更深一档的边框色确保分段控件整体轮廓在浅色主题下也清晰可见 */
-  border: 1px solid var(--background-modifier-border-hover);
+  border: none;
   background: var(--background-secondary);
   cursor: pointer;
   font-size: 12px;
@@ -470,34 +478,24 @@ button.bws-btn-refresh--inline {
   transition: all 0.15s;
 }
 
-/* 相邻 tab 无缝拼接（合并相邻边框），首尾圆角成整体分段 */
+/* 相邻 tab 之间用内部分隔线（最后一个 tab 不再需要右侧分隔） */
 .bws-filter-tab + .bws-filter-tab {
-  margin-left: -1px;
-}
-.bws-filter-tab:first-child {
-  border-radius: 6px 0 0 6px;
-}
-.bws-filter-tab:last-child {
-  border-radius: 0 6px 6px 0;
+  border-left: 1px solid var(--background-modifier-border-hover);
 }
 
-/* 悬停在分段控件里要压在相邻 tab 之上，避免被相邻边框遮挡 */
+/* 悬停反馈 */
 .bws-filter-tab:hover {
   background: var(--background-modifier-hover);
   color: var(--text-normal);
-  z-index: 1;
 }
 
-/* 激活态：填充竹青、边框同色（消除中间分隔线穿过激活态的视觉） */
+/* 激活态：填充竹青、白字，覆盖内部分隔线形成一体 */
 .bws-filter-tab.is-active {
   background: var(--bw-bamboo);
   color: var(--bw-white);
-  border-color: var(--bw-bamboo);
-  position: relative;
-  z-index: 2;
 }
 
-/* 激活态紧随其后的兄弟：左边框隐藏，避免与激活态的右边框重合出现双线 */
+/* 激活态紧随其后的兄弟：隐藏内部左边分隔线，避免穿过激活态 */
 .bws-filter-tab.is-active + .bws-filter-tab {
   border-left-color: transparent;
 }
