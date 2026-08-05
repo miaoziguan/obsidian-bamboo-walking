@@ -2638,8 +2638,12 @@ body.is-mobile .bws-status {
 body.is-mobile .bws-filter-tabs {
   margin-top: 2px;
 }
+body.is-mobile .bws-filter-tabs {
+  padding: 3px 12px 2px;
+  margin-top: var(--bw-space-sm);
+}
 body.is-mobile .bws-filter-tab {
-  padding: 3px 0;
+  padding: 2px 0;
   font-size: 12px;
 }
 /* 3) 分组 tab：压缩内边距 */
