@@ -3138,6 +3138,16 @@ body.is-mobile .bwr-body {
 .bw-ps-num {
   color: var(--text-normal);
 }
+.bw-pluginstats-table .bw-ps-link-td {
+  text-align: center;
+}
+.bw-ps-link {
+  color: var(--text-accent);
+  text-decoration: none;
+}
+.bw-ps-link:hover {
+  text-decoration: underline;
+}
 .bw-settings-textarea {
   width: 100%;
   resize: vertical;

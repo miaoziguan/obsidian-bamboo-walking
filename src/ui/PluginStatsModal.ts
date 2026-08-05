@@ -1,13 +1,15 @@
 /* ────────────── 插件态势详情弹窗 ────────────── */
 /*
- * 表格展示每个被跟踪插件的：当前下载量 / 距上次 / 7日 / 30日 增量 / 全站排名。
- * 顶部刷新按钮强制重新拉取。（社区跳转入口由侧栏卡提供，弹窗内不再重复）
+ * 表格展示每个被跟踪插件的：当前下载量 / 距上次 / 7日 / 30日 增量 / 全站排名，
+ * 并给出「在社区查看」跳转。顶部刷新按钮强制重新拉取。
  */
 
 import { App, Modal } from "obsidian";
 import type { PluginStatEntry } from "../types";
 import type { PluginStatsResult, PluginStatsService } from "../services/PluginStatsService";
 import {
+  COMMUNITY_PLUGIN_PAGE,
+  COMMUNITY_THEME_PAGE,
   PLUGIN_CN_NAMES,
   THEME_CN_NAMES,
 } from "../constants";
@@ -154,7 +156,7 @@ export class PluginStatsModal extends Modal {
     const table = root.createEl("table", { cls: "bw-pluginstats-table" });
     const thead = table.createEl("thead");
     const htr = thead.createEl("tr");
-    ["类型", "名称", "下载量", "距上次", "7日", "30日", "全站排名"].forEach(
+    ["类型", "名称", "下载量", "距上次", "7日", "30日", "全站排名", "社区"].forEach(
       (h) => htr.createEl("th", { text: h }),
     );
     const tbody = table.createEl("tbody");
@@ -221,6 +223,17 @@ export class PluginStatsModal extends Modal {
           text: e.found && e.rank > 0 ? `#${fmt(e.rank)} / ${fmt(e.total)}` : "—",
         });
       }
+      const linkTd = tr.createEl("td", { cls: "bw-ps-link-td" });
+      const link = linkTd.createEl("a", {
+        text: "查看",
+        href: isTheme
+          ? `${COMMUNITY_THEME_PAGE}${e.id}`
+          : `${COMMUNITY_PLUGIN_PAGE}${e.id}`,
+        cls: "bw-ps-link",
+      });
+      link.setAttribute("target", "_blank");
+      link.setAttribute("rel", "noopener noreferrer");
+      link.setAttribute("aria-label", "在社区查看");
     }
   }
 }
