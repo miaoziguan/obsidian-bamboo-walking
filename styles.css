@@ -457,46 +457,38 @@ button.bws-btn-refresh--inline {
   margin-top: var(--bw-space-md);
 }
 
-/* 分段容器：纯文字 tab（无外框），与分组行 nav 风格一致 */
+/* 分段容器：两个独立胶囊按钮，间距隔开 */
 .bws-filter-seg {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
+/* 胶囊按钮：全圆角 + 描边 */
 .bws-filter-tab {
   flex: 0 0 auto;
-  padding: 2px 6px;
-  border: none;
-  border-radius: 0;
-  background: none;
+  padding: 3px 16px;
+  border: 1px solid var(--background-modifier-border-hover);
+  border-radius: 999px;
+  background: var(--background-secondary);
   cursor: pointer;
   font-size: 12px;
   color: var(--text-muted);
   line-height: 1.4;
-  position: relative;
-  transition: color 0.15s;
+  transition: all 0.15s;
 }
 
-/* 悬停：文字颜色变深 */
+/* 悬停：浅色底 + 文字变深 */
 .bws-filter-tab:hover {
+  background: var(--background-modifier-hover);
   color: var(--text-normal);
 }
 
-/* 激活态：竹青文字 + 底部 2px 下划线 */
+/* 激活态：竹青填充 + 白字，描边同色 */
 .bws-filter-tab.is-active {
-  color: var(--bw-bamboo-deep);
-  font-weight: 600;
-}
-.bws-filter-tab.is-active::after {
-  content: "";
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  bottom: -2px;
-  height: 2px;
   background: var(--bw-bamboo);
-  border-radius: 1px;
+  color: var(--bw-white);
+  border-color: var(--bw-bamboo);
 }
 
 /* ── 分组切换：分类 | 时间线（精致小字 + 竖条分隔，弱层级） ── */
@@ -2661,10 +2653,10 @@ body.is-mobile .bws-filter-tabs {
   margin-top: var(--bw-space-sm);
 }
 body.is-mobile .bws-filter-seg {
-  /* 移动端使用 nav 文字 tab，无外框 */
+  /* 移动端胶囊按钮，略紧凑 */
 }
 body.is-mobile .bws-filter-tab {
-  padding: 1px 8px;
+  padding: 2px 12px;
   font-size: 12px;
 }
 /* 3) 分组 tab：压缩内边距 */
