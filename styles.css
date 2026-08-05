@@ -2667,6 +2667,11 @@ body.is-mobile .bws-filter-tab {
   align-items: center;
   justify-content: center;
 }
+/* 移动端行内刷新图标：缩小，与细长胶囊匹配 */
+body.is-mobile button.bws-btn-refresh--inline {
+  font-size: 13px;
+  padding: 2px 3px;
+}
 /* 3) 分组 tab：压缩内边距 */
 body.is-mobile .bws-group-tabs {
   margin-top: 1px;
