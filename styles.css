@@ -2555,6 +2555,21 @@ body.is-mobile .bwr-body {
   padding: 0 calc(var(--bw-space-lg) + var(--bw-safe-right)) calc(var(--bw-space-2xl) + var(--bw-safe-bottom)) calc(var(--bw-space-lg) + var(--bw-safe-left));
 }
 
+/* ── 移动端侧栏：加大列表项触控点击面 ── */
+body.is-mobile .bws-article {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  min-height: 48px;
+}
+body.is-mobile .bws-cat-title {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  min-height: 40px;
+}
+body.is-mobile .bws-article + .bws-article {
+  margin-top: 2px;
+}
+
 /* ── 超窄屏（≤480px）：摘要进一步截断、标题再缩小 ── */
 @media (max-width: 480px) {
   .bws-art-summary {
