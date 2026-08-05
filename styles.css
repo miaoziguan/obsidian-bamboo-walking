@@ -2676,18 +2676,14 @@ body.is-mobile .bws-search {
   padding-bottom: 4px;
   font-size: 12px;
 }
-/* 移动端搜索图标按钮：常态收成单图标，点击展开输入条 */
-body.is-mobile .bws-search-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+/* 移动端分组行内的搜索图标：推到最右，紧凑尺寸 */
 body.is-mobile .bws-search-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
   padding: 0;
   border: none;
   background: none;
@@ -2707,8 +2703,8 @@ body.is-mobile .bws-search-toggle .bws-btn-icon {
   line-height: 0;
 }
 body.is-mobile .bws-search-toggle .bws-btn-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   display: block;
 }
 body.is-mobile .bws-search-meta {

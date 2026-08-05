@@ -385,13 +385,35 @@ export class SidebarView extends ItemView {
         attr: { title: "按时间浏览" },
       });
       timeTab.addEventListener("click", () => this.setGroupMode("time"));
+
+      // 移动端：若正处于搜索展开态（有搜索词），分组行就地替换为输入条 → 隐藏分组行
+      if (document.body.classList.contains("is-mobile") && this.searchQuery) {
+        groupBar.addClass("bws-hidden");
+      }
+
+      // 移动端：搜索入口收成图标按钮，放到分组行最右（点击就地替换为输入条）
+      if (document.body.classList.contains("is-mobile")) {
+        const groupSearchBtn = groupBar.createEl("button", {
+          cls: "bws-search-toggle bws-search-toggle--group",
+          attr: { "aria-label": "搜索文章", title: "搜索文章" },
+        });
+        setIcon(groupSearchBtn.createSpan({ cls: "bws-btn-icon" }), "search");
+        groupSearchBtn.addEventListener("click", () => {
+          // 就地替换：隐藏分组行，展开输入条并聚焦
+          groupBar.addClass("bws-hidden");
+          const wrap = bodyEl.querySelector<HTMLElement>(".bws-search-wrap");
+          wrap?.removeClass("bws-hidden");
+          const input = wrap?.querySelector<HTMLInputElement>("input.bws-search");
+          window.requestAnimationFrame(() => input?.focus());
+        });
+      }
     }
 
     // ── 搜索框（带清除按钮） ──
     if (this.state !== "loading" || this.articles.length > 0) {
       const searchWrap = bodyEl.createDiv({ cls: "bws-search-wrap" });
 
-      // 移动端：搜索常态收成图标按钮，点击展开输入条，节省列表空间
+      // 移动端：搜索收成分组行最右的图标（点击就地替换为输入条）；桌面端输入条常驻
       const isMobile = document.body.classList.contains("is-mobile");
 
       const searchInput = searchWrap.createEl("input", {
@@ -399,40 +421,24 @@ export class SidebarView extends ItemView {
       });
       searchInput.value = this.searchQuery;
 
-      const searchToggle = searchWrap.createEl("button", {
-        cls: "bws-search-toggle",
-        attr: { "aria-label": "搜索文章", title: "搜索文章" },
-      });
-      setIcon(searchToggle.createSpan({ cls: "bws-btn-icon" }), "search");
-      searchToggle.addEventListener("click", () => {
-        searchToggle.addClass("bws-hidden");
-        searchInput.removeClass("bws-hidden");
-        // 输入条刚从 display:none 变为可见，需下一帧再 focus，
-        // 否则部分移动端浏览器会忽略对刚渲染元素的 focus
-        window.requestAnimationFrame(() => searchInput.focus());
-      });
-
       const clearBtn = searchWrap.createEl("button", {
         cls: "bws-search-clear",
         attr: { "aria-label": "清除搜索", title: "清除" },
       });
       clearBtn.setText("×");
-
-      // 移动端初始态：无搜索词时收成图标；有词时直接展开
-      if (isMobile && !this.searchQuery) {
-        searchToggle.removeClass("bws-hidden");
-        searchInput.addClass("bws-hidden");
-      } else {
-        searchToggle.addClass("bws-hidden");
-        searchInput.removeClass("bws-hidden");
-      }
       if (!this.searchQuery) clearBtn.addClass("bws-hidden");
 
-      // 移动端：输入条失焦且无搜索词时收起回图标
+      // 移动端：无搜索词时收起输入条（由分组行搜索图标触发展开）
+      if (isMobile && !this.searchQuery) {
+        searchWrap.addClass("bws-hidden");
+      }
+
+      // 移动端：输入条失焦且无搜索词时收起，恢复分组行
       searchInput.addEventListener("blur", () => {
         if (isMobile && !this.searchQuery) {
-          searchInput.addClass("bws-hidden");
-          searchToggle.removeClass("bws-hidden");
+          searchWrap.addClass("bws-hidden");
+          const groupBar = bodyEl.querySelector<HTMLElement>(".bws-group-tabs");
+          groupBar?.removeClass("bws-hidden");
         }
       });
 
@@ -444,9 +450,10 @@ export class SidebarView extends ItemView {
         this.searchFullText = false;
         this.renderListRegion();
         if (isMobile) {
-          // 移动端清空后收起输入条，恢复图标
-          searchInput.addClass("bws-hidden");
-          searchToggle.removeClass("bws-hidden");
+          // 移动端清空后收起输入条，恢复分组行
+          searchWrap.addClass("bws-hidden");
+          const groupBar = bodyEl.querySelector<HTMLElement>(".bws-group-tabs");
+          groupBar?.removeClass("bws-hidden");
         } else {
           searchInput.focus();
         }
