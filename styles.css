@@ -457,47 +457,46 @@ button.bws-btn-refresh--inline {
   margin-top: var(--bw-space-md);
 }
 
-/* 分段容器：整体边框 + 圆角，包裹两个 tab 形成统一的分段控件 */
+/* 分段容器：纯文字 tab（无外框），与分组行 nav 风格一致 */
 .bws-filter-seg {
   display: inline-flex;
-  align-items: stretch;
-  border: 1px solid var(--background-modifier-border-hover);
-  border-radius: 6px;
-  overflow: hidden;
+  align-items: center;
+  gap: 6px;
 }
 
 .bws-filter-tab {
   flex: 0 0 auto;
-  padding: 2px 14px;
+  padding: 2px 6px;
   border: none;
-  background: var(--background-secondary);
+  border-radius: 0;
+  background: none;
   cursor: pointer;
   font-size: 12px;
   color: var(--text-muted);
   line-height: 1.4;
-  transition: all 0.15s;
+  position: relative;
+  transition: color 0.15s;
 }
 
-/* 相邻 tab 之间用内部分隔线（最后一个 tab 不再需要右侧分隔） */
-.bws-filter-tab + .bws-filter-tab {
-  border-left: 1px solid var(--background-modifier-border-hover);
-}
-
-/* 悬停反馈 */
+/* 悬停：文字颜色变深 */
 .bws-filter-tab:hover {
-  background: var(--background-modifier-hover);
   color: var(--text-normal);
 }
 
-/* 激活态：填充竹青、白字，覆盖内部分隔线形成一体 */
+/* 激活态：竹青文字 + 底部 2px 下划线 */
 .bws-filter-tab.is-active {
-  background: var(--bw-bamboo);
-  color: var(--bw-white);
+  color: var(--bw-bamboo-deep);
+  font-weight: 600;
 }
-
-/* 激活态紧随其后的兄弟：隐藏内部左边分隔线，避免穿过激活态 */
-.bws-filter-tab.is-active + .bws-filter-tab {
-  border-left-color: transparent;
+.bws-filter-tab.is-active::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: -2px;
+  height: 2px;
+  background: var(--bw-bamboo);
+  border-radius: 1px;
 }
 
 /* ── 分组切换：分类 | 时间线（精致小字 + 竖条分隔，弱层级） ── */
@@ -2661,8 +2660,11 @@ body.is-mobile .bws-filter-tabs {
   padding: 4px 12px 2px;
   margin-top: var(--bw-space-sm);
 }
+body.is-mobile .bws-filter-seg {
+  /* 移动端使用 nav 文字 tab，无外框 */
+}
 body.is-mobile .bws-filter-tab {
-  padding: 1px 10px;
+  padding: 1px 8px;
   font-size: 12px;
 }
 /* 3) 分组 tab：压缩内边距 */
