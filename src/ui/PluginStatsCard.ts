@@ -105,6 +105,11 @@ export class PluginStatsCard {
         }
       });
 
+      // 移动端（Obsidian body.is-mobile）默认折叠成单行标题，节省列表空间
+      if (document.body.classList.contains("is-mobile")) {
+        card.classList.add("is-collapsed");
+      }
+
       void this.refresh();
     } catch (e) {
       console.error("[bamboo-walking] 黑曜石作品卡片渲染失败：", e);

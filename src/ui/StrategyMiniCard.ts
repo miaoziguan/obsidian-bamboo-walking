@@ -41,6 +41,7 @@ export class StrategyMiniCard {
       const label = left.createDiv({ cls: "bws-strategy-mini-label" });
       svgIcon(label, "chart", "bws-strategy-mini-ico");
       label.append(" 战略复盘");
+      left.createSpan({ cls: "bws-strategy-mini-caret", attr: { "aria-hidden": "true" } });
 
       this.infoEl = left.createDiv({
         cls: "bws-strategy-mini-info",
@@ -57,6 +58,17 @@ export class StrategyMiniCard {
         if (this.loading) return;
         void this.refresh();
       });
+
+      // 点击头部：折叠/展开（移动端默认折叠成单行标题，节省列表空间）
+      head.addEventListener("click", (e) => {
+        e.stopPropagation();
+        card.classList.toggle("is-collapsed");
+      });
+
+      // 移动端（Obsidian body.is-mobile）默认折叠成单行标题
+      if (document.body.classList.contains("is-mobile")) {
+        card.classList.add("is-collapsed");
+      }
 
       card.addEventListener("click", () => {
         if (this.cardEl?.classList.contains("is-disabled")) {
