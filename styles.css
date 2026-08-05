@@ -2612,6 +2612,49 @@ body.is-mobile .bws-strategy-mini-cult {
   font-size: 11px;
 }
 
+/* ── 移动端侧栏：进一步收缩其余元素，给列表腾空间 ── */
+/* 1) 状态栏非核心信息：移动端隐藏 */
+body.is-mobile .bws-status {
+  display: none;
+}
+/* 2) 未读/全部 tab + 刷新：压缩内边距 */
+body.is-mobile .bws-filter-tabs {
+  margin-top: 2px;
+}
+body.is-mobile .bws-filter-tab {
+  padding: 3px 0;
+  font-size: 12px;
+}
+/* 3) 分组 tab：压缩内边距 */
+body.is-mobile .bws-group-tabs {
+  margin-top: 1px;
+}
+body.is-mobile .bws-group-tab {
+  padding: 1px 2px 2px;
+  font-size: 11px;
+}
+/* 4) 搜索框：压缩内边距与字号 */
+body.is-mobile .bws-search-wrap {
+  padding: 4px 12px 2px;
+}
+body.is-mobile .bws-search {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  font-size: 12px;
+}
+body.is-mobile .bws-search-meta {
+  padding: 0 14px 2px;
+  font-size: 10px;
+}
+/* 5) 作者简介：移动端压到 1 行 */
+body.is-mobile .bws-author-bio {
+  -webkit-line-clamp: 1;
+}
+/* 6) 全站字数统计：移动端隐藏 */
+body.is-mobile .bws-author-stats {
+  display: none;
+}
+
 /* ── 超窄屏（≤480px）：标题再缩小，摘要不限宽 ── */
 @media (max-width: 480px) {
   .bwr-title {
