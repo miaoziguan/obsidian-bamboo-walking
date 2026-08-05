@@ -17,8 +17,7 @@ const SRC_ROOT = process.env.BAMBOO_COLUMN_ROOT
   ? path.resolve(process.env.BAMBOO_COLUMN_ROOT)
   : path.resolve(__dirname, "..", "..", "bamboo-column");
 
-// 动态加载内容源的 generate-index（路径随 SRC_ROOT 而定，兼容 CI 与本地）
-const { runGenerate } = require(path.join(SRC_ROOT, "scripts", "generate-index"));
+const GEN_INDEX = path.join(SRC_ROOT, "scripts", "generate-index.js");
 const DEST_ARTICLES = path.join(PLUGIN_ROOT, "content", "articles");
 
 function cpDir(src, dest) {
@@ -29,15 +28,27 @@ function cpDir(src, dest) {
 
 /**
  * 同步内容源到插件 content/。
+ * 内容源（bamboo-column）在 CI 构建环境下通常不存在：本地开发时它常与插件
+ * 仓库同级；CI 仅 checkout 插件仓库且未注入 BAMBOO_COLUMN_ROOT。此时跳过
+ * 同步，直接使用仓库内已提交的 content/articles，不阻塞插件构建。
  * @param {string} srcRoot 内容源仓库根（含 articles/）
  * @param {string} destArticles 插件 content/articles 目标目录
  * @param {{strict?: boolean}} [opts]
+ * @returns {boolean} true=已同步，false=源不可用已跳过
  */
 function syncContent(srcRoot, destArticles, { strict = false } = {}) {
   const srcArticles = path.join(srcRoot, "articles");
-  if (!fs.existsSync(srcArticles)) {
-    throw new Error(`源内容目录不存在: ${srcArticles}`);
+  // 源脚本或源目录缺失（典型 CI 场景）：跳过，复用已提交的 content
+  if (!fs.existsSync(GEN_INDEX) || !fs.existsSync(srcArticles)) {
+    console.warn(
+      `⚠️ 未找到内容源 (${srcRoot})，跳过内容同步，` +
+        `使用仓库内已提交的 content/articles。`,
+    );
+    return false;
   }
+
+  // 动态加载内容源的 generate-index（路径随 SRC_ROOT 而定，兼容 CI 与本地）
+  const { runGenerate } = require(GEN_INDEX);
 
   // 1) 源内生成最新 hash（strict 模式校验字段与一致性）
   runGenerate(srcRoot, { strict });

@@ -230,7 +230,7 @@ export class PluginStatsCard {
     // 插件：打开社区插件设置页并自动搜索填入插件 ID
     this.app.setting.open();
     this.app.setting.openTabById("community-plugins");
-    setTimeout(() => {
+    window.setTimeout(() => {
       const input = this.app.setting.containerEl.querySelector<HTMLInputElement>(
         'input[type="text"][placeholder*="搜索"], input[type="text"][placeholder*="Search"]',
       );
