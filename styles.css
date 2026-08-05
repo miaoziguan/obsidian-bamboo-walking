@@ -2570,6 +2570,48 @@ body.is-mobile .bws-article + .bws-article {
   margin-top: 2px;
 }
 
+/* ── 移动端侧栏：头部整体收缩，给文章列表腾出更多可见高度 ── */
+body.is-mobile .bws-header {
+  padding: var(--bw-space-sm) 12px var(--bw-space-md);
+}
+body.is-mobile .bws-status {
+  margin: var(--bw-space-sm) 0 var(--bw-space-xs);
+}
+body.is-mobile .bws-author-card {
+  gap: 6px;
+}
+body.is-mobile .bws-author-avatar-wrap {
+  width: 44px;
+  height: 44px;
+}
+body.is-mobile .bws-author-name {
+  font-size: 14px;
+}
+body.is-mobile .bws-author-handle {
+  font-size: 10px;
+  margin-top: 0;
+}
+body.is-mobile .bws-author-info {
+  gap: 4px;
+}
+body.is-mobile .bws-author-bio {
+  font-size: 11px;
+  line-height: 1.5;
+  -webkit-line-clamp: 2;
+}
+body.is-mobile .bws-author-stats {
+  font-size: 11px;
+}
+body.is-mobile .bws-strategy-mini,
+body.is-mobile .bws-pluginstats {
+  padding: 6px 8px;
+  margin-top: var(--bw-space-xs);
+}
+body.is-mobile .bws-strategy-mini-info,
+body.is-mobile .bws-strategy-mini-cult {
+  font-size: 11px;
+}
+
 /* ── 超窄屏（≤480px）：标题再缩小，摘要不限宽 ── */
 @media (max-width: 480px) {
   .bwr-title {
