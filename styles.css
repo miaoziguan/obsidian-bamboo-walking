@@ -2653,11 +2653,14 @@ body.is-mobile .bws-filter-tabs {
   margin-top: var(--bw-space-sm);
 }
 body.is-mobile .bws-filter-seg {
-  /* 移动端胶囊按钮，略紧凑 */
+  /* 移动端胶囊按钮：更小巧精致 */
+  gap: 4px;
 }
 body.is-mobile .bws-filter-tab {
-  padding: 2px 12px;
-  font-size: 12px;
+  padding: 1px 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  border-width: 1px;
 }
 /* 3) 分组 tab：压缩内边距 */
 body.is-mobile .bws-group-tabs {
