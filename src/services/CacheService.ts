@@ -6,6 +6,8 @@ import { CACHE_KEY, CACHE_VERSION } from "../constants";
 export class CacheService {
   private data: CacheData;
   private saveQueue: Promise<void> = Promise.resolve();
+  /** 已读 slug 的内存 Set 索引：isRead 由数组 includes O(n) 降为 O(1)，避免列表过滤时整体 O(n²) */
+  private readSet = new Set<string>();
 
   constructor(
     private loadData: () => Promise<Record<string, unknown> | null>,
@@ -39,6 +41,7 @@ export class CacheService {
         readSlugs: keptRead,
       };
     }
+    this.readSet = new Set(this.data.readSlugs);
   }
 
   /** 串行化所有写操作，避免并发 save 交错覆盖 */
@@ -115,15 +118,17 @@ export class CacheService {
   /* ── 已读追踪 ── */
 
   isRead(slug: string): boolean {
-    return this.data.readSlugs.includes(slug);
+    return this.readSet.has(slug);
   }
 
   async markRead(slug: string): Promise<void> {
-    if (!this.data.readSlugs.includes(slug)) {
+    if (!this.readSet.has(slug)) {
       this.data.readSlugs.push(slug);
+      this.readSet.add(slug);
       // 防止已读列表无限增长，保留最近 500 条
       if (this.data.readSlugs.length > 500) {
         this.data.readSlugs = this.data.readSlugs.slice(-500);
+        this.readSet = new Set(this.data.readSlugs);
       }
       await this.save();
     }

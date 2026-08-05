@@ -77,7 +77,8 @@ export class PluginStatsModal extends Modal {
     this.renderLoading(root);
     let result: PluginStatsResult;
     try {
-      result = await this.service.refresh(true);
+      // 打开弹窗走缓存（24h 内不重新下载三个大 JSON）；强制刷新由「刷新」按钮触发
+      result = await this.service.refresh(false);
     } catch (e) {
       this.loading = false;
       this.renderError(root, e instanceof Error ? e.message : "未知错误");

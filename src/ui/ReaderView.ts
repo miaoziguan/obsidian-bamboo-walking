@@ -30,6 +30,8 @@ export class ReaderView extends ItemView {
   private tocMask: HTMLElement | null = null;
   private tocCloseBtn: HTMLElement | null = null;
   private scrollHandler: (() => void) | null = null;
+  private scrollRafPending = false;
+  private scrollSaveTimer: number | null = null;
   private fontSize = 16; // 基准字号 px
   private bodyEl: HTMLElement | null = null;
   private layoutEl: HTMLElement | null = null;
@@ -125,6 +127,11 @@ export class ReaderView extends ItemView {
 
   async onClose(): Promise<void> {
     this.ttsControls.stop();
+    if (this.scrollSaveTimer !== null) {
+      window.clearTimeout(this.scrollSaveTimer);
+      this.scrollSaveTimer = null;
+    }
+    this.scrollRafPending = false;
     this.component.unload();
   }
 
@@ -280,42 +287,56 @@ export class ReaderView extends ItemView {
       .addEventListener("click", () => this.scrollTo("bottom"));
 
     // 滚动监听：TOC 进度 + 高亮（layout 是滚动容器）
+    // 用 rAF 节流：一帧只执行一次可视更新，避免高频滚动逐帧强制重排；
+    // localStorage 写入放到滚动停止后的 debounce，避免每帧同步写磁盘。
     this.scrollHandler = () => {
-      const scrollTop = layout.scrollTop;
-      const scrollHeight = layout.scrollHeight - layout.clientHeight;
+      if (this.scrollRafPending) return;
+      this.scrollRafPending = true;
+      window.requestAnimationFrame(() => {
+        this.scrollRafPending = false;
+        const scrollTop = layout.scrollTop;
+        const scrollHeight = layout.scrollHeight - layout.clientHeight;
 
-      // TOC 进度条 + 百分比
-      const pct = scrollHeight > 0 ? Math.min(scrollTop / scrollHeight, 1) : 0;
-      if (this.tocProgressBar) {
-        this.tocProgressBar.setCssStyles({ width: `${pct * 100}%` });
-      }
-      if (this.tocProgressPct) {
-        this.tocProgressPct.textContent = `${Math.round(pct * 100)}%`;
-      }
-
-      // TOC scroll spy
-      if (this.headingElements.length > 0) {
-        let activeId = this.headingElements[0].id;
-        for (const h of this.headingElements) {
-          if (h.el.offsetTop - layout.offsetTop <= scrollTop + 60) {
-            activeId = h.id;
-          } else {
-            break;
-          }
+        // TOC 进度条 + 百分比
+        const pct = scrollHeight > 0 ? Math.min(scrollTop / scrollHeight, 1) : 0;
+        if (this.tocProgressBar) {
+          this.tocProgressBar.setCssStyles({ width: `${pct * 100}%` });
         }
-        this.tocElements.forEach((el, id) => {
-          el.classList.toggle("is-active", id === activeId);
-        });
-      }
+        if (this.tocProgressPct) {
+          this.tocProgressPct.textContent = `${Math.round(pct * 100)}%`;
+        }
 
-      this.saveProgress(scrollTop);
+        // TOC scroll spy
+        if (this.headingElements.length > 0) {
+          let activeId = this.headingElements[0].id;
+          for (const h of this.headingElements) {
+            if (h.el.offsetTop - layout.offsetTop <= scrollTop + 60) {
+              activeId = h.id;
+            } else {
+              break;
+            }
+          }
+          this.tocElements.forEach((el, id) => {
+            el.classList.toggle("is-active", id === activeId);
+          });
+        }
 
-      // FAB 显隐：内容超过一屏时显示
-      if (this.fabEl) {
-        this.fabEl.classList.toggle("bwr-fab--show", scrollHeight > 100);
+        // FAB 显隐：内容超过一屏时显示
+        if (this.fabEl) {
+          this.fabEl.classList.toggle("bwr-fab--show", scrollHeight > 100);
+        }
+      });
+
+      // 滚动停止后（150ms 无新滚动）再写一次阅读进度到 localStorage
+      if (this.scrollSaveTimer !== null) {
+        window.clearTimeout(this.scrollSaveTimer);
       }
+      this.scrollSaveTimer = window.setTimeout(() => {
+        this.scrollSaveTimer = null;
+        this.saveProgress(layout.scrollTop);
+      }, 150);
     };
-    layout.addEventListener("scroll", this.scrollHandler);
+    layout.addEventListener("scroll", this.scrollHandler, { passive: true });
 
     // 恢复阅读进度
     if (this.article) {

@@ -233,6 +233,8 @@ export class SidebarView extends ItemView {
   }
   async onClose(): Promise<void> {
     if (this.searchDebounce !== null) window.clearTimeout(this.searchDebounce);
+    // 释放正文搜索缓存，避免长期持有大字符串
+    this.contentCache.clear();
   }
 
   /* ═══════ 日期格式化：中文短格式 + 相对时间 ═══════ */
@@ -695,11 +697,19 @@ export class SidebarView extends ItemView {
     }
   }
 
+  /** 正文小写缓存的最大条目数：超出时淘汰最久未用的，避免长期占用内存 */
+  private static readonly CONTENT_CACHE_MAX = 120;
+
   /** 取某 slug 的正文（小写），带缓存，避免每次击键重复读取+转换 */
   private cachedContent(slug: string): string {
     let c = this.contentCache.get(slug);
     if (c === undefined) {
       c = (this.getContent?.(slug) ?? "").toLowerCase();
+      // 容量上限：超过时淘汰最先插入的（简单 LRU）
+      if (this.contentCache.size >= SidebarView.CONTENT_CACHE_MAX) {
+        const oldest = this.contentCache.keys().next().value;
+        if (oldest !== undefined) this.contentCache.delete(oldest);
+      }
       this.contentCache.set(slug, c);
     }
     return c;
@@ -964,11 +974,12 @@ export class SidebarView extends ItemView {
       pool = pool.filter((a) => !this.isReadFn!(a.slug));
     }
 
-    // 搜索过滤（分类模式使用全文匹配，与统一语义一致）
+    // 搜索过滤（与时间线一致：轻量字段即时匹配，全文由异步补扫纳入，
+    // 避免输入时同步扫描全文阻塞主线程）
     if (this.searchQuery) {
       pool = pool.filter((a) =>
         matchArticle(this.searchQuery, a, {
-          fullText: true,
+          fullText: this.searchFullText,
           getContent: (s) => this.cachedContent(s),
         }),
       );

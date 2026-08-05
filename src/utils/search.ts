@@ -29,8 +29,10 @@ export function matchArticle(
 
   if (hit) return true;
 
+  // getContent 契约返回小写正文（见 cachedContent），此处无需再 toLowerCase，
+  // 避免为每篇命中候选重复分配新字符串
   if (opts.fullText && opts.getContent) {
-    return opts.getContent(entry.slug).toLowerCase().includes(q);
+    return opts.getContent(entry.slug).includes(q);
   }
   return false;
 }
