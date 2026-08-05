@@ -460,8 +460,9 @@ button.bws-btn-refresh--inline {
 .bws-filter-tab {
   flex: 0 0 auto;
   padding: 2px 14px;
-  border: 1px solid var(--background-modifier-border);
-  background: none;
+  /* 用更深一档的边框色确保分段控件整体轮廓在浅色主题下也清晰可见 */
+  border: 1px solid var(--background-modifier-border-hover);
+  background: var(--background-secondary);
   cursor: pointer;
   font-size: 12px;
   color: var(--text-muted);
@@ -480,18 +481,25 @@ button.bws-btn-refresh--inline {
   border-radius: 0 6px 6px 0;
 }
 
+/* 悬停在分段控件里要压在相邻 tab 之上，避免被相邻边框遮挡 */
 .bws-filter-tab:hover {
   background: var(--background-modifier-hover);
   color: var(--text-normal);
   z-index: 1;
 }
 
+/* 激活态：填充竹青、边框同色（消除中间分隔线穿过激活态的视觉） */
 .bws-filter-tab.is-active {
   background: var(--bw-bamboo);
   color: var(--bw-white);
   border-color: var(--bw-bamboo);
   position: relative;
   z-index: 2;
+}
+
+/* 激活态紧随其后的兄弟：左边框隐藏，避免与激活态的右边框重合出现双线 */
+.bws-filter-tab.is-active + .bws-filter-tab {
+  border-left-color: transparent;
 }
 
 /* ── 分组切换：分类 | 时间线（精致小字 + 竖条分隔，弱层级） ── */
