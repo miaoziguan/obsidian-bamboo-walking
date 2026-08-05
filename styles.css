@@ -2609,12 +2609,37 @@ body.is-mobile .bwr-body {
 body.is-mobile .bwr-toolbar {
   padding: var(--bw-space-xs) calc(var(--bw-space-lg) + var(--bw-safe-right)) var(--bw-space-xs) calc(var(--bw-space-lg) + var(--bw-safe-left));
   gap: 2px;
+  /* 移动端精简图标工具栏：单行不折行 */
+  flex-wrap: nowrap;
+  overflow-x: auto;
 }
 body.is-mobile .bwr-toolbar-sep {
   margin: 2px 4px;
 }
 body.is-mobile .bwr-zoom {
   gap: 0;
+}
+/* 移动端工具栏图标按钮：方形触控位 + 居中线性图标 */
+body.is-mobile button.bwr-btn-micon {
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--bw-radius-sm);
+  color: var(--text-muted);
+}
+body.is-mobile button.bwr-btn-micon .bwr-icon {
+  width: 17px;
+  height: 17px;
+}
+body.is-mobile button.bwr-btn-micon:active {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+body.is-mobile .bwr-toolbar button.bwr-btn-zoom {
+  min-height: 30px;
 }
 body.is-mobile .bws-art-summary {
   /* 不限宽：摘要占满剩余宽度，让移动端能多显示几字 */

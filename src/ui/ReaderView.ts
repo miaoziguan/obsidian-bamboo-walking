@@ -412,6 +412,12 @@ export class ReaderView extends ItemView {
   private renderToolbar(container: HTMLElement): void {
     const bar = container.createDiv({ cls: "bwr-toolbar" });
 
+    // 移动端：精简图标工具栏（单行），低频操作收进「更多」菜单
+    if (document.body.classList.contains("is-mobile")) {
+      this.buildMobileToolbar(bar);
+      return;
+    }
+
     // ── 导航区 ──
     if (this.onBack) {
       const backBtn = bar.createEl("button", {
@@ -422,16 +428,6 @@ export class ReaderView extends ItemView {
       backBtn.addEventListener("click", () => {
         if (this.onBack) this.onBack();
       });
-    }
-
-    // 移动端：目录唤起按钮（桌面端 TOC 常驻，无需此按钮）
-    if (document.body.classList.contains("is-mobile")) {
-      const tocBtn = bar.createEl("button", {
-        cls: "bwr-btn bwr-btn-toc",
-        text: "☰ 目录",
-        attr: { "aria-label": "打开目录", title: "目录" },
-      });
-      tocBtn.addEventListener("click", () => this.toggleMobileToc(true));
     }
 
     // 分隔符
@@ -527,6 +523,100 @@ export class ReaderView extends ItemView {
         }
       })();
     });
+  }
+
+  /** 移动端精简图标工具栏：单行不折行，低频操作收进「更多」菜单 */
+  private buildMobileToolbar(bar: HTMLElement): void {
+    // 返回（图标）
+    if (this.onBack) {
+      const backBtn = bar.createEl("button", {
+        cls: "bwr-btn bwr-btn-micon",
+        attr: { "aria-label": "返回目录", title: "返回" },
+      });
+      this.appendIcon(backBtn, "M15 8H3M8 3L3 8l5 5");
+      backBtn.addEventListener("click", () => {
+        if (this.onBack) this.onBack();
+      });
+    }
+
+    // 目录（图标）
+    const tocBtn = bar.createEl("button", {
+      cls: "bwr-btn bwr-btn-micon bwr-btn-toc",
+      attr: { "aria-label": "打开目录", title: "目录" },
+    });
+    this.appendIcon(tocBtn, "M2.5 5h11M2.5 8h11M2.5 11h11");
+    tocBtn.addEventListener("click", () => this.toggleMobileToc(true));
+
+    // 分隔符
+    bar.createDiv({ cls: "bwr-toolbar-sep" });
+
+    // 字号 A⁻ A A⁺
+    const zoom = bar.createDiv({ cls: "bwr-zoom" });
+    zoom.createEl("button", {
+      cls: "bwr-btn bwr-btn-zoom",
+      text: "A⁻",
+      attr: { "aria-label": "减小字号", title: "减小字号" },
+    }).addEventListener("click", () => this.zoomFont(-1));
+    zoom.createEl("button", {
+      cls: "bwr-btn bwr-btn-zoom",
+      text: "A",
+      attr: { "aria-label": "重置字号", title: "重置字号" },
+    }).addEventListener("click", () => this.zoomFont(0));
+    zoom.createEl("button", {
+      cls: "bwr-btn bwr-btn-zoom",
+      text: "A⁺",
+      attr: { "aria-label": "增大字号", title: "增大字号" },
+    }).addEventListener("click", () => this.zoomFont(1));
+
+    // 分隔符
+    bar.createDiv({ cls: "bwr-toolbar-sep" });
+
+    // 朗读（图标）
+    const ttsBtn = bar.createEl("button", {
+      cls: "bwr-btn bwr-btn-micon bwr-btn-tts-toggle",
+      attr: { "aria-label": "朗读全文", title: "朗读" },
+    });
+    this.appendIcon(ttsBtn, "M3 6v4h3l4 3V3L6 6H3zM11 6.5a3 3 0 010 5M13 4a6 6 0 010 8");
+    ttsBtn.addEventListener("click", () => this.ttsControls.toggleBar());
+    this.ttsControls.setPlayBtn(ttsBtn);
+
+    // 更多（•••）：弹出操作菜单
+    const moreBtn = bar.createEl("button", {
+      cls: "bwr-btn bwr-btn-micon bwr-btn-more",
+      attr: { "aria-label": "更多操作", title: "更多" },
+    });
+    this.appendIcon(moreBtn, "M3 8h.01M8 8h.01M13 8h.01");
+    moreBtn.addEventListener("click", (e) => this.showMobileMoreMenu(e));
+  }
+
+  /** 移动端「更多」菜单：专注 / 分享 / 提炼 / 保存 */
+  private showMobileMoreMenu(e: MouseEvent): void {
+    const menu = new Menu();
+    menu.addItem((i) =>
+      i.setTitle("专注阅读").setIcon("maximize").onClick(() => this.toggleFocusMode()),
+    );
+    menu.addItem((i) =>
+      i.setTitle("生成分享卡片").setIcon("share").onClick(() => this.openShareModal()),
+    );
+    menu.addItem((i) =>
+      i.setTitle("提炼为原子笔记").setIcon("pen-tool").onClick(() => this.extractToAtomicNotes()),
+    );
+    menu.addItem((i) =>
+      i.setTitle("保存为笔记").setIcon("save").onClick(() => this.saveFromMenu()),
+    );
+    menu.showAtMouseEvent(e);
+  }
+
+  /** 移动端「更多」菜单里的保存：执行保存并用 Notice 反馈 */
+  private saveFromMenu(): void {
+    if (this.isSaving || !this.onSave) return;
+    this.isSaving = true;
+    void this.onSave()
+      .then(() => new Notice("已保存为笔记"))
+      .catch(() => new Notice("保存失败"))
+      .finally(() => {
+        this.isSaving = false;
+      });
   }
 
   /** 打开分享卡片浮层。selected 为已确定的选中文字（右键菜单传入）；省略时自动读取正文选区 */
