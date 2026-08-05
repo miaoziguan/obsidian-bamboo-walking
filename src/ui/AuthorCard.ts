@@ -54,7 +54,7 @@ export function renderAuthorCard(
   });
   const aboutIco = aboutBtn.createSpan({ cls: "bw-brand-link-ico-wrap" });
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setIcon 是 Obsidian 官方 API
-  setIcon(aboutIco, "info");
+  setIcon(aboutIco, "user");
   aboutBtn.addEventListener("click", () => callbacks.openAbout());
 
   const handle = PROFILE_LINKS[0]?.url.split("/").pop() ?? "";
