@@ -2687,6 +2687,17 @@ body.is-mobile .bws-search-toggle:hover {
   background: var(--background-modifier-hover);
   color: var(--text-normal);
 }
+body.is-mobile .bws-search-toggle .bws-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+body.is-mobile .bws-search-toggle .bws-btn-icon svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
 body.is-mobile .bws-search-meta {
   padding: 0 14px 2px;
   font-size: 10px;

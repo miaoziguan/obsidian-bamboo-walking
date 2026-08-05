@@ -407,7 +407,9 @@ export class SidebarView extends ItemView {
       searchToggle.addEventListener("click", () => {
         searchToggle.addClass("bws-hidden");
         searchInput.removeClass("bws-hidden");
-        searchInput.focus();
+        // 输入条刚从 display:none 变为可见，需下一帧再 focus，
+        // 否则部分移动端浏览器会忽略对刚渲染元素的 focus
+        window.requestAnimationFrame(() => searchInput.focus());
       });
 
       const clearBtn = searchWrap.createEl("button", {
