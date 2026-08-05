@@ -868,13 +868,19 @@ button.bws-btn-refresh--inline {
   transition: background 0.1s var(--bw-ease), color 0.1s var(--bw-ease), transform 0.1s var(--bw-ease);
 }
 /* 触摸 active 背景反馈：统一在 is-mobile 或粗指针设备上生效 */
+/* 移动端（body.is-mobile）点击反馈 */
 body.is-mobile button.bwr-btn:active,
 body.is-mobile button.bwr-btn-zoom:active,
 body.is-mobile button.bwr-btn-share:active,
 body.is-mobile button.bwr-btn-extract:active,
 body.is-mobile button.bwr-btn-tts-toggle:active,
 body.is-mobile button.bws-author-link:active,
-body.is-mobile .bws-article:active,
+body.is-mobile .bws-article:active {
+  background: color-mix(in srgb, var(--bw-bamboo-pale) 22%, transparent);
+  color: var(--bw-bamboo-deep);
+  border-radius: var(--bw-radius-sm);
+}
+/* 粗指针设备（触摸屏）点击反馈 */
 @media (hover: none) and (pointer: coarse) {
   button.bwr-btn:active,
   button.bwr-btn-zoom:active,
@@ -888,15 +894,21 @@ body.is-mobile .bws-article:active,
     border-radius: var(--bw-radius-sm);
   }
 }
-button.bwr-btn-save:active,
-body.is-mobile button.bwr-btn-save:active,
+/* 保存按钮点击反馈（移动端 + 粗指针） */
+body.is-mobile button.bwr-btn-save:active {
+  background: color-mix(in srgb, var(--bw-bamboo) 18%, transparent);
+  color: var(--bw-white);
+}
 @media (hover: none) and (pointer: coarse) {
   button.bwr-btn-save:active {
     background: color-mix(in srgb, var(--bw-bamboo) 18%, transparent);
     color: var(--bw-white);
   }
 }
-body.is-mobile .bwr-fab-btn:active,
+/* FAB 按钮点击反馈（移动端 + 粗指针） */
+body.is-mobile .bwr-fab-btn:active {
+  transform: scale(0.92);
+}
 @media (hover: none) and (pointer: coarse) {
   .bwr-fab-btn:active { transform: scale(0.92); }
 }
