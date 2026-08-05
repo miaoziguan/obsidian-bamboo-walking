@@ -5,7 +5,6 @@ import {
   PROFILE_BIO,
   PROFILE_LINKS,
   AVATAR_DATA_URI,
-  CONTACT_EMAIL,
 } from "../constants";
 
 export interface AuthorCardCallbacks {
@@ -48,31 +47,22 @@ export function renderAuthorCard(
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setIcon 是 Obsidian 官方 API
     setIcon(ghIco, "github");
   }
+  // 关于入口：折叠为名字行内图标，点击打开关于弹层（内含投稿说明与邮箱）
+  const aboutBtn = nameRow.createEl("button", {
+    cls: "bws-author-gh bws-author-about",
+    attr: { "aria-label": "关于作者与其他平台", title: "关于" },
+  });
+  const aboutIco = aboutBtn.createSpan({ cls: "bw-brand-link-ico-wrap" });
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setIcon 是 Obsidian 官方 API
+  setIcon(aboutIco, "info");
+  aboutBtn.addEventListener("click", () => callbacks.openAbout());
+
   const handle = PROFILE_LINKS[0]?.url.split("/").pop() ?? "";
   idBox.createDiv({ cls: "bws-author-handle", text: handle ? "@" + handle : "" });
 
   // 文字信息区：简介
   const info = card.createDiv({ cls: "bws-author-info" });
   info.createDiv({ cls: "bws-author-bio", text: PROFILE_BIO });
-
-  // 作者连接入口：关于 · 投稿（把读者沉淀到作者其他触点）
-  const linksRow = card.createDiv({ cls: "bws-author-links" });
-  const aboutLink = linksRow.createEl("button", {
-    cls: "bws-author-link",
-    text: "关于",
-    attr: { title: "关于作者与其他平台" },
-  });
-  aboutLink.addEventListener("click", () => callbacks.openAbout());
-  if (CONTACT_EMAIL) {
-    linksRow.createSpan({ cls: "bws-author-link-sep", text: "·" });
-    const submitLink = linksRow.createEl("button", {
-      cls: "bws-author-link",
-      text: "投稿",
-      attr: { title: "投稿 / 联系作者" },
-    });
-    // 投稿也走同一弹层（内含投稿说明与邮箱）
-    submitLink.addEventListener("click", () => callbacks.openAbout());
-  }
 
   // 全站字数汇总（渐进补全，首屏无统计时隐藏）
   const authorStatsEl = card.createDiv({ cls: "bws-author-stats bws-hidden" });

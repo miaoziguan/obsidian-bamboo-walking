@@ -282,37 +282,6 @@ body {
   overflow: hidden;
 }
 
-/* ── 作者连接入口：关于 · 投稿 ── */
-.bws-author-links {
-  display: flex;
-  align-items: center;
-  gap: var(--bw-space-xs);
-  margin-top: 2px;
-}
-
-button.bws-author-link {
-  padding: 0;
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-size: 11px;
-  color: var(--bw-bamboo);
-  opacity: 0.85;
-  transition: opacity 0.15s, color 0.15s;
-}
-
-button.bws-author-link:hover {
-  opacity: 1;
-  color: var(--bw-bamboo-deep);
-  text-decoration: underline;
-}
-
-.bws-author-link-sep {
-  color: var(--text-faint);
-  font-size: 10px;
-  user-select: none;
-}
-
 /* ── 行内 GitHub 小图标（名字/作者后）── */
 .bws-author-name-row {
   display: flex;
@@ -337,6 +306,14 @@ button.bws-author-link:hover {
   opacity: 1;
   text-decoration: none;
   transform: scale(1.12);
+}
+
+/* 关于图标按钮（名字行 GH 图标旁）：button 元素需重置默认边框/背景 */
+button.bws-author-about {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
 }
 
 /* 图标容器（行内） */
@@ -874,7 +851,7 @@ body.is-mobile button.bwr-btn-zoom:active,
 body.is-mobile button.bwr-btn-share:active,
 body.is-mobile button.bwr-btn-extract:active,
 body.is-mobile button.bwr-btn-tts-toggle:active,
-body.is-mobile button.bws-author-link:active,
+body.is-mobile button.bws-author-about:active,
 body.is-mobile .bws-article:active {
   background: color-mix(in srgb, var(--bw-bamboo-pale) 22%, transparent);
   color: var(--bw-bamboo-deep);
@@ -887,7 +864,7 @@ body.is-mobile .bws-article:active {
   button.bwr-btn-share:active,
   button.bwr-btn-extract:active,
   button.bwr-btn-tts-toggle:active,
-  button.bws-author-link:active,
+  button.bws-author-about:active,
   .bws-article:active {
     background: color-mix(in srgb, var(--bw-bamboo-pale) 22%, transparent);
     color: var(--bw-bamboo-deep);
