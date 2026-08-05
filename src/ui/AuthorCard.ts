@@ -49,7 +49,7 @@ export function renderAuthorCard(
   }
   // 关于入口：折叠为名字行内图标，点击打开关于弹层（内含投稿说明与邮箱）
   const aboutBtn = nameRow.createEl("button", {
-    cls: "bws-author-gh bws-author-about",
+    cls: "bws-author-about",
     attr: { "aria-label": "关于作者与其他平台", title: "关于" },
   });
   const aboutIco = aboutBtn.createSpan({ cls: "bw-brand-link-ico-wrap" });

@@ -308,12 +308,24 @@ body {
   transform: scale(1.12);
 }
 
-/* 关于图标按钮（名字行 GH 图标旁）：button 元素需重置默认边框/背景 */
+/* 关于图标按钮（名字行 GH 图标旁）：button 元素需重置默认边框/背景，
+   并显式对齐 GH 图标的颜色，确保两枚行内图标完全一致 */
 button.bws-author-about {
+  display: inline-flex;
+  align-items: center;
   padding: 0;
   border: none;
   background: none;
   cursor: pointer;
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
+button.bws-author-about:hover {
+  color: var(--bw-bamboo);
+  opacity: 1;
+  text-decoration: none;
+  transform: scale(1.12);
 }
 
 /* 图标容器（行内） */
