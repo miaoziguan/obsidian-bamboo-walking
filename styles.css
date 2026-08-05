@@ -2646,9 +2646,6 @@ body.is-mobile .bws-status {
 }
 /* 2) 未读/全部 tab + 刷新：压缩内边距 */
 body.is-mobile .bws-filter-tabs {
-  margin-top: 2px;
-}
-body.is-mobile .bws-filter-tabs {
   padding: 4px 12px 2px;
   margin-top: var(--bw-space-sm);
 }
