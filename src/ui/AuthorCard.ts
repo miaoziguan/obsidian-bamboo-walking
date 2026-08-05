@@ -36,6 +36,16 @@ export function renderAuthorCard(
   const idBox = top.createDiv({ cls: "bws-author-idbox" });
   const nameRow = idBox.createDiv({ cls: "bws-author-name-row" });
   nameRow.createDiv({ cls: "bws-author-name", text: PROFILE_NAME });
+  // 关于入口：折叠为名字行内图标，点击打开关于弹层（内含投稿说明与邮箱）
+  const aboutBtn = nameRow.createEl("button", {
+    cls: "bws-author-about",
+    attr: { "aria-label": "关于作者与其他平台", title: "关于" },
+  });
+  const aboutIco = aboutBtn.createSpan({ cls: "bw-brand-link-ico-wrap" });
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setIcon 是 Obsidian 官方 API
+  setIcon(aboutIco, "user");
+  aboutBtn.addEventListener("click", () => callbacks.openAbout());
+
   const ghUrl = PROFILE_LINKS[0]?.url;
   if (ghUrl) {
     const gh = nameRow.createEl("a", {
@@ -47,15 +57,6 @@ export function renderAuthorCard(
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setIcon 是 Obsidian 官方 API
     setIcon(ghIco, "github");
   }
-  // 关于入口：折叠为名字行内图标，点击打开关于弹层（内含投稿说明与邮箱）
-  const aboutBtn = nameRow.createEl("button", {
-    cls: "bws-author-about",
-    attr: { "aria-label": "关于作者与其他平台", title: "关于" },
-  });
-  const aboutIco = aboutBtn.createSpan({ cls: "bw-brand-link-ico-wrap" });
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setIcon 是 Obsidian 官方 API
-  setIcon(aboutIco, "user");
-  aboutBtn.addEventListener("click", () => callbacks.openAbout());
 
   const handle = PROFILE_LINKS[0]?.url.split("/").pop() ?? "";
   idBox.createDiv({ cls: "bws-author-handle", text: handle ? "@" + handle : "" });
