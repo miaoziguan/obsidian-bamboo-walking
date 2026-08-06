@@ -286,9 +286,6 @@ export class ReaderView extends ItemView {
       this.headingElements.push({ id, el: el as HTMLElement });
     });
 
-    // 文章评论（正文末尾嵌入评论区）
-    void this.renderComments(contentCol);
-
     // 上/下篇导航（基于当前文章在列表中的位置）
     this.renderPrevNext(contentCol);
 
@@ -297,6 +294,9 @@ export class ReaderView extends ItemView {
 
     // 知识回流：本文在你本地知识库（竹叶飞刃）里的相关原子笔记
     void this.renderRelatedNotes(contentCol);
+
+    // 文章评论（正文末尾之后：读完正文与推荐后，再进入评论区互动）
+    void this.renderComments(contentCol);
 
     // 浮动跳转按钮
     const fab = contentCol.createDiv({ cls: "bwr-fab" });
