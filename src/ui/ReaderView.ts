@@ -1072,11 +1072,10 @@ export class ReaderView extends ItemView {
     if (!this.article || this.article.slug !== anchorSlug) return;
 
     const comments = svc.filterBySlug(result.entries, anchorSlug);
-    countEl.setText(comments.length > 0 ? `${comments.length} 条` : "暂无评论");
+    countEl.setText(comments.length > 0 ? `${comments.length} 条` : "");
 
     if (comments.length === 0) {
-      const empty = section.createDiv({ cls: "bwr-comments-list bwr-comments-empty" });
-      empty.createDiv({ text: result.stale ? "暂时无法加载评论" : "还没有评论，来抢沙发。" });
+      // 无评论时不显示任何空态文案，评论区保持干净
       return;
     }
 
