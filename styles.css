@@ -1880,6 +1880,11 @@ button.bw-about-copy-btn:active {
   overflow-y: auto;
   max-height: none;
 }
+.bw-board-view .bw-board-compose {
+  flex: 0 0 auto;
+  overflow-y: auto;
+  max-height: 45%;
+}
 .bw-board-head {
   display: flex;
   align-items: flex-start;
@@ -2574,6 +2579,8 @@ button.bws-btn-retry:hover { opacity: 0.7; }
   min-width: 0;
   background: var(--background-primary);
   position: relative;
+  /* 防止 grid 1fr 行把内容列拉伸到填满可视高度，导致短文章正文后出现大片空白 */
+  align-self: start;
 }
 
 

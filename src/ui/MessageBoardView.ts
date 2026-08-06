@@ -14,8 +14,6 @@ export class MessageBoardView extends ItemView {
   private service: MessageBoardService;
   private listEl: HTMLElement | null = null;
   private statusEl: HTMLElement | null = null;
-  private tokenEl: HTMLInputElement | null = null;
-  private composeWrap: HTMLElement | null = null;
   private loading = false;
 
   constructor(leaf: WorkspaceLeaf, service?: MessageBoardService) {
@@ -50,16 +48,6 @@ export class MessageBoardView extends ItemView {
     this.statusEl = headLeft.createDiv({ cls: "bw-board-status", text: "加载中…" });
 
     const actions = head.createDiv({ cls: "bw-board-actions" });
-    const writeBtn = actions.createEl("button", {
-      cls: "bw-board-btn bw-board-primary",
-      text: "写留言",
-      attr: { "aria-label": "写留言", title: "写留言" },
-    });
-    writeBtn.addEventListener("click", () => {
-      const wasHidden = this.composeWrap?.classList.contains("bw-hidden") ?? true;
-      this.composeWrap?.toggleClass("bw-hidden", !wasHidden);
-      if (wasHidden) this.tokenEl?.focus();
-    });
     const refresh = actions.createEl("button", {
       cls: "bw-board-btn bw-board-refresh",
       text: "刷新",
@@ -75,18 +63,17 @@ export class MessageBoardView extends ItemView {
       window.open(MESSAGE_BOARD_URL, "_blank", "noopener,noreferrer");
     });
 
-    // ── 写留言区（默认收起） ──
-    this.buildCompose(contentEl);
-
-    // ── 留言列表 ──
+    // ── 留言列表（上方，可滚动） ──
     this.listEl = contentEl.createDiv({ cls: "bw-board-list" });
     void this.loadBoard(false);
+
+    // ── 写留言区（底部常显） ──
+    this.buildCompose(contentEl);
   }
 
-  /** 构建写留言区：token 输入 + 标题 + 正文 + 发布 */
+  /** 构建写留言区：token 输入 + 标题 + 正文 + 发布（底部常显） */
   private buildCompose(contentEl: HTMLElement): void {
-    const wrap = contentEl.createDiv({ cls: "bw-board-compose bw-hidden" });
-    this.composeWrap = wrap;
+    const wrap = contentEl.createDiv({ cls: "bw-board-compose" });
 
     const tokenRow = wrap.createDiv({ cls: "bw-board-field" });
     tokenRow.createDiv({ cls: "bw-board-field-label", text: "GitHub Token" });
@@ -96,7 +83,6 @@ export class MessageBoardView extends ItemView {
       attr: { placeholder: "你的 GitHub Personal Access Token（public_repo 权限）" },
     });
     tokenInput.value = this.service.getToken();
-    this.tokenEl = tokenInput;
     wrap.createDiv({ cls: "bw-board-tip", text: "Token 仅保存在本机，用于以你的身份创建留言。" });
 
     const titleRow = wrap.createDiv({ cls: "bw-board-field" });
@@ -135,7 +121,6 @@ export class MessageBoardView extends ItemView {
       try {
         await this.service.createMessage(title, bodyInput.value);
         new Notice("留言已发布");
-        wrap.addClass("bw-hidden");
         titleInput.value = "";
         bodyInput.value = "";
         void this.loadBoard(true);
