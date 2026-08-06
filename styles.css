@@ -1869,9 +1869,24 @@ button.bw-about-copy-btn:active {
   transform: scale(0.92);
 }
 
-/* ═══════════ 留言板弹窗 ═══════════ */
+/* ═══════════ 留言板（主区视图 + 文章评论区共用控件） ═══════════ */
 
-.bw-board-modal .bw-board-head {
+/* 主区留言板视图容器 */
+.bw-board-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.bw-board-view .bw-board-head {
+  flex: 0 0 auto;
+}
+.bw-board-view .bw-board-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  max-height: none;
+}
+.bw-board-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1879,15 +1894,15 @@ button.bw-about-copy-btn:active {
   padding: var(--bw-space-md) var(--bw-space-lg);
   border-bottom: 1px solid var(--background-modifier-border);
 }
-.bw-board-modal .bw-board-head-left {
+.bw-board-head-left {
   min-width: 0;
 }
-.bw-board-modal .bw-board-title-row {
+.bw-board-title-row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.bw-board-modal .bw-board-title-ico {
+.bw-board-title-ico {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1895,23 +1910,23 @@ button.bw-about-copy-btn:active {
   width: 18px;
   height: 18px;
 }
-.bw-board-modal .bw-board-title {
+.bw-board-title {
   font-size: 16px;
   font-weight: 600;
   color: var(--text-normal);
 }
-.bw-board-modal .bw-board-status {
+.bw-board-status {
   margin-top: 2px;
   font-size: 12px;
   color: var(--text-muted);
 }
-.bw-board-modal .bw-board-actions {
+.bw-board-actions {
   display: flex;
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
 }
-.bw-board-modal button.bw-board-btn {
+button.bw-board-btn {
   display: inline-flex;
   align-items: center;
   padding: 4px 12px;
@@ -1924,44 +1939,44 @@ button.bw-about-copy-btn:active {
   cursor: pointer;
   transition: all 0.15s;
 }
-.bw-board-modal button.bw-board-btn:hover {
+button.bw-board-btn:hover {
   background: var(--background-modifier-hover);
 }
-.bw-board-modal button.bw-board-primary {
+button.bw-board-primary {
   background: var(--bw-bamboo);
   border-color: var(--bw-bamboo);
   color: var(--bw-white);
 }
-.bw-board-modal button.bw-board-primary:hover {
+button.bw-board-primary:hover {
   background: var(--bw-bamboo-deep);
   border-color: var(--bw-bamboo-deep);
 }
-.bw-board-modal button.bw-board-secondary {
+button.bw-board-secondary {
   color: var(--text-muted);
 }
-.bw-board-modal button.bw-board-secondary:hover {
+button.bw-board-secondary:hover {
   background: var(--background-modifier-hover);
   color: var(--text-normal);
 }
 
 /* 写留言区 */
-.bw-board-modal .bw-board-compose {
+.bw-board-compose {
   margin: var(--bw-space-sm) var(--bw-space-lg) 0;
   padding: var(--bw-space-md);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--bw-radius);
   background: var(--background-secondary);
 }
-.bw-board-modal .bw-board-field {
+.bw-board-field {
   margin-bottom: var(--bw-space-sm);
 }
-.bw-board-modal .bw-board-field-label {
+.bw-board-field-label {
   font-size: 11.5px;
   font-weight: 600;
   color: var(--text-muted);
   margin-bottom: 3px;
 }
-.bw-board-modal .bw-board-input {
+.bw-board-input {
   width: 100%;
   padding: 5px 8px;
   font-size: 12.5px;
@@ -1970,32 +1985,32 @@ button.bw-about-copy-btn:active {
   background: var(--background-primary);
   color: var(--text-normal);
 }
-.bw-board-modal .bw-board-input:focus {
+.bw-board-input:focus {
   outline: none;
   border-color: var(--bw-bamboo);
 }
-.bw-board-modal .bw-board-textarea {
+.bw-board-textarea {
   resize: vertical;
   min-height: 56px;
   font-family: inherit;
   line-height: 1.5;
 }
-.bw-board-modal .bw-board-tip {
+.bw-board-tip {
   margin-top: -2px;
   margin-bottom: var(--bw-space-sm);
   font-size: 10.5px;
   color: var(--text-faint);
   line-height: 1.5;
 }
-.bw-board-modal .bw-board-submit-row {
+.bw-board-submit-row {
   text-align: right;
 }
-.bw-board-modal .bw-board-list {
+.bw-board-list {
   padding: var(--bw-space-sm) var(--bw-space-lg) var(--bw-space-lg);
   overflow-y: auto;
   max-height: 62vh;
 }
-.bw-board-modal .bw-board-card {
+.bw-board-card {
   padding: var(--bw-space-sm) var(--bw-space-md);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--bw-radius);
@@ -2003,42 +2018,42 @@ button.bw-about-copy-btn:active {
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 }
-.bw-board-modal .bw-board-card:hover {
+.bw-board-card:hover {
   border-color: var(--bw-bamboo);
   background: var(--background-modifier-hover);
 }
-.bw-board-modal .bw-board-meta {
+.bw-board-meta {
   display: flex;
   align-items: center;
   gap: var(--bw-space-sm);
 }
-.bw-board-modal .bw-board-avatar {
+.bw-board-avatar {
   width: 28px;
   height: 28px;
   border-radius: 50%;
   flex: 0 0 auto;
   background: var(--background-modifier-hover);
 }
-.bw-board-modal .bw-board-name-time {
+.bw-board-name-time {
   min-width: 0;
 }
-.bw-board-modal .bw-board-author {
+.bw-board-author {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-normal);
 }
-.bw-board-modal .bw-board-time {
+.bw-board-time {
   font-size: 10.5px;
   color: var(--text-faint);
 }
-.bw-board-modal .bw-board-card-title {
+.bw-board-card-title {
   margin-top: var(--bw-space-xs);
   font-size: 13.5px;
   font-weight: 600;
   color: var(--text-normal);
   line-height: 1.45;
 }
-.bw-board-modal .bw-board-card-body {
+.bw-board-card-body {
   margin-top: 3px;
   font-size: 12.5px;
   color: var(--text-muted);
@@ -2050,17 +2065,17 @@ button.bw-about-copy-btn:active {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.bw-board-modal .bw-board-empty {
+.bw-board-empty {
   text-align: center;
   padding: var(--bw-space-2xl) var(--bw-space-lg);
   color: var(--text-muted);
 }
-.bw-board-modal .bw-board-empty-title {
+.bw-board-empty-title {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-normal);
 }
-.bw-board-modal .bw-board-empty-sub {
+.bw-board-empty-sub {
   margin-top: var(--bw-space-sm);
   font-size: 12.5px;
   line-height: 1.6;
@@ -4435,5 +4450,11 @@ body.is-mobile .bws-author-stats {
   font-variant-numeric: tabular-nums;
   color: var(--text-normal);
   font-weight: 600;
+}
+
+/* ── 弱化 Obsidian 工作区分隔线（让多栏布局更通透、视觉更连贯） ── */
+.workspace-split.mod-vertical {
+  border-right-color: transparent;
+  border-left-color: transparent;
 }
 
