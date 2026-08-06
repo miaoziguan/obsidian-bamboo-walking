@@ -675,11 +675,6 @@ button.bws-btn-refresh--inline {
 
 .bws-article:hover { background: var(--background-modifier-hover); }
 
-/* #3: 未读文章左侧竹青竖条（用 inset box-shadow，不占布局、不影响对齐） */
-.bws-article:not(.is-read) {
-  box-shadow: inset 3px 0 0 var(--bw-bamboo);
-}
-
 /* ── 「新」内容标记：竹青实心圆点 + 胶囊徽章 ── */
 .bws-article.bws-is-new {
   box-shadow: inset 3px 0 0 var(--bw-bamboo-deep);
@@ -725,10 +720,9 @@ button.bws-btn-refresh--inline {
   min-width: 0;
 }
 
-/* #4: 选中态竹青竖条 + 深色背景 */
+/* #4: 选中态深色背景 */
 .bws-article.is-active {
   background: color-mix(in srgb, var(--bw-bamboo-pale) 18%, transparent);
-  box-shadow: inset 3px 0 0 var(--bw-bamboo-deep);
 }
 
 /* #1: 标题行 */
