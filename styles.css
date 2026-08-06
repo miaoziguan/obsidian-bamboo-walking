@@ -2080,6 +2080,9 @@ button.bw-board-secondary:hover {
 .bwr-comments {
   margin-top: var(--bw-space-2xl);
   padding-top: var(--bw-space-lg);
+  /* 与正文对齐：左右留出与 .bwr-body 相同的间距 */
+  padding-left: var(--bw-space-2xl);
+  padding-right: var(--bw-space-2xl);
   border-top: 1px solid var(--background-modifier-border);
 }
 .bwr-comments-head {
