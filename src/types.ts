@@ -34,6 +34,8 @@ export interface CategoryGroup {
 export interface BambooWalkingSettings {
   /** 保存笔记的目标文件夹 */
   savePath: string;
+  /** 留言板用的 GitHub Personal Access Token（读者各自配置，public_repo 权限），存本机 */
+  messageBoardToken: string;
   /** 按 GitHub 手柄（插件仓库所有者）自动发现「我的插件」；每行/每项一个 */
   authorHandles: string[];
 }
@@ -93,6 +95,7 @@ export const VIEW_TYPE_READER = "bamboo-walking-reader";
 /** 读者侧默认配置 */
 export const DEFAULT_SETTINGS: BambooWalkingSettings = {
   savePath: "竹杖芒鞋",
+  messageBoardToken: "",
   authorHandles: ["miaoziguan"],
 };
 

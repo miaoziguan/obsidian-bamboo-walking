@@ -7,6 +7,7 @@ import { GitHubArticleService } from "./services/GitHubArticleService";
 import { LocalArticleService } from "./services/LocalArticleService";
 import { CacheService } from "./services/CacheService";
 import { PluginStatsService } from "./services/PluginStatsService";
+import { MessageBoardService } from "./services/MessageBoardService";
 import { PluginStatsModal } from "./ui/PluginStatsModal";
 import { SidebarView } from "./ui/SidebarView";
 import { ReaderView } from "./ui/ReaderView";
@@ -71,6 +72,8 @@ export default class BambooWalkingPlugin extends Plugin {
   cacheService!: CacheService;
   /** 插件态势服务（侧栏卡与详情弹窗共享） */
   pluginStatsService!: PluginStatsService;
+  /** 留言板服务（读取 + 创建留言；token 存插件 data，读者各自配置） */
+  messageBoardService!: MessageBoardService;
 
   private service!: ArticleService;
   private refreshTimer: number | null = null;
@@ -112,6 +115,15 @@ export default class BambooWalkingPlugin extends Plugin {
     );
     await this.pluginStatsService.init();
 
+    // 留言板服务（读者各自的 GitHub token 存插件 data）
+    this.messageBoardService = new MessageBoardService({
+      getToken: () => this.settings.messageBoardToken,
+      setToken: (t) => {
+        this.settings.messageBoardToken = t;
+        void this.saveSettings();
+      },
+    });
+
     // ── 注册视图 ──
     this.registerView(VIEW_TYPE_SIDEBAR, (leaf) => {
       const view = new SidebarView(leaf);
@@ -121,6 +133,7 @@ export default class BambooWalkingPlugin extends Plugin {
       view.setGetContentFn((slug) => this.cacheService.getCachedArticle(slug)?.content ?? null);
       view.setGetWordCountFn((slug) => this.cacheService.getWordCount(slug));
       view.setPluginStatsService(this.pluginStatsService);
+      view.setMessageBoardService(this.messageBoardService);
       view.setOnReady(() => {
         const idx = this.currentIndex.length > 0
           ? this.currentIndex
@@ -139,6 +152,7 @@ export default class BambooWalkingPlugin extends Plugin {
       view.setOnBack(() => this.focusSidebar());
       view.setGetArticles(() => this.cacheService.getIndex());
       view.setSavePathHint(this.settings.savePath);
+      view.setMessageBoardService(this.messageBoardService);
       view.setOnOpen((slug: string) => {
         const entry = this.cacheService.getIndex().find((e) => e.slug === slug);
         if (entry) void this.openArticle(entry);

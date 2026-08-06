@@ -9,13 +9,16 @@ import { MessageBoardService, type MessageBoardEntry } from "../services/Message
 import { MESSAGE_BOARD_URL } from "../constants";
 
 export class MessageBoardModal extends Modal {
-  private service = new MessageBoardService();
+  private service: MessageBoardService;
   private listEl: HTMLElement | null = null;
   private statusEl: HTMLElement | null = null;
   private entries: MessageBoardEntry[] = [];
+  private tokenEl: HTMLInputElement | null = null;
+  private composeWrap: HTMLElement | null = null;
 
-  constructor(app: App) {
+  constructor(app: App, service?: MessageBoardService) {
     super(app);
+    this.service = service ?? new MessageBoardService();
   }
 
   onOpen(): void {
@@ -34,6 +37,18 @@ export class MessageBoardModal extends Modal {
     this.statusEl = headLeft.createDiv({ cls: "bw-board-status", text: "加载中…" });
 
     const actions = head.createDiv({ cls: "bw-board-actions" });
+    const writeBtn = actions.createEl("button", {
+      cls: "bw-board-btn bw-board-primary",
+      text: "写留言",
+      attr: { "aria-label": "写留言", title: "写留言" },
+    });
+    writeBtn.addEventListener("click", () => {
+      const wasHidden = this.composeWrap?.classList.contains("bw-hidden") ?? true;
+      this.composeWrap?.toggleClass("bw-hidden", !wasHidden);
+      if (wasHidden) {
+        this.tokenEl?.focus();
+      }
+    });
     const refresh = actions.createEl("button", {
       cls: "bw-board-btn bw-board-refresh",
       text: "刷新",
@@ -41,18 +56,92 @@ export class MessageBoardModal extends Modal {
     });
     refresh.addEventListener("click", () => void this.load(true));
     const goGithub = actions.createEl("button", {
-      cls: "bw-board-btn bw-board-primary",
-      text: "去 GitHub 留言",
+      cls: "bw-board-btn bw-board-secondary",
+      text: "GitHub",
       attr: { "aria-label": "在 GitHub 留言", title: "在 GitHub 留言" },
     });
     goGithub.addEventListener("click", () => {
-      // 读者主动点击：打开仓库 Issues 页（本插件内容，无剪贴板读取）
       window.open(MESSAGE_BOARD_URL, "_blank", "noopener,noreferrer");
     });
+
+    // ── 写留言区（默认收起） ──
+    this.buildCompose(contentEl);
 
     // ── 留言列表 ──
     this.listEl = contentEl.createDiv({ cls: "bw-board-list" });
     void this.load(false);
+  }
+
+  /** 构建写留言区：token 输入 + 标题 + 正文 + 提交 */
+  private buildCompose(contentEl: HTMLElement): void {
+    const wrap = contentEl.createDiv({ cls: "bw-board-compose bw-hidden" });
+    this.composeWrap = wrap;
+
+    // Token 输入（读者自己的 GitHub PAT，需 public_repo 权限）
+    const tokenRow = wrap.createDiv({ cls: "bw-board-field" });
+    tokenRow.createDiv({ cls: "bw-board-field-label", text: "GitHub Token" });
+    const tokenInput = tokenRow.createEl("input", {
+      type: "password",
+      cls: "bw-board-input",
+      attr: { placeholder: "输入你的 GitHub Personal Access Token（public_repo 权限）" },
+    });
+    tokenInput.value = this.service.getToken();
+    this.tokenEl = tokenInput;
+    // Token 仅保存在本机，用于以你的身份创建留言
+    wrap.createDiv({ cls: "bw-board-tip", text: "Token 仅保存在本机，用于以你的身份创建留言。" });
+
+    // 标题
+    const titleRow = wrap.createDiv({ cls: "bw-board-field" });
+    titleRow.createDiv({ cls: "bw-board-field-label", text: "标题" });
+    const titleInput = titleRow.createEl("input", {
+      type: "text",
+      cls: "bw-board-input",
+      attr: { placeholder: "留言标题" },
+    });
+
+    // 正文
+    const bodyRow = wrap.createDiv({ cls: "bw-board-field" });
+    bodyRow.createDiv({ cls: "bw-board-field-label", text: "内容" });
+    const bodyInput = wrap.createEl("textarea", {
+      cls: "bw-board-input bw-board-textarea",
+      attr: { placeholder: "留言内容（选填）", rows: "3" },
+    });
+
+    const submitRow = wrap.createDiv({ cls: "bw-board-submit-row" });
+    const submit = submitRow.createEl("button", {
+      cls: "bw-board-btn bw-board-primary",
+      text: "发布留言",
+    });
+
+    let submitting = false;
+    submit.addEventListener("click", async () => {
+      if (submitting) return;
+      // 保存 token（有值才存，避免清空）
+      const token = tokenInput.value.trim();
+      if (token) {
+        this.service.setToken(token);
+      }
+      const title = titleInput.value.trim();
+      if (!title) {
+        new Notice("请填写留言标题");
+        return;
+      }
+      submitting = true;
+      submit.setText("发布中…");
+      try {
+        await this.service.createMessage(title, bodyInput.value);
+        new Notice("留言已发布");
+        wrap.addClass("bw-hidden");
+        titleInput.value = "";
+        bodyInput.value = "";
+        void this.load(true);
+      } catch (e) {
+        new Notice((e as Error).message ?? "发布失败");
+      } finally {
+        submitting = false;
+        submit.setText("发布留言");
+      }
+    });
   }
 
   private async load(force: boolean): Promise<void> {

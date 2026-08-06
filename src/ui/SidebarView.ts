@@ -5,6 +5,7 @@ import { VIEW_TYPE_SIDEBAR } from "../types";
 import { AboutModal } from "./AboutModal";
 import { MessageBoardModal } from "./MessageBoardModal";
 import type { PluginStatsService } from "../services/PluginStatsService";
+import type { MessageBoardService } from "../services/MessageBoardService";
 import { renderAuthorCard } from "./AuthorCard";
 import { StrategyMiniCard } from "./StrategyMiniCard";
 import { PluginStatsCard } from "./PluginStatsCard";
@@ -50,6 +51,8 @@ export class SidebarView extends ItemView {
   private pluginStatsCard: PluginStatsCard = new PluginStatsCard(this.app);
   /** 插件态势服务（由 main 注入；为 null 时卡片降级为不可点） */
   private pluginStatsService: PluginStatsService | null = null;
+  /** 留言板服务（由 main 注入，共享 token 存取） */
+  private messageBoardService: MessageBoardService | null = null;
 
   getViewType(): string { return VIEW_TYPE_SIDEBAR; }
   getDisplayText(): string { return "竹杖芒鞋"; }
@@ -66,6 +69,11 @@ export class SidebarView extends ItemView {
   setPluginStatsService(svc: PluginStatsService): void {
     this.pluginStatsService = svc;
     this.pluginStatsCard.setService(svc);
+  }
+
+  /** 注入留言板服务（main -> 视图，共享 token 存取） */
+  setMessageBoardService(svc: MessageBoardService): void {
+    this.messageBoardService = svc;
   }
 
   /** 持久状态栏：显示最近一次刷新结果。
@@ -275,7 +283,8 @@ export class SidebarView extends ItemView {
     const header = contentEl.createDiv({ cls: "bws-header" });
     const authorRefs = renderAuthorCard(header, {
       openAbout: () => new AboutModal(this.app).open(),
-      openMessageBoard: () => new MessageBoardModal(this.app).open(),
+      openMessageBoard: () =>
+        new MessageBoardModal(this.app, this.messageBoardService ?? undefined).open(),
     });
     this.authorStatsEl = authorRefs.authorStatsEl;
     this.strategyMiniCard.render(header);

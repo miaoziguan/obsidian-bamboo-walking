@@ -1936,6 +1936,60 @@ button.bw-about-copy-btn:active {
   background: var(--bw-bamboo-deep);
   border-color: var(--bw-bamboo-deep);
 }
+.bw-board-modal button.bw-board-secondary {
+  color: var(--text-muted);
+}
+.bw-board-modal button.bw-board-secondary:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* 写留言区 */
+.bw-board-modal .bw-board-compose {
+  margin: var(--bw-space-sm) var(--bw-space-lg) 0;
+  padding: var(--bw-space-md);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--bw-radius);
+  background: var(--background-secondary);
+}
+.bw-board-modal .bw-board-field {
+  margin-bottom: var(--bw-space-sm);
+}
+.bw-board-modal .bw-board-field-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+.bw-board-modal .bw-board-input {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 12.5px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--bw-radius-sm);
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+.bw-board-modal .bw-board-input:focus {
+  outline: none;
+  border-color: var(--bw-bamboo);
+}
+.bw-board-modal .bw-board-textarea {
+  resize: vertical;
+  min-height: 56px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+.bw-board-modal .bw-board-tip {
+  margin-top: -2px;
+  margin-bottom: var(--bw-space-sm);
+  font-size: 10.5px;
+  color: var(--text-faint);
+  line-height: 1.5;
+}
+.bw-board-modal .bw-board-submit-row {
+  text-align: right;
+}
 .bw-board-modal .bw-board-list {
   padding: var(--bw-space-sm) var(--bw-space-lg) var(--bw-space-lg);
   overflow-y: auto;

@@ -11,6 +11,7 @@ import { requestUrl } from "obsidian";
 import {
   MESSAGE_BOARD_API_URL,
   MESSAGE_BOARD_CACHE_MS,
+  MESSAGE_BOARD_LABEL,
   MESSAGE_BOARD_REPO,
   MESSAGE_BOARD_OWNER,
 } from "../constants";
@@ -53,8 +54,65 @@ interface GitHubIssue {
   pull_request?: unknown;
 }
 
+export interface MessageBoardTokenStore {
+  getToken: () => string;
+  setToken: (token: string) => void;
+}
+
 export class MessageBoardService {
   private cache: { entries: MessageBoardEntry[]; fetchedAt: number } | null = null;
+
+  constructor(private tokenStore?: MessageBoardTokenStore) {}
+
+  /** 读取已保存的 token（读者自己的 GitHub PAT，需 public_repo 权限） */
+  getToken(): string {
+    return this.tokenStore?.getToken() ?? "";
+  }
+
+  /** 保存 token 到插件本地 data */
+  setToken(token: string): void {
+    this.tokenStore?.setToken(token);
+  }
+
+  /**
+   * 创建一条留言（GitHub issue）。需要读者自己的 token 认证。
+   * @returns 成功返回新 issue 的 URL；失败抛出含信息 Error。
+   */
+  async createMessage(title: string, body: string): Promise<string> {
+    const token = this.getToken().trim();
+    if (!token) {
+      throw new Error("尚未配置 GitHub Token，请先填写");
+    }
+    if (!title.trim()) {
+      throw new Error("留言标题不能为空");
+    }
+    const resp = await requestUrl({
+      url: `https://api.github.com/repos/${MESSAGE_BOARD_OWNER}/${MESSAGE_BOARD_REPO}/issues`,
+      method: "POST",
+      headers: {
+        Authorization: `token ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title: title.trim(),
+        body: body.trim() || undefined,
+        labels: [MESSAGE_BOARD_LABEL],
+      }),
+      throw: false,
+    });
+    if (resp.status !== 201) {
+      // 401/403 = token 无效/无权限；429 = 限流
+      const hint =
+        resp.status === 401 || resp.status === 403
+          ? "Token 无效或无 public_repo 权限，请检查"
+          : resp.status === 429
+            ? "GitHub 请求过于频繁，请稍后再试"
+            : `创建失败（GitHub ${resp.status}）`;
+      throw new Error(hint);
+    }
+    const data = resp.json as { html_url?: string };
+    return data.html_url ?? `https://github.com/${MESSAGE_BOARD_OWNER}/${MESSAGE_BOARD_REPO}/issues`;
+  }
 
   /**
    * 拉取留言。force=false 时命中 5 分钟本地缓存即返回；

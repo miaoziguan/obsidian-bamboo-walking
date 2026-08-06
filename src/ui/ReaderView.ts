@@ -8,6 +8,7 @@ import { ShareModal } from "./ShareModal";
 import { MessageBoardModal } from "./MessageBoardModal";
 import { TtsControls } from "./TtsControls";
 import { getAtomicNotesApi, buildExtractionText, findRelatedNotes } from "../services/AtomicNotesBridge";
+import type { MessageBoardService } from "../services/MessageBoardService";
 import { getBambooImmortalsApi, refineQuoteToGoal } from "../services/BambooReviewBridge";
 
 interface TocEntry {
@@ -24,6 +25,7 @@ export class ReaderView extends ItemView {
   private onBack: (() => void) | null = null;
   private getArticles: (() => ArticleIndexEntry[]) | null = null;
   private onOpenArticle: ((slug: string) => void) | null = null;
+  private messageBoardService: MessageBoardService | null = null;
   private tocElements = new Map<string, HTMLElement>();
   private headingElements: { id: string; el: HTMLElement }[] = [];
   private tocProgressBar: HTMLElement | null = null;
@@ -78,6 +80,8 @@ export class ReaderView extends ItemView {
   setGetArticles(cb: () => ArticleIndexEntry[]): void { this.getArticles = cb; }
   setOnOpen(cb: (slug: string) => void): void { this.onOpenArticle = cb; }
   setSavePathHint(hint: string): void { this._savePathHint = hint; }
+  /** 注入留言板服务（main -> 视图，共享 token 存取） */
+  setMessageBoardService(svc: MessageBoardService): void { this.messageBoardService = svc; }
   private _savePathHint = "竹杖芒鞋/";
   private getSavePathHint(): string { return this._savePathHint; }
 
@@ -608,7 +612,9 @@ export class ReaderView extends ItemView {
       attr: { "aria-label": "打开留言板", title: "留言板" },
     });
     this.appendIcon(boardBtn, "M3 4h12v7H7l-4 3V4zM15 9h2l4 3v7h-4v-2");
-    boardBtn.addEventListener("click", () => new MessageBoardModal(this.app).open());
+    boardBtn.addEventListener("click", () =>
+      new MessageBoardModal(this.app, this.messageBoardService ?? undefined).open(),
+    );
 
     // 更多（•••）：弹出操作菜单
     const moreBtn = bar.createEl("button", {
