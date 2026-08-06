@@ -1869,6 +1869,149 @@ button.bw-about-copy-btn:active {
   transform: scale(0.92);
 }
 
+/* ═══════════ 留言板弹窗 ═══════════ */
+
+.bw-board-modal .bw-board-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--bw-space-md);
+  padding: var(--bw-space-md) var(--bw-space-lg);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.bw-board-modal .bw-board-head-left {
+  min-width: 0;
+}
+.bw-board-modal .bw-board-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bw-board-modal .bw-board-title-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bw-bamboo);
+  width: 18px;
+  height: 18px;
+}
+.bw-board-modal .bw-board-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+.bw-board-modal .bw-board-status {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.bw-board-modal .bw-board-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.bw-board-modal button.bw-board-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--bw-radius);
+  background: none;
+  color: var(--text-normal);
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.bw-board-modal button.bw-board-btn:hover {
+  background: var(--background-modifier-hover);
+}
+.bw-board-modal button.bw-board-primary {
+  background: var(--bw-bamboo);
+  border-color: var(--bw-bamboo);
+  color: var(--bw-white);
+}
+.bw-board-modal button.bw-board-primary:hover {
+  background: var(--bw-bamboo-deep);
+  border-color: var(--bw-bamboo-deep);
+}
+.bw-board-modal .bw-board-list {
+  padding: var(--bw-space-sm) var(--bw-space-lg) var(--bw-space-lg);
+  overflow-y: auto;
+  max-height: 62vh;
+}
+.bw-board-modal .bw-board-card {
+  padding: var(--bw-space-sm) var(--bw-space-md);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--bw-radius);
+  margin-bottom: var(--bw-space-sm);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.bw-board-modal .bw-board-card:hover {
+  border-color: var(--bw-bamboo);
+  background: var(--background-modifier-hover);
+}
+.bw-board-modal .bw-board-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--bw-space-sm);
+}
+.bw-board-modal .bw-board-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--background-modifier-hover);
+}
+.bw-board-modal .bw-board-name-time {
+  min-width: 0;
+}
+.bw-board-modal .bw-board-author {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+.bw-board-modal .bw-board-time {
+  font-size: 10.5px;
+  color: var(--text-faint);
+}
+.bw-board-modal .bw-board-card-title {
+  margin-top: var(--bw-space-xs);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-normal);
+  line-height: 1.45;
+}
+.bw-board-modal .bw-board-card-body {
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.bw-board-modal .bw-board-empty {
+  text-align: center;
+  padding: var(--bw-space-2xl) var(--bw-space-lg);
+  color: var(--text-muted);
+}
+.bw-board-modal .bw-board-empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+.bw-board-modal .bw-board-empty-sub {
+  margin-top: var(--bw-space-sm);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
 /* ═══════════ 暗色模式精调 ═══════════ */
 
 /* 暗色竹青 —— 提高亮度与饱和度，确保对比度 */

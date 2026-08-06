@@ -9,6 +9,7 @@ import {
 
 export interface AuthorCardCallbacks {
   openAbout: () => void;
+  openMessageBoard: () => void;
 }
 
 export interface AuthorCardRefs {
@@ -45,6 +46,16 @@ export function renderAuthorCard(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setIcon 是 Obsidian 官方 API
   setIcon(aboutIco, "user");
   aboutBtn.addEventListener("click", () => callbacks.openAbout());
+
+  // 留言板入口：名字行内图标，点击打开留言板弹窗
+  const boardBtn = nameRow.createEl("button", {
+    cls: "bws-author-gh bws-author-about",
+    attr: { "aria-label": "打开留言板", title: "留言板" },
+  });
+  const boardIco = boardBtn.createSpan({ cls: "bw-brand-link-ico-wrap" });
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setIcon 是 Obsidian 官方 API
+  setIcon(boardIco, "message-square");
+  boardBtn.addEventListener("click", () => callbacks.openMessageBoard());
 
   const ghUrl = PROFILE_LINKS[0]?.url;
   if (ghUrl) {

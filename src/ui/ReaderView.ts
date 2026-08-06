@@ -5,6 +5,7 @@ import { VIEW_TYPE_READER } from "../types";
 import { AUTHOR_NAME } from "../constants";
 import { countWords, formatWordCount, estimateReadingTime } from "../utils/text";
 import { ShareModal } from "./ShareModal";
+import { MessageBoardModal } from "./MessageBoardModal";
 import { TtsControls } from "./TtsControls";
 import { getAtomicNotesApi, buildExtractionText, findRelatedNotes } from "../services/AtomicNotesBridge";
 import { getBambooImmortalsApi, refineQuoteToGoal } from "../services/BambooReviewBridge";
@@ -600,6 +601,14 @@ export class ReaderView extends ItemView {
     this.appendIcon(ttsBtn, "M3 6v4h3l4 3V3L6 6H3zM11 6.5a3 3 0 010 5M13 4a6 6 0 010 8");
     ttsBtn.addEventListener("click", () => this.ttsControls.toggleBar());
     this.ttsControls.setPlayBtn(ttsBtn);
+
+    // 留言板（图标）：打开留言板弹窗
+    const boardBtn = bar.createEl("button", {
+      cls: "bwr-btn bwr-btn-micon bwr-btn-board",
+      attr: { "aria-label": "打开留言板", title: "留言板" },
+    });
+    this.appendIcon(boardBtn, "M3 4h12v7H7l-4 3V4zM15 9h2l4 3v7h-4v-2");
+    boardBtn.addEventListener("click", () => new MessageBoardModal(this.app).open());
 
     // 更多（•••）：弹出操作菜单
     const moreBtn = bar.createEl("button", {

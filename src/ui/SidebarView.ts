@@ -3,6 +3,7 @@ import { ItemView, setIcon } from "obsidian";
 import type { ArticleIndexEntry, CategoryGroup } from "../types";
 import { VIEW_TYPE_SIDEBAR } from "../types";
 import { AboutModal } from "./AboutModal";
+import { MessageBoardModal } from "./MessageBoardModal";
 import type { PluginStatsService } from "../services/PluginStatsService";
 import { renderAuthorCard } from "./AuthorCard";
 import { StrategyMiniCard } from "./StrategyMiniCard";
@@ -274,6 +275,7 @@ export class SidebarView extends ItemView {
     const header = contentEl.createDiv({ cls: "bws-header" });
     const authorRefs = renderAuthorCard(header, {
       openAbout: () => new AboutModal(this.app).open(),
+      openMessageBoard: () => new MessageBoardModal(this.app).open(),
     });
     this.authorStatsEl = authorRefs.authorStatsEl;
     this.strategyMiniCard.render(header);
