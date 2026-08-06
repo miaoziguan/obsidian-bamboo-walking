@@ -1003,9 +1003,6 @@ export class ReaderView extends ItemView {
 
     const section = container.createDiv({ cls: "bwr-comments" });
     const head = section.createDiv({ cls: "bwr-comments-head" });
-    const titleEl = head.createDiv({ cls: "bwr-comments-title" });
-    this.appendIcon(titleEl, "M3 4h12v7H7l-4 3V4z");
-    titleEl.createSpan({ text: "评论" });
     const countEl = head.createDiv({ cls: "bwr-comments-count", text: "…" });
 
     // 写评论入口
