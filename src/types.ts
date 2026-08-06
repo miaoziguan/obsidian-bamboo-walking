@@ -91,6 +91,7 @@ interface CachedArticle {
 /** 视图类型常量 */
 export const VIEW_TYPE_SIDEBAR = "bamboo-walking-sidebar";
 export const VIEW_TYPE_READER = "bamboo-walking-reader";
+export const VIEW_TYPE_MESSAGE_BOARD = "bamboo-walking-message-board";
 
 /** 读者侧默认配置 */
 export const DEFAULT_SETTINGS: BambooWalkingSettings = {

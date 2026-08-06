@@ -153,6 +153,12 @@ export const MESSAGE_BOARD_REPO = GITHUB_REPO;
 /** 留言板统一标签（GitHub Issues 上用该标签区分留言） */
 export const MESSAGE_BOARD_LABEL = "留言板";
 
+/** 文章评论统一标签（GitHub Issues 上用该标签区分文章评论） */
+export const MESSAGE_COMMENT_LABEL = "评论";
+
+/** 文章评论 body 中的 slug 元数据键（frontmatter 格式：slug: xxx） */
+export const MESSAGE_SLUG_KEY = "slug";
+
 /** 留言板 Issues 页 URL（读者发言入口） */
 export const MESSAGE_BOARD_URL =
   `https://github.com/${MESSAGE_BOARD_OWNER}/${MESSAGE_BOARD_REPO}/issues?q=is%3Aissue+label%3A${encodeURIComponent(MESSAGE_BOARD_LABEL)}`;

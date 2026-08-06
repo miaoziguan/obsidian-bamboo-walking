@@ -1,28 +1,31 @@
 /* ────────────── 留言板服务 ────────────── */
 /*
- * 留言板用「内容仓库」的 GitHub Issues 承载，一条留言 = 一个 issue（统一标签）。
- * 插件内调 GitHub 公开 API 拉取并展示；读者想发言则跳转 GitHub Issues 页。
+ * 留言板与文章评论都用「内容仓库」的 GitHub Issues 承载，一条留言/评论 = 一个 issue。
+ *  - 全局留言：标签「留言板」
+ *  - 文章评论：标签「评论」，body 首行带 slug 元数据（slug: xxx）关联文章
+ * 插件内调 GitHub 公开 API 拉取并展示；读者想发言则填自己的 token 在插件内创建。
  *
- * 纯客户端、零后端、无需 token。无 token 的 GitHub API 限流 60 次/小时，
- * 因此做本地缓存（默认 5 分钟）应对；任何异常都降级到上次缓存，不影响主功能。
+ * 纯客户端、零后端。无 token 的 GitHub API 限流 60 次/小时，
+ * 按标签分开做本地缓存（默认 5 分钟）应对；任何异常都降级到上次缓存。
  */
 
 import { requestUrl } from "obsidian";
 import {
-  MESSAGE_BOARD_API_URL,
   MESSAGE_BOARD_CACHE_MS,
   MESSAGE_BOARD_LABEL,
+  MESSAGE_COMMENT_LABEL,
+  MESSAGE_SLUG_KEY,
   MESSAGE_BOARD_REPO,
   MESSAGE_BOARD_OWNER,
 } from "../constants";
 
-/** 单条留言 */
+/** 单条留言/评论 */
 export interface MessageBoardEntry {
   /** GitHub issue 编号 */
   number: number;
-  /** 留言标题（issue 标题） */
+  /** 标题（issue 标题） */
   title: string;
-  /** 留言正文（issue body） */
+  /** 正文（issue body，已剥离 slug 元数据） */
   body: string;
   /** 发言者名字 */
   author: string;
@@ -30,8 +33,10 @@ export interface MessageBoardEntry {
   authorAvatar: string;
   /** 创建时间 ISO 字符串 */
   createdAt: string;
-  /** 该留言的 GitHub 链接 */
+  /** 该条目的 GitHub 链接 */
   url: string;
+  /** 关联的文章 slug（文章评论才有；全局留言为空） */
+  slug?: string;
 }
 
 /** 拉取结果 */
@@ -39,8 +44,14 @@ export interface MessageBoardResult {
   entries: MessageBoardEntry[];
   /** 是否降级缓存（离线/超时/失败，读到的是旧数据） */
   stale: boolean;
-  /** 数据来源时间（成功拉取或缓存命中时间） */
+  /** 数据来源时间 */
   fetchedAt: number;
+}
+
+/** 创建留言/评论的参数 */
+export interface CreateMessageOptions {
+  /** 关联文章 slug：传入则创建「文章评论」（评论标签 + body 带 slug）；省略则创建「全局留言」（留言板标签） */
+  slug?: string;
 }
 
 /** GitHub Issues API 单条结构（仅取用字段） */
@@ -60,7 +71,8 @@ export interface MessageBoardTokenStore {
 }
 
 export class MessageBoardService {
-  private cache: { entries: MessageBoardEntry[]; fetchedAt: number } | null = null;
+  /** 按标签分开的缓存：label -> { entries, fetchedAt } */
+  private caches = new Map<string, { entries: MessageBoardEntry[]; fetchedAt: number }>();
 
   constructor(private tokenStore?: MessageBoardTokenStore) {}
 
@@ -74,18 +86,98 @@ export class MessageBoardService {
     this.tokenStore?.setToken(token);
   }
 
+  /** 依据标签构造拉取 URL（一次只拉一个标签，对限流友好） */
+  private buildApiUrl(label: string): string {
+    return (
+      `https://api.github.com/repos/${MESSAGE_BOARD_OWNER}/${MESSAGE_BOARD_REPO}/issues` +
+      `?state=all&labels=${encodeURIComponent(label)}&sort=updated&direction=desc&per_page=100`
+    );
+  }
+
+  /** 解析 issue body 里的 slug 元数据：取 frontmatter 格式的 slug: xxx，并返回剥离后的正文 */
+  private parseSlug(body: string): { slug?: string; content: string } {
+    const firstLine = body.split("\n")[0]?.trim() ?? "";
+    if (firstLine.startsWith(`${MESSAGE_SLUG_KEY}:`)) {
+      const slug = firstLine.slice(MESSAGE_SLUG_KEY.length + 1).trim();
+      const rest = body.split("\n").slice(1).join("\n").replace(/^\s*-+\s*\n?/, "").trim();
+      return { slug: slug || undefined, content: rest };
+    }
+    return { slug: undefined, content: body.trim() };
+  }
+
   /**
-   * 创建一条留言（GitHub issue）。需要读者自己的 token 认证。
+   * 拉取指定标签的留言/评论。force=false 时命中 5 分钟本地缓存即返回；
+   * 网络失败降级到旧缓存（stale=true），无缓存则返回空。
+   * @param label 要拉取的标签（MESSAGE_BOARD_LABEL=全局留言 / MESSAGE_COMMENT_LABEL=文章评论）
+   */
+  async fetchMessages(label: string, force = false): Promise<MessageBoardResult> {
+    const now = Date.now();
+    const cached = this.caches.get(label);
+    if (!force && cached && now - cached.fetchedAt < MESSAGE_BOARD_CACHE_MS) {
+      return { entries: cached.entries, stale: false, fetchedAt: cached.fetchedAt };
+    }
+
+    try {
+      const resp = await requestUrl({
+        url: this.buildApiUrl(label),
+        method: "GET",
+        throw: false,
+      });
+      if (resp.status !== 200) {
+        throw new Error(`GitHub API ${resp.status}`);
+      }
+      const list = resp.json as GitHubIssue[];
+      const entries: MessageBoardEntry[] = list
+        .filter((i) => !i.pull_request)
+        .map((i) => {
+          const rawBody = i.body ?? "";
+          const { slug, content } = this.parseSlug(rawBody);
+          return {
+            number: i.number ?? 0,
+            title: i.title ?? "",
+            body: content,
+            author: i.user?.login ?? "unknown",
+            authorAvatar: i.user?.avatar_url ?? "",
+            createdAt: i.created_at ?? "",
+            url: i.html_url ?? `https://github.com/${MESSAGE_BOARD_OWNER}/${MESSAGE_BOARD_REPO}/issues/${i.number ?? ""}`,
+            ...(slug ? { slug } : {}),
+          };
+        });
+      this.caches.set(label, { entries, fetchedAt: now });
+      return { entries, stale: false, fetchedAt: now };
+    } catch {
+      // 降级到旧缓存
+      if (cached) {
+        return { entries: cached.entries, stale: true, fetchedAt: cached.fetchedAt };
+      }
+      return { entries: [], stale: true, fetchedAt: now };
+    }
+  }
+
+  /** 按文章 slug 过滤评论（在已拉取的「评论」条目上过滤，无需额外请求） */
+  filterBySlug(entries: MessageBoardEntry[], slug: string): MessageBoardEntry[] {
+    return entries.filter((e) => e.slug === slug);
+  }
+
+  /**
+   * 创建一条留言或文章评论（GitHub issue）。需要读者自己的 token 认证。
+   * opts.slug 传入则创建文章评论（评论标签 + body 带 slug），否则创建全局留言（留言板标签）。
    * @returns 成功返回新 issue 的 URL；失败抛出含信息 Error。
    */
-  async createMessage(title: string, body: string): Promise<string> {
+  async createMessage(title: string, body: string, opts?: CreateMessageOptions): Promise<string> {
     const token = this.getToken().trim();
     if (!token) {
       throw new Error("尚未配置 GitHub Token，请先填写");
     }
     if (!title.trim()) {
-      throw new Error("留言标题不能为空");
+      throw new Error("标题不能为空");
     }
+    const label = opts?.slug ? MESSAGE_COMMENT_LABEL : MESSAGE_BOARD_LABEL;
+    // 文章评论：body 首行插入 slug 元数据；全局留言：纯内容
+    const issueBody = opts?.slug
+      ? `${MESSAGE_SLUG_KEY}: ${opts.slug}\n---\n${body.trim()}`
+      : body.trim();
+
     const resp = await requestUrl({
       url: `https://api.github.com/repos/${MESSAGE_BOARD_OWNER}/${MESSAGE_BOARD_REPO}/issues`,
       method: "POST",
@@ -95,13 +187,12 @@ export class MessageBoardService {
       },
       body: JSON.stringify({
         title: title.trim(),
-        body: body.trim() || undefined,
-        labels: [MESSAGE_BOARD_LABEL],
+        body: issueBody || undefined,
+        labels: [label],
       }),
       throw: false,
     });
     if (resp.status !== 201) {
-      // 401/403 = token 无效/无权限；429 = 限流
       const hint =
         resp.status === 401 || resp.status === 403
           ? "Token 无效或无 public_repo 权限，请检查"
@@ -112,47 +203,5 @@ export class MessageBoardService {
     }
     const data = resp.json as { html_url?: string };
     return data.html_url ?? `https://github.com/${MESSAGE_BOARD_OWNER}/${MESSAGE_BOARD_REPO}/issues`;
-  }
-
-  /**
-   * 拉取留言。force=false 时命中 5 分钟本地缓存即返回；
-   * 网络失败降级到旧缓存（stale=true），无缓存则返回空。
-   */
-  async fetchMessages(force = false): Promise<MessageBoardResult> {
-    const now = Date.now();
-    if (!force && this.cache && now - this.cache.fetchedAt < MESSAGE_BOARD_CACHE_MS) {
-      return { entries: this.cache.entries, stale: false, fetchedAt: this.cache.fetchedAt };
-    }
-
-    try {
-      const resp = await requestUrl({
-        url: MESSAGE_BOARD_API_URL,
-        method: "GET",
-        throw: false,
-      });
-      if (resp.status !== 200) {
-        throw new Error(`GitHub API ${resp.status}`);
-      }
-      const list = resp.json as GitHubIssue[];
-      const entries: MessageBoardEntry[] = list
-        .filter((i) => !i.pull_request)
-        .map((i) => ({
-          number: i.number ?? 0,
-          title: i.title ?? "",
-          body: i.body ?? "",
-          author: i.user?.login ?? "unknown",
-          authorAvatar: i.user?.avatar_url ?? "",
-          createdAt: i.created_at ?? "",
-          url: i.html_url ?? `https://github.com/${MESSAGE_BOARD_OWNER}/${MESSAGE_BOARD_REPO}/issues/${i.number ?? ""}`,
-        }));
-      this.cache = { entries, fetchedAt: now };
-      return { entries, stale: false, fetchedAt: now };
-    } catch {
-      // 降级到旧缓存
-      if (this.cache) {
-        return { entries: this.cache.entries, stale: true, fetchedAt: this.cache.fetchedAt };
-      }
-      return { entries: [], stale: true, fetchedAt: now };
-    }
   }
 }

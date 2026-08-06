@@ -1,14 +1,14 @@
 /* ────────────── 主区域：文章阅读视图 ────────────── */
 import { ItemView, WorkspaceLeaf, MarkdownRenderer, Component, Notice, Menu, setIcon } from "obsidian";
 import type { Article, ArticleIndexEntry } from "../types";
-import { VIEW_TYPE_READER } from "../types";
+import { VIEW_TYPE_READER, VIEW_TYPE_MESSAGE_BOARD } from "../types";
 import { AUTHOR_NAME } from "../constants";
 import { countWords, formatWordCount, estimateReadingTime } from "../utils/text";
 import { ShareModal } from "./ShareModal";
-import { MessageBoardModal } from "./MessageBoardModal";
 import { TtsControls } from "./TtsControls";
 import { getAtomicNotesApi, buildExtractionText, findRelatedNotes } from "../services/AtomicNotesBridge";
-import type { MessageBoardService } from "../services/MessageBoardService";
+import { MESSAGE_COMMENT_LABEL } from "../constants";
+import type { MessageBoardService, MessageBoardEntry } from "../services/MessageBoardService";
 import { getBambooImmortalsApi, refineQuoteToGoal } from "../services/BambooReviewBridge";
 
 interface TocEntry {
@@ -82,6 +82,18 @@ export class ReaderView extends ItemView {
   setSavePathHint(hint: string): void { this._savePathHint = hint; }
   /** 注入留言板服务（main -> 视图，共享 token 存取） */
   setMessageBoardService(svc: MessageBoardService): void { this.messageBoardService = svc; }
+
+  /** 在主区打开全局留言板页面 */
+  private openMessageBoardView(): void {
+    const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_MESSAGE_BOARD)[0];
+    if (existing) {
+      this.app.workspace.revealLeaf(existing);
+      this.app.workspace.setActiveLeaf(existing, { focus: true });
+      return;
+    }
+    const leaf = this.app.workspace.getLeaf(false);
+    if (leaf) void leaf.setViewState({ type: VIEW_TYPE_MESSAGE_BOARD, active: true });
+  }
   private _savePathHint = "竹杖芒鞋/";
   private getSavePathHint(): string { return this._savePathHint; }
 
@@ -273,6 +285,9 @@ export class ReaderView extends ItemView {
       el.id = id;
       this.headingElements.push({ id, el: el as HTMLElement });
     });
+
+    // 文章评论（正文末尾嵌入评论区）
+    void this.renderComments(contentCol);
 
     // 上/下篇导航（基于当前文章在列表中的位置）
     this.renderPrevNext(contentCol);
@@ -612,9 +627,7 @@ export class ReaderView extends ItemView {
       attr: { "aria-label": "打开留言板", title: "留言板" },
     });
     this.appendIcon(boardBtn, "M3 4h12v7H7l-4 3V4zM15 9h2l4 3v7h-4v-2");
-    boardBtn.addEventListener("click", () =>
-      new MessageBoardModal(this.app, this.messageBoardService ?? undefined).open(),
-    );
+    boardBtn.addEventListener("click", () => this.openMessageBoardView());
 
     // 更多（•••）：弹出操作菜单
     const moreBtn = bar.createEl("button", {
@@ -979,6 +992,139 @@ export class ReaderView extends ItemView {
         void this.app.workspace.openLinkText(n.path, "", false);
       });
     }
+  }
+
+  /** 文章评论区：正文末尾嵌入，展示本文评论 + 写评论 */
+  private async renderComments(container: HTMLElement): Promise<void> {
+    const svc = this.messageBoardService;
+    if (!svc) return;
+    const anchorSlug = this.article?.slug ?? "";
+    if (!anchorSlug) return;
+
+    const section = container.createDiv({ cls: "bwr-comments" });
+    const head = section.createDiv({ cls: "bwr-comments-head" });
+    const titleEl = head.createDiv({ cls: "bwr-comments-title" });
+    this.appendIcon(titleEl, "M3 4h12v7H7l-4 3V4z");
+    titleEl.createSpan({ text: "评论" });
+    const countEl = head.createDiv({ cls: "bwr-comments-count", text: "…" });
+
+    // 写评论入口
+    const composeWrap = section.createDiv({ cls: "bwr-comments-compose bw-hidden" });
+    const tokenRow = composeWrap.createDiv({ cls: "bw-board-field" });
+    tokenRow.createDiv({ cls: "bw-board-field-label", text: "GitHub Token" });
+    const tokenInput = tokenRow.createEl("input", {
+      type: "password",
+      cls: "bw-board-input",
+      attr: { placeholder: "你的 GitHub Personal Access Token（public_repo 权限）" },
+    });
+    tokenInput.value = svc.getToken();
+    const titleRow = composeWrap.createDiv({ cls: "bw-board-field" });
+    titleRow.createDiv({ cls: "bw-board-field-label", text: "标题" });
+    const titleInput = titleRow.createEl("input", {
+      type: "text",
+      cls: "bw-board-input",
+      attr: { placeholder: "评论标题" },
+    });
+    const bodyRow = composeWrap.createDiv({ cls: "bw-board-field" });
+    bodyRow.createDiv({ cls: "bw-board-field-label", text: "内容" });
+    const bodyInput = composeWrap.createEl("textarea", {
+      cls: "bw-board-input bw-board-textarea",
+      attr: { placeholder: "评论内容（选填）", rows: "3" },
+    });
+    const submitRow = composeWrap.createDiv({ cls: "bw-board-submit-row" });
+    const submit = submitRow.createEl("button", {
+      cls: "bw-board-btn bw-board-primary",
+      text: "发布评论",
+    });
+    const writeBtn = head.createEl("button", {
+      cls: "bw-board-btn bw-board-primary",
+      text: "写评论",
+    });
+    writeBtn.addEventListener("click", () => {
+      const wasHidden = composeWrap.classList.contains("bw-hidden");
+      composeWrap.toggleClass("bw-hidden", !wasHidden);
+      if (wasHidden) tokenInput.focus();
+    });
+    let submitting = false;
+    submit.addEventListener("click", async () => {
+      if (submitting) return;
+      const token = tokenInput.value.trim();
+      if (token) svc.setToken(token);
+      const title = titleInput.value.trim();
+      if (!title) {
+        new Notice("请填写评论标题");
+        return;
+      }
+      submitting = true;
+      submit.setText("发布中…");
+      try {
+        await svc.createMessage(title, bodyInput.value, { slug: anchorSlug });
+        new Notice("评论已发布");
+        composeWrap.addClass("bw-hidden");
+        titleInput.value = "";
+        bodyInput.value = "";
+        void this.loadComments(anchorSlug, section, countEl);
+      } catch (e) {
+        new Notice((e as Error).message ?? "发布失败");
+      } finally {
+        submitting = false;
+        submit.setText("发布评论");
+      }
+    });
+
+    await this.loadComments(anchorSlug, section, countEl);
+  }
+
+  /** 拉取并渲染本文评论 */
+  private async loadComments(
+    anchorSlug: string,
+    section: HTMLElement,
+    countEl: HTMLElement,
+  ): Promise<void> {
+    const svc = this.messageBoardService;
+    if (!svc) return;
+    const listEl = section.querySelector(".bwr-comments-list");
+    if (listEl) listEl.remove();
+    const result = await svc.fetchMessages(MESSAGE_COMMENT_LABEL);
+    // 文章已切换，放弃渲染
+    if (!this.article || this.article.slug !== anchorSlug) return;
+
+    const comments = svc.filterBySlug(result.entries, anchorSlug);
+    countEl.setText(comments.length > 0 ? `${comments.length} 条` : "暂无评论");
+
+    if (comments.length === 0) {
+      const empty = section.createDiv({ cls: "bwr-comments-list bwr-comments-empty" });
+      empty.createDiv({ text: result.stale ? "暂时无法加载评论" : "还没有评论，来抢沙发。" });
+      return;
+    }
+
+    const list = section.createDiv({ cls: "bwr-comments-list" });
+    for (const entry of comments) {
+      this.renderComment(list, entry);
+    }
+  }
+
+  /** 渲染单条评论 */
+  private renderComment(list: HTMLElement, entry: MessageBoardEntry): void {
+    const card = list.createDiv({ cls: "bwr-comment" });
+    const meta = card.createDiv({ cls: "bwr-comment-meta" });
+    const avatar = meta.createEl("img", {
+      cls: "bwr-comment-avatar",
+      attr: { alt: "", loading: "lazy" },
+    });
+    if (entry.authorAvatar) avatar.src = entry.authorAvatar;
+    const nameTime = meta.createDiv({ cls: "bwr-comment-name-time" });
+    nameTime.createDiv({ cls: "bwr-comment-author", text: entry.author });
+    nameTime.createDiv({ cls: "bwr-comment-time", text: this.formatCommentTime(entry.createdAt) });
+    if (entry.title) card.createDiv({ cls: "bwr-comment-title", text: entry.title });
+    if (entry.body) card.createDiv({ cls: "bwr-comment-body", text: entry.body });
+  }
+
+  private formatCommentTime(iso: string): string {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleString("zh-CN", { year: "numeric", month: "short", day: "numeric" });
   }
 
   /**

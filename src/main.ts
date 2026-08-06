@@ -1,13 +1,14 @@
 /* ────────────── 竹杖芒鞋 · 插件入口 ────────────── */
 import { App, Modal, Notice, Plugin, Setting } from "obsidian";
 import type { Article, ArticleIndexEntry, BambooWalkingSettings } from "./types";
-import { DEFAULT_SETTINGS, VIEW_TYPE_READER, VIEW_TYPE_SIDEBAR } from "./types";
+import { DEFAULT_SETTINGS, VIEW_TYPE_READER, VIEW_TYPE_SIDEBAR, VIEW_TYPE_MESSAGE_BOARD } from "./types";
 import { REFRESH_INTERVAL, DEFAULT_AUTHOR_HANDLES } from "./constants";
 import { GitHubArticleService } from "./services/GitHubArticleService";
 import { LocalArticleService } from "./services/LocalArticleService";
 import { CacheService } from "./services/CacheService";
 import { PluginStatsService } from "./services/PluginStatsService";
 import { MessageBoardService } from "./services/MessageBoardService";
+import { MessageBoardView } from "./ui/MessageBoardView";
 import { PluginStatsModal } from "./ui/PluginStatsModal";
 import { SidebarView } from "./ui/SidebarView";
 import { ReaderView } from "./ui/ReaderView";
@@ -133,7 +134,6 @@ export default class BambooWalkingPlugin extends Plugin {
       view.setGetContentFn((slug) => this.cacheService.getCachedArticle(slug)?.content ?? null);
       view.setGetWordCountFn((slug) => this.cacheService.getWordCount(slug));
       view.setPluginStatsService(this.pluginStatsService);
-      view.setMessageBoardService(this.messageBoardService);
       view.setOnReady(() => {
         const idx = this.currentIndex.length > 0
           ? this.currentIndex
@@ -157,6 +157,11 @@ export default class BambooWalkingPlugin extends Plugin {
         const entry = this.cacheService.getIndex().find((e) => e.slug === slug);
         if (entry) void this.openArticle(entry);
       });
+      return view;
+    });
+
+    this.registerView(VIEW_TYPE_MESSAGE_BOARD, (leaf) => {
+      const view = new MessageBoardView(leaf, this.messageBoardService);
       return view;
     });
 
@@ -250,6 +255,18 @@ export default class BambooWalkingPlugin extends Plugin {
     if (leaves.length > 0) {
       this.app.workspace.setActiveLeaf(leaves[0], { focus: true });
     }
+  }
+
+  /** 在主区打开全局留言板页面 */
+  async openMessageBoard(): Promise<void> {
+    const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_MESSAGE_BOARD)[0];
+    if (existing) {
+      this.app.workspace.revealLeaf(existing);
+      this.app.workspace.setActiveLeaf(existing, { focus: true });
+      return;
+    }
+    const leaf = this.app.workspace.getLeaf(false);
+    if (leaf) await leaf.setViewState({ type: VIEW_TYPE_MESSAGE_BOARD, active: true });
   }
 
   /* ═══════════════════ 文章 ═══════════════════ */
