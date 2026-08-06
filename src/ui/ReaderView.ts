@@ -1005,8 +1005,8 @@ export class ReaderView extends ItemView {
     const head = section.createDiv({ cls: "bwr-comments-head" });
     const countEl = head.createDiv({ cls: "bwr-comments-count", text: "…" });
 
-    // 写评论入口
-    const composeWrap = section.createDiv({ cls: "bwr-comments-compose bw-hidden" });
+    // 写评论入口（常显，无需折叠按钮）
+    const composeWrap = section.createDiv({ cls: "bwr-comments-compose" });
     const tokenRow = composeWrap.createDiv({ cls: "bw-board-field" });
     tokenRow.createDiv({ cls: "bw-board-field-label", text: "GitHub Token" });
     const tokenInput = tokenRow.createEl("input", {
@@ -1026,15 +1026,6 @@ export class ReaderView extends ItemView {
       cls: "bw-board-btn bw-board-primary",
       text: "发布评论",
     });
-    const writeBtn = head.createEl("button", {
-      cls: "bw-board-btn bw-board-primary",
-      text: "写评论",
-    });
-    writeBtn.addEventListener("click", () => {
-      const wasHidden = composeWrap.classList.contains("bw-hidden");
-      composeWrap.toggleClass("bw-hidden", !wasHidden);
-      if (wasHidden) tokenInput.focus();
-    });
     let submitting = false;
     submit.addEventListener("click", async () => {
       if (submitting) return;
@@ -1053,7 +1044,6 @@ export class ReaderView extends ItemView {
       try {
         await svc.createMessage(autoTitle, body, { slug: anchorSlug });
         new Notice("评论已发布");
-        composeWrap.addClass("bw-hidden");
         bodyInput.value = "";
         void this.loadComments(anchorSlug, section, countEl);
       } catch (e) {

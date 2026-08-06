@@ -2094,9 +2094,6 @@ button.bw-board-secondary:hover {
   font-size: 12px;
   color: var(--text-muted);
 }
-.bwr-comments-head button.bw-board-primary {
-  margin-left: auto;
-}
 .bwr-comments-compose {
   margin-top: var(--bw-space-md);
   padding: var(--bw-space-md);
