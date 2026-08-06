@@ -1015,13 +1015,6 @@ export class ReaderView extends ItemView {
       attr: { placeholder: "你的 GitHub Personal Access Token（public_repo 权限）" },
     });
     tokenInput.value = svc.getToken();
-    const titleRow = composeWrap.createDiv({ cls: "bw-board-field" });
-    titleRow.createDiv({ cls: "bw-board-field-label", text: "标题" });
-    const titleInput = titleRow.createEl("input", {
-      type: "text",
-      cls: "bw-board-input",
-      attr: { placeholder: "评论标题" },
-    });
     const bodyRow = composeWrap.createDiv({ cls: "bw-board-field" });
     bodyRow.createDiv({ cls: "bw-board-field-label", text: "内容" });
     const bodyInput = composeWrap.createEl("textarea", {
@@ -1047,18 +1040,20 @@ export class ReaderView extends ItemView {
       if (submitting) return;
       const token = tokenInput.value.trim();
       if (token) svc.setToken(token);
-      const title = titleInput.value.trim();
-      if (!title) {
-        new Notice("请填写评论标题");
-        return;
-      }
+      const body = bodyInput.value.trim();
+      // 自动生成标题：取正文前 30 字；正文为空则用文章标题 + "评论"
+      const fallback = (this.article?.title ?? "评论") + " 的评论";
+      const autoTitle = body
+        ? body.length > 30
+          ? body.slice(0, 30) + "…"
+          : body
+        : fallback;
       submitting = true;
       submit.setText("发布中…");
       try {
-        await svc.createMessage(title, bodyInput.value, { slug: anchorSlug });
+        await svc.createMessage(autoTitle, body, { slug: anchorSlug });
         new Notice("评论已发布");
         composeWrap.addClass("bw-hidden");
-        titleInput.value = "";
         bodyInput.value = "";
         void this.loadComments(anchorSlug, section, countEl);
       } catch (e) {
