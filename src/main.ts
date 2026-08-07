@@ -261,8 +261,8 @@ export default class BambooWalkingPlugin extends Plugin {
   async openMessageBoard(): Promise<void> {
     const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_MESSAGE_BOARD)[0];
     if (existing) {
-      this.app.workspace.revealLeaf(existing);
-      this.app.workspace.setActiveLeaf(existing, { focus: true });
+      void this.app.workspace.revealLeaf(existing);
+      void this.app.workspace.setActiveLeaf(existing, { focus: true });
       return;
     }
     const leaf = this.app.workspace.getLeaf(false);

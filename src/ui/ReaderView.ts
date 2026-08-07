@@ -87,8 +87,8 @@ export class ReaderView extends ItemView {
   private openMessageBoardView(): void {
     const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_MESSAGE_BOARD)[0];
     if (existing) {
-      this.app.workspace.revealLeaf(existing);
-      this.app.workspace.setActiveLeaf(existing, { focus: true });
+      void this.app.workspace.revealLeaf(existing);
+      void this.app.workspace.setActiveLeaf(existing, { focus: true });
       return;
     }
     const leaf = this.app.workspace.getLeaf(false);
@@ -1027,31 +1027,33 @@ export class ReaderView extends ItemView {
       text: "发布评论",
     });
     let submitting = false;
-    submit.addEventListener("click", async () => {
-      if (submitting) return;
-      const token = tokenInput.value.trim();
-      if (token) svc.setToken(token);
-      const body = bodyInput.value.trim();
-      // 自动生成标题：取正文前 30 字；正文为空则用文章标题 + "评论"
-      const fallback = (this.article?.title ?? "评论") + " 的评论";
-      const autoTitle = body
-        ? body.length > 30
-          ? body.slice(0, 30) + "…"
-          : body
-        : fallback;
-      submitting = true;
-      submit.setText("发布中…");
-      try {
-        await svc.createMessage(autoTitle, body, { slug: anchorSlug });
-        new Notice("评论已发布");
-        bodyInput.value = "";
-        void this.loadComments(anchorSlug, section, countEl);
-      } catch (e) {
-        new Notice((e as Error).message ?? "发布失败");
-      } finally {
-        submitting = false;
-        submit.setText("发布评论");
-      }
+    submit.addEventListener("click", () => {
+      void (async () => {
+        if (submitting) return;
+        const token = tokenInput.value.trim();
+        if (token) svc.setToken(token);
+        const body = bodyInput.value.trim();
+        // 自动生成标题：取正文前 30 字；正文为空则用文章标题 + "评论"
+        const fallback = (this.article?.title ?? "评论") + " 的评论";
+        const autoTitle = body
+          ? body.length > 30
+            ? body.slice(0, 30) + "…"
+            : body
+          : fallback;
+        submitting = true;
+        submit.setText("发布中…");
+        try {
+          await svc.createMessage(autoTitle, body, { slug: anchorSlug });
+          new Notice("评论已发布");
+          bodyInput.value = "";
+          void this.loadComments(anchorSlug, section, countEl);
+        } catch (e) {
+          new Notice((e as Error).message ?? "发布失败");
+        } finally {
+          submitting = false;
+          submit.setText("发布评论");
+        }
+      })();
     });
 
     await this.loadComments(anchorSlug, section, countEl);

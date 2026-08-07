@@ -107,29 +107,31 @@ export class MessageBoardView extends ItemView {
     });
 
     let submitting = false;
-    submit.addEventListener("click", async () => {
-      if (submitting) return;
-      const token = tokenInput.value.trim();
-      if (token) this.service.setToken(token);
-      const title = titleInput.value.trim();
-      if (!title) {
-        new Notice("请填写留言标题");
-        return;
-      }
-      submitting = true;
-      submit.setText("发布中…");
-      try {
-        await this.service.createMessage(title, bodyInput.value);
-        new Notice("留言已发布");
-        titleInput.value = "";
-        bodyInput.value = "";
-        void this.loadBoard(true);
-      } catch (e) {
-        new Notice((e as Error).message ?? "发布失败");
-      } finally {
-        submitting = false;
-        submit.setText("发布留言");
-      }
+    submit.addEventListener("click", () => {
+      void (async () => {
+        if (submitting) return;
+        const token = tokenInput.value.trim();
+        if (token) this.service.setToken(token);
+        const title = titleInput.value.trim();
+        if (!title) {
+          new Notice("请填写留言标题");
+          return;
+        }
+        submitting = true;
+        submit.setText("发布中…");
+        try {
+          await this.service.createMessage(title, bodyInput.value);
+          new Notice("留言已发布");
+          titleInput.value = "";
+          bodyInput.value = "";
+          void this.loadBoard(true);
+        } catch (e) {
+          new Notice((e as Error).message ?? "发布失败");
+        } finally {
+          submitting = false;
+          submit.setText("发布留言");
+        }
+      })();
     });
   }
 
