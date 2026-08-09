@@ -10,6 +10,7 @@ import {
 export interface AuthorCardCallbacks {
   openAbout: () => void;
   openMessageBoard: () => void;
+  openConsult: () => void;
 }
 
 export interface AuthorCardRefs {
@@ -56,6 +57,16 @@ export function renderAuthorCard(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setIcon 是 Obsidian 官方 API
   setIcon(boardIco, "message-square");
   boardBtn.addEventListener("click", () => callbacks.openMessageBoard());
+
+  // 竹林咨询入口：名字行内图标，点击向羽鳞君发邮件请教（联动竹林修仙传 SMTP 配置）
+  const consultBtn = nameRow.createEl("button", {
+    cls: "bws-author-gh bws-author-about",
+    attr: { "aria-label": "向羽鳞君咨询", title: "咨询" },
+  });
+  const consultIco = consultBtn.createSpan({ cls: "bw-brand-link-ico-wrap" });
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- setIcon 是 Obsidian 官方 API
+  setIcon(consultIco, "mail");
+  consultBtn.addEventListener("click", () => callbacks.openConsult());
 
   const ghUrl = PROFILE_LINKS[0]?.url;
   if (ghUrl) {
