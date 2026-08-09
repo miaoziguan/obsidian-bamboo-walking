@@ -120,6 +120,14 @@ export interface BambooReviewApi {
    * 调用方回退到 getBambooCoinBalance 保证兼容。
    */
   getBambooCoinAvailableBalance?: () => Promise<number | null>;
+  /**
+   * 直接弹出「竹林咨询」邮件弹窗（复用竹林修仙传的 SMTP 配置）。
+   * 可选：旧版竹林修仙传未实现时返回 undefined，调用方据此优雅降级。
+   */
+  openConsult?: (
+    externalText?: string,
+    opts?: { sourceLabel?: string }
+  ) => Promise<void>;
 }
 
 /**
@@ -230,4 +238,28 @@ export async function getBambooCoinAvailableBalance(
     return api.getBambooCoinBalance();
   }
   return null;
+}
+
+/**
+ * 弹出「竹林咨询」邮件弹窗（联动竹林修仙传的 SMTP 配置，单一来源、零重复）。
+ * 把一段外部文本（如阅读中的文章标题+正文片段）作为咨询草稿带入，用户可改可补。
+ *
+ * 未安装 / 未启用竹林修仙传，或版本过旧无 openConsult 时返回 false，
+ * 由调用方据此隐藏入口，优雅降级（与金句炼化联动同策略）。
+ *
+ * @returns 成功弹出咨询弹窗返回 true；未检测到竹林修仙传返回 false
+ */
+export async function openConsult(
+  app: App,
+  externalText?: string,
+  sourceLabel?: string
+): Promise<boolean> {
+  const api = getBambooImmortalsApi(app);
+  if (api && typeof api.openConsult === "function") {
+    await api.openConsult(externalText, {
+      sourceLabel: sourceLabel ?? "竹杖芒鞋·咨询",
+    });
+    return true;
+  }
+  return false;
 }
