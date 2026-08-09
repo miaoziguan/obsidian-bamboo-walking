@@ -565,17 +565,6 @@ export class ReaderView extends ItemView {
       })();
     });
 
-    // 竹林咨询：联动「竹林修仙传」的 SMTP 配置，把本文带入弹窗问候羽鳞君
-    const consultBtn = actions.createEl("button", {
-      cls: "bwr-btn bwr-btn-consult",
-      attr: {
-        "aria-label": "咨询本文",
-        title: "把本文带入「竹林咨询」弹窗，向羽鳞君发邮件请教",
-      },
-    });
-    this.appendIcon(consultBtn, "M4 4h12v9H8l-4 3V4z");
-    consultBtn.createSpan({ text: "咨询本文" });
-    consultBtn.addEventListener("click", () => this.consultCurrentArticle());
   }
 
   /** 移动端精简图标工具栏：单行不折行，低频操作收进「更多」菜单 */
@@ -665,15 +654,6 @@ export class ReaderView extends ItemView {
     menu.addItem((i) =>
       i.setTitle("保存为笔记").setIcon("save").onClick(() => this.saveFromMenu()),
     );
-    // 竹林咨询：仅当检测到「竹林修仙传」插件时提供
-    if (getBambooImmortalsApi(this.app)) {
-      menu.addItem((i) =>
-        i
-          .setTitle("咨询本文")
-          .setIcon("mail")
-          .onClick(() => this.consultCurrentArticle()),
-      );
-    }
     menu.showAtMouseEvent(e);
   }
 
@@ -755,28 +735,6 @@ export class ReaderView extends ItemView {
     if (!sel.anchorNode || !this.contentEl.contains(sel.anchorNode)) return undefined;
     const text = sel.toString().replace(/\s+/g, " ").trim();
     return text.length > 0 ? text : undefined;
-  }
-
-  /** 联动竹林修仙传：把当前文章标题+正文片段带入「竹林咨询」弹窗，向羽鳞君发邮件请教 */
-  private consultCurrentArticle(): void {
-    const article = this.currentArticle;
-    if (!article) {
-      new Notice("当前没有正在阅读的文章");
-      return;
-    }
-    const title = article.title ?? "";
-    const content = (article.content ?? "").trim();
-    // 正文前 800 字作为草稿，用户可在弹窗内改可补
-    const snippet = content.length > 800 ? content.slice(0, 800) + "…（正文略）" : content;
-    const draft = title ? `# ${title}\n\n${snippet}` : snippet;
-    void openConsult(this.app, draft, `竹杖芒鞋·《${title || "未命名"}》`).then((ok) => {
-      if (!ok) {
-        new Notice(
-          "未检测到「竹林修仙传」插件或未配置 SMTP。请先安装并启用竹林修仙传，并在其设置中填写发件邮箱与授权码。",
-          8000,
-        );
-      }
-    });
   }
 
   /** 联动竹林修仙传：把当前选中的文字直接带入「竹林咨询」弹窗，向羽鳞君发邮件请教 */
