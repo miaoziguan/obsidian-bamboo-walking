@@ -726,17 +726,23 @@ export class ReaderView extends ItemView {
           }
         }),
     );
-    // 跨插件联动：仅当检测到「竹林修仙传」插件时，提供「炼化为修行目标」
+    // 跨插件联动：仅当检测到「竹林修仙传」插件时，提供「炼化为修行目标」「咨询选中内容」
     if (getBambooImmortalsApi(this.app)) {
       menu.addItem((item) =>
         item
           .setTitle("炼化为修行目标")
           .setIcon("target")
           .onClick(() => {
-            void refineQuoteToGoal(this.app, sel, this.article?.title).then((ok) => {
+            void refineQuoteToGoal(this.app,  sel, this.article?.title).then((ok) => {
               if (!ok) new Notice("未检测到「竹林修仙传」插件，无法炼化");
             });
           }),
+      );
+      menu.addItem((item) =>
+        item
+          .setTitle("咨询选中内容")
+          .setIcon("mail")
+          .onClick(() => this.consultSelection(sel)),
       );
     }
     menu.showAtMouseEvent(e);
@@ -764,6 +770,19 @@ export class ReaderView extends ItemView {
     const snippet = content.length > 800 ? content.slice(0, 800) + "…（正文略）" : content;
     const draft = title ? `# ${title}\n\n${snippet}` : snippet;
     void openConsult(this.app, draft, `竹杖芒鞋·《${title || "未命名"}》`).then((ok) => {
+      if (!ok) {
+        new Notice(
+          "未检测到「竹林修仙传」插件或未配置 SMTP。请先安装并启用竹林修仙传，并在其设置中填写发件邮箱与授权码。",
+          8000,
+        );
+      }
+    });
+  }
+
+  /** 联动竹林修仙传：把当前选中的文字直接带入「竹林咨询」弹窗，向羽鳞君发邮件请教 */
+  private consultSelection(sel: string): void {
+    const title = this.currentArticle?.title ?? "";
+    void openConsult(this.app, sel, `竹杖芒鞋·《${title || "未命名"}》`).then((ok) => {
       if (!ok) {
         new Notice(
           "未检测到「竹林修仙传」插件或未配置 SMTP。请先安装并启用竹林修仙传，并在其设置中填写发件邮箱与授权码。",

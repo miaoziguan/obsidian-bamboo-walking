@@ -5,7 +5,6 @@ import { VIEW_TYPE_SIDEBAR, VIEW_TYPE_MESSAGE_BOARD } from "../types";
 import { AboutModal } from "./AboutModal";
 import type { PluginStatsService } from "../services/PluginStatsService";
 import { renderAuthorCard } from "./AuthorCard";
-import { openConsult } from "../services/BambooReviewBridge";
 import { StrategyMiniCard } from "./StrategyMiniCard";
 import { PluginStatsCard } from "./PluginStatsCard";
 import { matchArticle } from "../utils/search";
@@ -285,10 +284,6 @@ export class SidebarView extends ItemView {
         }
         const leaf = this.app.workspace.getLeaf(false);
         if (leaf) void leaf.setViewState({ type: VIEW_TYPE_MESSAGE_BOARD, active: true });
-      },
-      openConsult: () => {
-        // 作者行语境无当前文章，自由输入咨询内容（联动竹林修仙传 SMTP 配置）
-        void openConsult(this.app, undefined, "竹杖芒鞋·作者行");
       },
     });
     this.authorStatsEl = authorRefs.authorStatsEl;
