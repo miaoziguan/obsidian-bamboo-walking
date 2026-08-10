@@ -94,6 +94,7 @@ export const PLUGIN_CN_NAMES: Record<string, string> = {
   "bamboo-walking": "竹杖芒鞋",
   "atomic-notes-extractor": "竹叶飞刃",
   "bamboo-immortals": "竹林修仙传",
+  "chinese-plugin-market": "中文区插件市场",
 };
 
 /** 缓存数据结构版本，升级字段时 +1 */
