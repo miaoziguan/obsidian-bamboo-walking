@@ -7,6 +7,7 @@ import type { PluginStatsService } from "../services/PluginStatsService";
 import { renderAuthorCard } from "./AuthorCard";
 import { StrategyMiniCard } from "./StrategyMiniCard";
 import { PluginStatsCard } from "./PluginStatsCard";
+import { BambooSeriesCard } from "./BambooSeriesCard";
 import { matchArticle } from "../utils/search";
 import { formatWordCount } from "../utils/text";
 
@@ -47,6 +48,8 @@ export class SidebarView extends ItemView {
   private strategyMiniCard: StrategyMiniCard = new StrategyMiniCard(this.app);
   /** 插件态势极简卡组件 */
   private pluginStatsCard: PluginStatsCard = new PluginStatsCard(this.app);
+  /** 竹林系列联动卡组件（竹杖芒鞋 × 竹林修仙传 × 竹叶飞刃 × 中文区插件市场） */
+  private bambooSeriesCard: BambooSeriesCard = new BambooSeriesCard(this.app);
   /** 插件态势服务（由 main 注入；为 null 时卡片降级为不可点） */
   private pluginStatsService: PluginStatsService | null = null;
 
@@ -289,6 +292,7 @@ export class SidebarView extends ItemView {
     this.authorStatsEl = authorRefs.authorStatsEl;
     this.strategyMiniCard.render(header);
     this.pluginStatsCard.render(header);
+    this.bambooSeriesCard.render(header);
 
     // 品牌区底部渐隐分隔：暗示下方是可滚动的内容区
     const fade = header.createDiv({ cls: "bws-header-fade" });

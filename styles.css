@@ -4441,3 +4441,161 @@ body.is-mobile .bws-author-stats {
   border-left-color: transparent;
 }
 
+/* ═══════════ 竹林系列联动卡 ═══════════ */
+/* 复用黑曜石作品卡的盒模型与交互语言，形成统一侧栏语言 */
+.bws-bambooseries {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bw-space-xs);
+  margin: var(--bw-space-sm) 0 0;
+  padding: var(--bw-space-sm);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--bw-radius);
+  background: var(--background-secondary);
+  transition: background 0.15s, border-color 0.15s;
+}
+.bws-bambooseries-err {
+  color: var(--text-error);
+  border-color: var(--background-modifier-error);
+  font-size: 12px;
+  padding: 6px 8px;
+}
+.bws-bambooseries-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bw-space-sm);
+  cursor: pointer;
+}
+.bws-bambooseries-left {
+  display: flex;
+  align-items: center;
+  gap: var(--bw-space-sm);
+  min-width: 0;
+  overflow: hidden;
+}
+.bws-bambooseries-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-accent);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.bws-bambooseries-label .bw-icon {
+  font-size: 13px;
+}
+/* 折叠 caret 箭头（与黑曜石作品卡同风格） */
+.bws-bambooseries-caret {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+  letter-spacing: 0;
+}
+.bws-bambooseries-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+.bws-bambooseries-market {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--bw-radius-sm);
+  cursor: pointer;
+  opacity: 0;
+  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+/* 默认隐藏，悬停整卡或键盘聚焦时才浮现 */
+.bws-bambooseries:hover .bws-bambooseries-market,
+.bws-bambooseries:focus-within .bws-bambooseries-market {
+  opacity: 0.75;
+}
+.bws-bambooseries-market:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-accent);
+  opacity: 1;
+}
+.bws-bambooseries.is-collapsed .bws-bambooseries-body {
+  display: none;
+}
+.bws-bambooseries-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.bws-bambooseries-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bw-space-sm);
+  min-width: 0;
+  padding: 3px 6px;
+  border-radius: var(--bw-radius-sm);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.bws-bambooseries-row.is-self {
+  cursor: default;
+}
+.bws-bambooseries-row:not(.is-self):hover {
+  background: var(--background-modifier-hover);
+}
+.bws-bambooseries-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-normal);
+  font-weight: 500;
+}
+.bws-bambooseries-row.is-self .bws-bambooseries-name {
+  color: var(--text-faint);
+}
+.bws-bambooseries-right {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+.bws-bambooseries-state {
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+.bws-bambooseries-row.is-installed .bws-bambooseries-state {
+  color: var(--bw-bamboo-deep);
+  background: color-mix(in srgb, var(--bw-bamboo-pale) 35%, transparent);
+}
+.bws-bambooseries-row.is-missing .bws-bambooseries-state {
+  color: var(--text-faint);
+  background: var(--background-modifier-hover);
+}
+.bws-bambooseries-row.is-self .bws-bambooseries-state {
+  color: var(--text-accent);
+  background: transparent;
+}
+
+/* 移动端：头部默认折叠（单行展示），与黑曜石作品卡行为一致 */
+body.is-mobile .bws-bambooseries {
+  padding: 6px 8px;
+  margin-top: var(--bw-space-xs);
+}
+body.is-mobile .bws-bambooseries-market {
+  opacity: 0.75;
+}
+
